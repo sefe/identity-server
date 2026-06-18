@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" />
+        <PackageReference Include="NSubstitute" />
+        <PackageReference Include="NUnit" />
+        <PackageReference Include="NUnit3TestAdapter" />
+        <PackageReference Include="NUnit.Analyzers" />
+        <PackageReference Include="coverlet.collector" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\IdentityServer.Abstraction\IdentityServer.Abstraction.csproj" />
+        <ProjectReference Include="..\IdentityServer.MicrosoftGraph\IdentityServer.MicrosoftGraph.csproj" />
+        <ProjectReference Include="..\IdentityServer.Tests.Common\IdentityServer.Tests.Common.csproj" />
+    </ItemGroup>
+	
+	<ItemGroup>
+		<Using Include="NUnit.Framework" />
+	</ItemGroup>
+	
+</Project>

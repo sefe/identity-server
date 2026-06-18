@@ -1,0 +1,160 @@
+@inherits EditableComponentBase
+
+@inject IAdminApiService AdminApi
+@inject IConfirmationService ConfirmationService
+@inject NotificationService NotificationService
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row mx-auto gy-2">
+            <div class="col-12 col-lg-3">
+                <RequiredFieldLabel ForTarget="apiName" LabelText="Identifier" />
+                <div class="row mx-auto align-items-center">
+                    <div class="col-auto m-0 p-0">
+                        <CopyToClipboardButton ValueToCopy="@ApiResource.Name" />
+                    </div>
+                    <div class="col m-0 p-0">
+                        <p id="clientId" class="m-0 form-control-plaintext text-break">@ApiResource.Name</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-4">
+                <RequiredFieldLabel ForTarget="apiDisplayName" LabelText="Display Name" />
+                @if (!IsReadonly)
+                {
+                    <EditableFieldModal TModel="ApiResourceDtoUpdate" Model="@dtoUpdate" OnSave="@(() => UpdateApiResourceAsync(dtoUpdate, "Display Name"))" Title="Edit API Resource Display Name"
+                                        OnOpen="@(model => model.DisplayName = ApiResource.DisplayName)" OnCancel="ResetUpdateModel">
+                        <FormItems>
+                            <FormItem>
+                                <Template>
+                                    <RequiredFieldLabel ForTarget="apiDisplayNameEdit" LabelText="Display Name" />
+                                    <TelerikTextBox id="apiDisplayNameEdit" class="form-control" @bind-Value="@dtoUpdate.DisplayName" AriaDescribedBy="apiDisplayNameHelpBlock" />
+                                    <div id="apiDisplayNameHelpBlock" class="form-text">Human-readable name. Keep it short and clear.</div>
+                                    <TelerikValidationMessage For="@(() => dtoUpdate.DisplayName)" />
+                                </Template>
+                            </FormItem>
+                        </FormItems>
+                    </EditableFieldModal>
+                }
+                <p id="apiDisplayName" class="m-0 form-control-plaintext text-break">@ApiResource.DisplayName</p>
+            </div>
+
+            <div class="col-12 col-lg-3">
+                <RequiredFieldLabel ForTarget="apiSystemPermission" LabelText="System Permission" />
+                <p id="apiSystemPermission" class="m-0 form-control-plaintext">
+                    <a class="btn btn-link text-start text-break text-decoration-underline p-0" href="@PageRoutes.SystemPermissionsEdit(@ApiResource.SystemPermissionId)">@ApiResource.SystemPermissionName</a>
+                </p>
+            </div>
+
+            <div class="col-12 col-lg-2">
+                <RequiredFieldLabel ForTarget="apiSystemPermissionEnvironment" LabelText="Environment" />
+                <SystemPermissionEnvironmentContactsButton Entity="ApiResource" Id="apiSystemPermissionEnvironment" />
+            </div>
+
+            <div class="col-12">
+                <label for="apiResourceDescription" class="k-label k-form-label">Description</label>
+
+                @if (!IsReadonly)
+                {
+                    <EditableFieldModal TModel="ApiResourceDtoUpdate" Model="@dtoUpdate" OnSave="@(() => UpdateApiResourceAsync(dtoUpdate, "Description"))" Title="Edit API Resource Description"
+                                        OnOpen="@(model => model.Description = ApiResource.Description)" OnCancel="ResetUpdateModel">
+                        <FormItems>
+                            <FormItem>
+                                <Template>
+                                    <label for="apiResourceDescription" class="k-label k-form-label">Description</label>
+                                    <TelerikTextArea id="apiResourceDescription" class="form-control" @bind-Value="@dtoUpdate.Description" rows="10" placeholder="Optional information about the API Resource." />
+                                    <div id="clientDescriptionHelpBlock" class="form-text">Provide a meaningful description in @Constants.Limits.ApiResource.Description.MaxLength characters or less</div>
+                                    <TelerikValidationMessage For="@(() => dtoUpdate.Description)" />
+                                </Template>
+                            </FormItem>
+                        </FormItems>
+                    </EditableFieldModal>
+                }
+                <p id="apiResourceDescription" class="m-0 form-control-plaintext text-break">@ApiResource.Description</p>
+            </div>
+
+            <div class="col-12 col-lg-6">
+                <div class="row">
+                    <div class="col my-auto">
+                        <label for="apiResourceEnabled" class="k-label k-form-label">Is Enabled</label>
+                    </div>
+                    <div class="col my-auto">
+                        <TelerikSwitch Value="@ApiResource.Enabled" AriaDescribedBy="apiResourceEnabledHelpBlock" Id="apiResourceEnabled"
+                                       OnLabel="True" OffLabel="False" Width="85px" ValueChanged="@((bool val) => ToggleIsEnabled(val))" Enabled="!IsReadonly" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div id="apiResourceEnabledHelpBlock" class="col k-form-hint">The API Resource cannot be used until enabled.</div>
+                </div>
+            </div>
+
+            <ErrorAlert @bind-ErrorMessage="@errorMessage" CssClass="mt-2" />
+
+            @if (awaitingResults)
+            {
+                <div>
+                    <TelerikLoaderContainer />
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public ApiResourceDtoRead ApiResource { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<ApiResourceDtoRead> OnApiResourceUpdate { get; set; }
+
+    [Parameter]
+    public EventCallback Cancel { get; set; }
+
+    private ApiResourceDtoUpdate dtoUpdate = new();
+    private string? errorMessage;
+    private bool awaitingResults = false;
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        ResetUpdateModel();
+    }
+
+    private async Task UpdateApiResourceAsync(ApiResourceDtoUpdate dto, string fieldName)
+    {
+        if (IsReadonly)
+        {
+            return;
+        }
+
+        awaitingResults = true;
+        dto.Id = ApiResource.Id;
+        var callResult = await AdminApi.UpdateApiResource(dto);
+        if (callResult.IsSuccess)
+        {
+            errorMessage = null;
+            ApiResource = callResult.Result;
+            ResetUpdateModel();
+            NotificationService.ShowInfo($"{fieldName} updated.");
+            await OnApiResourceUpdate.InvokeAsync(ApiResource);
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+        awaitingResults = false;
+    }
+
+    private Task ToggleIsEnabled(bool newValue)
+    {
+        return UpdateApiResourceAsync(new ApiResourceDtoUpdate { Enabled = newValue }, "'Is Enabled' setting");
+    }
+
+    private void ResetUpdateModel()
+    {
+        dtoUpdate = new ApiResourceDtoUpdate { Id = ApiResource.Id };
+    }
+}

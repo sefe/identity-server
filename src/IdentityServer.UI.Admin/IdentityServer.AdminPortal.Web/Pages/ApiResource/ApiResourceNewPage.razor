@@ -1,0 +1,30 @@
+﻿@page "/apiresources/new"
+@inherits UserRoleBasePage
+
+@attribute [Authorize(Roles = "Admin, User")]
+
+@inject NavigationManager NavigationManager
+@inject NotificationService NotificationService
+
+<div class="container">
+    <div class="row">
+        <h3>Create New API Resource</h3>
+    </div>
+
+    <ApiResourceInfoNew OnSave="OnSave" OnCancel="GoBack" />
+</div>
+
+@code {
+    private Task GoBack()
+    {
+        NavigationManager.NavigateTo(PageRoutes.ApiResources);
+        return Task.CompletedTask;
+    }
+
+    private Task OnSave(ApiResourceDtoRead createdApi)
+    {
+        NotificationService.ShowInfo($"API Resource '{createdApi.Name}' created.");
+        NavigationManager.NavigateTo(PageRoutes.ApiResourcesEdit(createdApi.Id));
+        return Task.CompletedTask;
+    }
+}

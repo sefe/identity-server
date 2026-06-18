@@ -1,0 +1,75 @@
+<Project Sdk="WixToolset.Sdk/6.0.0">
+  <PropertyGroup>
+    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
+    <Name>IdentityServer.AdminPortal.Setup</Name>
+    <IdpWebDir>..\IdentityServer.AdminPortal.Server\bin\$(Configuration)\net8.0</IdpWebDir>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <ProjectGuid>{8f355c0a-c2d3-42fe-a5bd-d4447167ae9e}</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
+    <DefineConstants>Debug;IdpWebDir=$(IdpWebDir)</DefineConstants>
+    <SuppressValidation>True</SuppressValidation>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
+    <DefineConstants>IdpWebDir=$(IdpWebDir)</DefineConstants>
+    <SuppressValidation>True</SuppressValidation>
+  </PropertyGroup>
+  <PropertyGroup>
+	<AppVersion Condition=" '$(AppVersion)' == '' ">1.0.0.0</AppVersion>
+	<DefineConstants>AppVersion=$(AppVersion);IdpWebDir=$(IdpWebDir)</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="Dependencies.wxi" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="IdentityServer.AdminPortal.Setup.msi.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <None Include="Web\IdentityServer.AdminPortal\HeatTransform.xslt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\IdentityServer.AdminPortal.Server\IdentityServer.AdminPortal.Server.csproj">
+      <Name>IdentityServer.AdminPortal</Name>
+      <Project>{04049D67-9EF2-4D74-92BF-8FEA3AA04506}</Project>
+      <Private>True</Private>
+      <DoNotHarvest>True</DoNotHarvest>
+      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
+    </ProjectReference>
+  </ItemGroup>
+  <Target Name="PublishProjects" AfterTargets="BeforeResolveReferences">
+    <Exec Command="dotnet publish &quot;..\IdentityServer.AdminPortal.Server\IdentityServer.AdminPortal.Server.csproj&quot; -c $(Configuration) -o $(IdpWebDir)" />
+  </Target>
+  <ItemGroup>
+    <HarvestDirectory Include="$(IdpWebDir)">
+      <DirectoryRefId>AdminPortalFolder</DirectoryRefId>
+      <ComponentGroupName>IdpAdmComGroup</ComponentGroupName>
+      <Transforms>$(ProjectDir)Web\IdentityServer.AdminPortal\HeatTransform.xslt</Transforms>
+      <PreprocessorVariable>var.IdpWebDir</PreprocessorVariable>
+	    <SuppressCom>true</SuppressCom>
+      <SuppressRootDirectory>true</SuppressRootDirectory>
+	    <SuppressRegistry>true</SuppressRegistry>
+    </HarvestDirectory>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="WixJsonFileExtension" Version="6.0.0.46" />
+    <PackageReference Include="WixToolset.Heat" Version="6.0.0" />
+    <PackageReference Include="WixToolset.Util.wixext" Version="6.0.0" />
+    <PackageReference Include="WixToolset.Iis.wixext" Version="6.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="..\" />
+    <Folder Include="..\IdentityServer.AdminPortal.Server\" />
+    <Folder Include="..\IdentityServer.AdminPortal.Server\bin\" />
+    <Folder Include="Web\" />
+    <Folder Include="Web\IdentityServer.AdminPortal\" />
+  </ItemGroup>
+  <PropertyGroup>
+    <SuppressSpecificWarnings>1070;1071</SuppressSpecificWarnings>
+  </PropertyGroup>
+  <Target Name="CopyJsonFiles" AfterTargets="Build">
+    <Copy SourceFiles="$(ProjectDir)IdentityServer.AdminPortal.Setup.msi.json" 
+          DestinationFolder="$(ProjectDir)bin\$(Platform)\$(Configuration)\en-US\" 
+          SkipUnchangedFiles="true" />
+  </Target>
+</Project>

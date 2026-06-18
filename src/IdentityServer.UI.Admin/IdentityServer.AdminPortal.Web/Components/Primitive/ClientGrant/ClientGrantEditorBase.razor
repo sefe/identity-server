@@ -1,0 +1,93 @@
+@using System.Collections.Generic
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Linq.Expressions
+@using IdentityServer.Abstraction.Extensions
+
+@inherits EditableComponentBase
+
+@typeparam TItem where TItem : class
+@typeparam TCollection where TCollection : ICollection<TItem>
+
+<div class="@Class">
+    <ClientGrantItemList Label="Allowed:"
+                         Items="@AllowedItems"
+                         IsAdd="false"
+                         IsReadonly="IsReadonly" />
+    <ClientGrantItemList Label="Available:"
+                         Items="@AvailableItems"
+                         IsAdd="true"
+                         IsReadonly="IsReadonly" />
+    <ClientGrantItemList Label="Incompatible:"
+                         Items="@IncompatibleItems"
+                         IsAdd="false"
+                         IsReadonly="IsReadonly" />
+    <ClientGrantHint />
+</div>
+
+@code {
+    [Parameter]
+    public TCollection Value { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<TCollection> ValueChanged { get; set; }
+
+    [Parameter]
+    public Expression<Func<TCollection>> ValueExpression { get; set; } = default!;
+
+    [Parameter]
+    public string Class { get; set; } = string.Empty;
+
+    [CascadingParameter]
+    protected EditContext? EditContext { get; set; }
+
+    protected abstract IEnumerable<ClientGrantItemListItem> AllowedItems { get; }
+
+    protected abstract IEnumerable<ClientGrantItemListItem> AvailableItems { get; }
+
+    protected abstract IEnumerable<ClientGrantItemListItem> IncompatibleItems { get; }
+
+    protected internal abstract bool IsAlreadyAdded(string grant);
+
+    protected virtual bool IsGrantCompatible(string grantKey)
+    {
+        return !GetIncompatibleGrantsFor(grantKey).Any();
+    }
+
+    protected static string GetGrantDisplayText(string grantKey)
+    {
+        // Try to get from AllGrantTypes, fallback to the key itself if unknown
+        return ClientGrantTypeNames.AllGrantTypes.TryGetValue(grantKey, out var displayText)
+            ? displayText
+            : grantKey;
+    }
+
+    protected IEnumerable<KeyValuePair<string, string>> GetAvailableGrants()
+    {
+        return ClientGrantTypeNames.AllowedGrantTypes.Where(grant => !IsAlreadyAdded(grant.Key) && IsGrantCompatible(grant.Key));
+    }
+
+    protected IEnumerable<KeyValuePair<string, string>> GetIncompatibleGrants()
+    {
+        return ClientGrantTypeNames.AllowedGrantTypes.Where(grant => !IsAlreadyAdded(grant.Key) && !IsGrantCompatible(grant.Key));
+    }
+
+    protected internal virtual string GetGrantTooltip(string grantKey)
+    {
+        var reasons = new List<string>();
+
+        foreach (var (g1, g2) in GetIncompatibleGrantsFor(grantKey))
+        {
+            var incompatibleWith = grantKey.IsSameLax(g2) ? g1 : g2;
+            reasons.Add($"Cannot select '{GetGrantDisplayText(grantKey)}' together with '{GetGrantDisplayText(incompatibleWith)}'.");
+        }
+
+        return string.Join(" ", reasons);
+    }
+
+    private IEnumerable<KeyValuePair<string, string>> GetIncompatibleGrantsFor(string grantKey)
+    {
+        return ClientGrantTypeNames.IncompatibleGrantPairs.Where(
+            gkv => (grantKey.IsSameLax(gkv.Key) && IsAlreadyAdded(gkv.Value)) || (grantKey.IsSameLax(gkv.Value) && IsAlreadyAdded(gkv.Key)));
+    }
+}

@@ -1,0 +1,26 @@
+﻿@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+
+@inject NavigationManager Navigation
+@attribute [AllowAnonymous]
+
+<AuthorizeView>
+    <Authorized>
+        <div class="username-container">
+            <span class="my-auto">Hello, @context.User.Identity?.Name!</span>
+        </div>
+        <div class="auth-controls">
+            <ThemeToggle />
+            <LogoutButton />
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <TelerikButton ThemeColor="@ThemeConstants.Button.ThemeColor.Primary" OnClick="BeginLogIn" ButtonType="ButtonType.Button">Log in</TelerikButton>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    public void BeginLogIn()
+    {
+        Navigation.NavigateToLogin("authentication/login");
+    }
+}

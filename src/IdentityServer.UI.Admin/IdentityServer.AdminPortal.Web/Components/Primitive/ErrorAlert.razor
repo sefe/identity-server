@@ -1,0 +1,26 @@
+@if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show @CssClass" role="alert">
+        <strong>Error!</strong> @ErrorMessage
+        <button type="button" class="btn-close" @onclick="OnDismissClick" aria-label="Close"></button>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string? ErrorMessage { get; set; }
+
+    [Parameter]
+    public EventCallback<string?> ErrorMessageChanged { get; set; }
+
+    [Parameter]
+    public string CssClass { get; set; } = "mb-1";
+
+    private async Task OnDismissClick()
+    {
+        if (ErrorMessageChanged.HasDelegate)
+        {
+            await ErrorMessageChanged.InvokeAsync(null);
+        }
+    }
+}

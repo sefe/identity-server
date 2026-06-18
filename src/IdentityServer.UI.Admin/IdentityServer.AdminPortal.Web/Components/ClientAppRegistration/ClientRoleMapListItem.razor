@@ -1,0 +1,87 @@
+﻿@inherits EditablePagedComponentBase
+
+<div class="card mb-3">
+    <div class="card-header">
+        <div class="row justify-content-between">
+            <div class="col-auto my-auto">
+                <h5 class="my-0">@GetReadableName() Role Mapping</h5>
+            </div>
+            @if (!IsReadonly)
+            {
+                <div class="col text-end">
+                    <TelerikButton Size="small" OnClick="OnCreateNew" ButtonType="ButtonType.Button" ThemeColor="primary">Create @GetReadableName() Mapping</TelerikButton>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="card-body">
+        @if (MappedRoles.Any())
+        {
+            <TelerikGrid Data="MappedRoles"
+                         Pageable="true"
+                         PageSize="@PageSize"
+                         PageSizeChanged="@OnPageSizeChanged"
+                         Sortable="true"
+                         Groupable="true"
+                         FilterMode="GridFilterMode.FilterMenu"
+                         FilterMenuType="FilterMenuType.CheckBoxList"
+                         OnDelete="OnGridDelete"
+                         EnableLoaderContainer="false">
+                <GridSettings>
+                    <GridPagerSettings PageSizes="@PageSizes" />
+                </GridSettings>
+                <GridToolBar>
+                    <GridToolBarSearchBoxTool />
+                </GridToolBar>
+                <GridColumns>
+                    <GridColumn Field="@(nameof(ClientMappedRole.ClientRoleName))" Title="Role Name" VisibleInColumnChooser="false" />
+                    <GridColumn Field="@(nameof(ClientMappedRole.RoleMappingValue))" Title="Value" />
+                    <GridColumn Field="@(nameof(ClientMappedRole.RoleMappingDescription))" Title="Display Name" />
+                    <GridCommandColumn Width="50px">
+                        <GridCommandButton Command="Delete" Icon="@SvgIcon.Trash" ThemeColor="error" FillMode="outline" />
+                    </GridCommandColumn>
+                </GridColumns>
+            </TelerikGrid>
+        }
+        else
+        {
+            <span class="form-text">None</span>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public RoleMapType MapType { get; set; }
+
+    [Parameter]
+    public IEnumerable<ClientMappedRole> MappedRoles { get; set; } = [];
+
+    [Parameter]
+    public EventCallback OnCreateNew { get; set; }
+
+    [Parameter]
+    public EventCallback<ClientPropertyRoleMappingDtoRead> OnDeleteRoleMapping { get; set; }
+
+    protected override string? PageSizeStorageKey => $"idp.admin.client.rolemap.{MapType}.pagesize.gs";
+
+    private async Task OnGridDelete(GridCommandEventArgs args)
+    {
+        if (args.Item is ClientMappedRole mappedRole && mappedRole.RoleMapping != null)
+        {
+            await OnDeleteRoleMapping.InvokeAsync(mappedRole.RoleMapping);
+        }
+    }
+
+    private string GetReadableName()
+    {
+        return MapType switch
+        {
+            RoleMapType.ClientId => "Client",
+            RoleMapType.UserObjectId => "User",
+            RoleMapType.SecurityGroup => "Group",
+            _ => string.Empty,
+        };
+    }
+
+}

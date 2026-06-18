@@ -1,0 +1,66 @@
+﻿@implements IDisposable
+
+@inject IConfirmationService ConfirmationService
+
+<TelerikDialog Visible="@IsVisible" Width="480px" ShowCloseButton="false">
+    <DialogTitle>@Title</DialogTitle>
+    <DialogContent>
+        <p>@Message</p>
+        @if (!string.IsNullOrEmpty(Link))
+        {
+            <p>
+                <a href="@Link" target="_blank">See more details</a>
+            </p>
+        }
+    </DialogContent>
+    <DialogButtons>
+        @if (ConfirmCancel)
+        {
+            <TelerikButton ThemeColor="secondary" OnClick="() => Confirm(false)" ButtonType="ButtonType.Button">Cancel</TelerikButton>
+            <TelerikButton ThemeColor="primary" OnClick="() => Confirm(true)" ButtonType="ButtonType.Button">Confirm</TelerikButton>
+        }
+        else
+        {
+            <TelerikButton ThemeColor="primary" OnClick="() => Confirm(true)" ButtonType="ButtonType.Button">OK</TelerikButton>
+        }
+    </DialogButtons>
+</TelerikDialog>
+
+
+@code {
+
+    private bool IsVisible { get; set; }
+    private string Title { get; set; } = "Confirm";
+    private string Message { get; set; } = "";
+    private string Link { get; set; } = "";
+    private bool ConfirmCancel { get; set; } = true;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        ConfirmationService.OnShow += ShowDialog;
+    }
+
+    private Task ShowDialog(string title, string message, string link, bool confirmCancel)
+    {
+        Title = string.IsNullOrEmpty(title) ? "Confirm" : title;
+        Message = message ?? string.Empty;
+        Link = link ?? string.Empty;
+        ConfirmCancel = confirmCancel;
+        IsVisible = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private void Confirm(bool confirmed)
+    {
+        IsVisible = false;
+        ConfirmationService.SetConfirmationResult(confirmed);
+    }
+
+    public void Dispose()
+    {
+        ConfirmationService.OnShow -= ShowDialog;
+    }
+}

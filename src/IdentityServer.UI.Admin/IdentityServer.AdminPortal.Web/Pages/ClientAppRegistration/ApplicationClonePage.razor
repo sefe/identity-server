@@ -1,0 +1,30 @@
+﻿@page "/applications/clone/{ApplicationId:int}"
+@inherits UserRoleBasePage
+
+@attribute [Authorize(Roles = "Admin, User")]
+
+@inject NavigationManager NavigationManager
+@inject NotificationService NotificationService
+
+<div class="container">
+
+    <ClientInfoClone ApplicationId="@ApplicationId"
+                     OnSave="OpenClonedApp"
+                     OnCancel="GoBack" />
+</div>
+
+@code {
+    [Parameter]
+    public int ApplicationId { get; set; }
+
+    private void OpenClonedApp(ClientDtoRead clonedApp)
+    {
+        NotificationService.ShowInfo($"New Application '{clonedApp.ClientId}' created.");
+        NavigationManager.NavigateTo(PageRoutes.ApplicationsEdit(clonedApp.Id));
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo(PageRoutes.ApplicationsEdit(ApplicationId));
+    }
+}

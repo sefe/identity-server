@@ -1,0 +1,50 @@
+@using IdentityServer.AdminPortal.Web.Services.Storage
+@inherits EditableComponentBase
+@inject IJSStorageService StorageService
+
+@code {
+    protected int PageSize { get; set; } = 10;
+    protected List<int?> PageSizes { get; set; } = new List<int?> { 10, 20, 50 };
+
+    /// <summary>
+    /// Override this property in derived components to provide a unique storage key for PageSize caching
+    /// </summary>
+    protected virtual string? PageSizeStorageKey => null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        
+        // Restore cached PageSize if storage key is provided
+        if (!string.IsNullOrEmpty(PageSizeStorageKey))
+        {
+            try
+            {
+                var cachedPageSize = await StorageService.GetItem<int?>(PageSizeStorageKey);
+                if (cachedPageSize.HasValue && cachedPageSize.Value > 0)
+                {
+                    PageSize = cachedPageSize.Value;
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                // the JS Interop for the local storage cannot be used during pre-rendering
+                // so the code above will throw. Once the app initializes, it will work fine
+            }
+        }
+    }
+
+    /// <summary>
+    /// Handler for PageSize changes to ensure PageSize is cached when changed
+    /// </summary>
+    protected async Task OnPageSizeChanged(int newPageSize)
+    {
+        PageSize = newPageSize;
+        
+        // Save the updated PageSize if storage key is provided
+        if (!string.IsNullOrEmpty(PageSizeStorageKey))
+        {
+            await StorageService.SetItem(PageSizeStorageKey, PageSize);
+        }
+    }
+}

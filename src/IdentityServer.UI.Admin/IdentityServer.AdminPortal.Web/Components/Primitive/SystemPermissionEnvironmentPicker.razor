@@ -1,0 +1,88 @@
+﻿@using System.Linq.Expressions
+@using Telerik.DataSource
+
+@inject IAdminApiService AdminApi
+@inject IConfirmationService ConfirmationService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<TelerikDropDownList TItem="SystemPermissionEnvironmentDtoRead" TValue="int"
+                     Id="@Id"
+                     ScrollMode="DropDownScrollMode.Virtual"
+                     OnRead="@ReadSystemPermissionEnvironmentsPaged"
+                     ItemHeight="40"
+                     PageSize="20"
+                     Value="Value"
+                     ValueChanged="ValueChanged"
+                     ValueExpression="ValueExpression"
+                     TextField="@nameof(SystemPermissionEnvironmentDtoRead.DisplayName)"
+                     ValueField="@nameof(SystemPermissionEnvironmentDtoRead.Id)"
+                     Filterable="true"
+                     FilterOperator="@StringFilterOperator.Contains"
+                     FilterDebounceDelay="150"
+                     FilterPlaceholder="Search a system permission...">
+    <DropDownListSettings>
+        <DropDownListPopupSettings Height="300px" />
+    </DropDownListSettings>
+</TelerikDropDownList>
+
+@code {
+    [Parameter]
+    public string? Id { get; set; }
+
+    [Parameter]
+    public int Value { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<int> ValueChanged { get; set; }
+
+    [Parameter]
+    public Expression<Func<int>> ValueExpression { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public EventCallback<string> OnError { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        // Telerik DropDown has no async methods to load or prefetch the data, thus the below hack is needed.
+        // Try preloading environments to see if the user has access to any of them
+
+        var req = new DropDownListReadEventArgs(new DataSourceRequest { Page = 1, PageSize = 1 });
+        await ReadSystemPermissionEnvironmentsPaged(req);
+
+        if (req.Total < 1)
+        {
+            if (await ConfirmationService.ConfirmAsync(
+                "No Accessible System Permissions",
+                "You must be able to access at least one System Permission to create or clone entities. "
+                + "\r\nPress 'Confirm' to go to System Permissions page."
+                + "\r\n"
+                + "\r\nPress 'Cancel' to return to the previous page."))
+            {
+                NavigationManager.NavigateTo(PageRoutes.SystemPermissions);
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("history.back");
+            }
+        }
+    }
+
+    private async Task ReadSystemPermissionEnvironmentsPaged(DropDownListReadEventArgs args)
+    {
+        var callResult = await AdminApi.GetSystemPermissionEnvironmentsPaged(args.Request);
+        if (callResult.IsSuccess)
+        {
+            args.Data = callResult.Result.CurrentPageData;
+            args.Total = callResult.Result.TotalItemCount;
+        }
+        else
+        {
+            args.Data = Enumerable.Empty<SystemPermissionEnvironmentDtoRead>();
+            args.Total = 0;
+            await OnError.InvokeAsync(callResult.ErrorMessage);
+        }
+    }
+}

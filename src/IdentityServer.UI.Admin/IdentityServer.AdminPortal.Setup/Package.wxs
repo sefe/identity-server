@@ -1,0 +1,68 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+	<?include Dependencies.wxi?>
+	<Package Name="IdentityServer.AdminPortal" Version="$(var.ProductVersion)"
+	         Manufacturer="Identity Server"
+	         ProductCode="EF0CFB6F-FE32-40D5-A52B-9D9FADBB7C0D"
+			 UpgradeCode="19B3563E-B007-40F1-8D7A-411919D8D380"
+			 InstallerVersion="500"
+			 Compressed="yes"
+			 Scope="perMachine">
+		>
+		<MajorUpgrade
+			AllowDowngrades="yes"
+			Schedule="afterInstallValidate" />
+
+		<Media Id="1" Cabinet="media1.cab" EmbedCab="yes" />
+
+		<Feature Id="IdentityServer.AdminPortal" Title="IdentityServer AdminPortal" Level="1">
+			<Feature Id="Web.Components" Title="Web Components">
+				<ComponentRef Id="ServiceComponent"/>
+				<ComponentGroupRef Id="IdpAdmComGroup" />
+				<ComponentRef Id="IdpAdmComponent" />
+			</Feature>
+		</Feature>
+
+		<StandardDirectory Id="ProgramFiles64Folder">
+			<Directory Id="AdminPortalFolder" Name="IdentityServer.AdminPortal" />
+		</StandardDirectory>
+	</Package>
+
+	<Fragment>
+		<ComponentGroup Id="ServiceComponentGroup" Directory="AdminPortalFolder">
+
+			<Component Id="ServiceComponent" Guid="4BC65D09-04EA-48AF-8E11-8D31EFE72D8D" Bitness="always64">
+
+				<util:User Id="ServiceUser" Name="[SERVICEIDENTITY]" Password="[SERVICEPASSWORD]" CreateUser="no" UpdateIfExists="no" FailIfExists="no" RemoveOnUninstall="no" LogonAsService="yes" />
+
+				<File Id="IdentityServerAdminPortalExe" Source="$(var.IdpWebDir)\IdentityServer.AdminPortal.Server.exe" KeyPath="yes" />
+
+				<ServiceInstall Id="IdentityServerAdminPortalInstall"
+				                Type="ownProcess"
+				                Vital="yes"
+				                Name="IdentityServer.AdminPortal"
+				                DisplayName="IdentityServer.AdminPortal"
+				                Description="Admin Portal for Identity Server"
+				                Start="auto"
+				                Account="[SERVICEIDENTITY]"
+				                Password="[SERVICEPASSWORD]"
+				                ErrorControl="normal"
+				                Arguments="env=[ENVIRONMENTTIER]"
+				                Interactive="no">
+					<util:ServiceConfig FirstFailureActionType="restart"
+					                    SecondFailureActionType="restart"
+					                    ThirdFailureActionType="restart"
+					                    ResetPeriodInDays="1"
+					                    RestartServiceDelayInSeconds="60" />
+				</ServiceInstall>
+
+				<ServiceControl Id="IdentityServerAdminPortalControl"
+				                Name="IdentityServer.AdminPortal"
+				                Remove="uninstall"
+				                Stop="both"
+				                Wait="yes"/>
+
+			</Component>
+		</ComponentGroup>
+
+	</Fragment>
+</Wix>

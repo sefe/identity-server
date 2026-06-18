@@ -1,0 +1,25 @@
+﻿<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(App).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(LandingLayout)">
+                <NotAuthorized>
+                    @if (context.User.Identity?.IsAuthenticated != true)
+                    {
+                        <RedirectTo Target="/" SaveCurrentUrl="true" />
+                    }
+                    else
+                    {
+                        <ReturnHomeOrLogout ErrorMessage="Access denied. You do not have permission to view this page." />
+                    }
+                </NotAuthorized>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <PageTitle>Not found</PageTitle>
+            <LayoutView Layout="@typeof(LandingLayout)">
+                <ReturnHomeOrLogout ErrorMessage="Oops! The page you're looking for doesn't exist." />
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>

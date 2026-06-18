@@ -1,0 +1,72 @@
+@implements IDisposable
+@inject IThemeService ThemeService
+
+<TelerikDropDownButton Icon="@SvgIcon.BrightnessContrast" Class="theme-toggle-button text-nowrap border border-1 rounded-pill" FillMode="@ThemeConstants.Button.FillMode.Flat">
+    <DropDownButtonContent>
+        @if (!isSmallScreen)
+        {
+            <text>Switch Theme (@GetCurrentThemeText())</text>
+        }
+    </DropDownButtonContent>
+    <DropDownButtonItems>
+        <DropDownButtonItem OnClick="@(() => SetTheme(ThemeMode.Auto))" Icon="@SvgIcon.Optimization">
+            @if (ThemeService.CurrentTheme == ThemeMode.Auto)
+            {
+                <TelerikSvgIcon Icon="SvgIcon.ChevronRight" Class="k-button-icon" />
+            }
+            Auto
+        </DropDownButtonItem>
+        <DropDownButtonItem OnClick="@(() => SetTheme(ThemeMode.Light))" Icon="@SvgIcon.LaptopOutline">
+            @if (ThemeService.CurrentTheme == ThemeMode.Light)
+            {
+                <TelerikSvgIcon Icon="SvgIcon.ChevronRight" Class="k-button-icon" />
+            }
+            Light
+        </DropDownButtonItem>
+        <DropDownButtonItem OnClick="@(() => SetTheme(ThemeMode.Dark))" Icon="@SvgIcon.LaptopSolid">
+            @if (ThemeService.CurrentTheme == ThemeMode.Dark)
+            {
+                <TelerikSvgIcon Icon="SvgIcon.ChevronRight" Class="k-button-icon" />
+            }
+            Dark
+        </DropDownButtonItem>
+    </DropDownButtonItems>
+</TelerikDropDownButton>
+
+<TelerikMediaQuery Media="(max-width: 865px)" OnChange="@((changed) => isSmallScreen = changed)"></TelerikMediaQuery>
+
+@code {
+    private bool isSmallScreen;
+
+    protected override void OnInitialized()
+    {
+        ThemeService.OnThemeChanged += OnThemeChanged;
+    }
+
+    private string GetCurrentThemeText()
+    {
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Auto => "Auto",
+            ThemeMode.Light => "Light",
+            ThemeMode.Dark => "Dark",
+            _ => string.Empty
+        };
+    }
+
+    private async Task SetTheme(ThemeMode mode)
+    {
+        await ThemeService.SetThemeAsync(mode);
+        StateHasChanged();
+    }
+
+    private void OnThemeChanged(object? sender, ThemeMode mode)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= OnThemeChanged;
+    }
+}

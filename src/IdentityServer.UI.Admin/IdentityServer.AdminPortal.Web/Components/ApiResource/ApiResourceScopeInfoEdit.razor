@@ -1,0 +1,258 @@
+﻿@inherits EditableComponentBase
+
+@inject IAdminApiService AdminApi
+@inject IConfirmationService ConfirmationService
+@inject NavigationManager NavigationManager
+@inject NotificationService NotificationService
+
+<ErrorAlert @bind-ErrorMessage="@errorMessage" />
+
+<div class="mb-2">
+    <LastModifiedInfo Created="Scope.ApiScope?.Created" Updated="Scope.ApiScope?.Updated" />
+</div>
+
+<div class="row mx-auto gy-2">
+    <div class="col-12">
+        <RequiredFieldLabel ForTarget="scopeId" LabelText="Identifier" />
+        <p id="scopeId" class="m-0 form-control-plaintext text-break">@Scope.ApiScope?.Name</p>
+    </div>
+
+    <div class="col-12">
+        <RequiredFieldLabel ForTarget="scopeDisplayName" LabelText="Display Name" />
+
+        @if (!IsReadonly)
+        {
+            <EditableFieldModal TModel="ApiResourcePropertyScopeDtoUpdate" Model="@dtoUpdate"
+                                OnSave="@(() => UpdateApiResourceScopeAsync(dtoUpdate, "Display Name"))" Title="Edit Scope Display Name"
+                                OnOpen="@(model => model.DisplayName = Scope.ApiScope?.DisplayName)" OnCancel="ResetUpdateModel">
+                <FormItems>
+                    <FormItem>
+                        <Template>
+                            <RequiredFieldLabel ForTarget="scopeDisplayNameEdit" LabelText="Display Name" />
+                            <TelerikTextBox id="scopeDisplayNameEdit" class="form-control" @bind-Value="@dtoUpdate.DisplayName" AriaDescribedBy="scopeDisplayNameHelpBlock" />
+                            <div id="scopeDisplayNameHelpBlock" class="form-text">Human-readable name. Keep it short and clear.</div>
+                            <TelerikValidationMessage For="@(() => dtoUpdate.DisplayName)" />
+                        </Template>
+                    </FormItem>
+                </FormItems>
+            </EditableFieldModal>
+        }
+        <p id="scopeDisplayName" class="m-0 form-control-plaintext text-break">@Scope.ApiScope?.DisplayName</p>
+    </div>
+
+    <div class="col-12">
+        <label for="scopeDescription" class="k-label k-form-label">Description</label>
+
+        @if (!IsReadonly)
+        {
+            <EditableFieldModal TModel="ApiResourcePropertyScopeDtoUpdate" Model="@dtoUpdate"
+                                OnSave="@(() => UpdateApiResourceScopeAsync(dtoUpdate, "Description"))" Title="Edit Scope Description"
+                                OnOpen="@(model => model.Description = Scope.ApiScope?.Description)" OnCancel="ResetUpdateModel">
+                <FormItems>
+                    <FormItem>
+                        <Template>
+                            <label for="scopeDescription" class="k-label k-form-label">Description</label>
+                            <TelerikTextArea id="scopeDescription" class="form-control" @bind-Value="@dtoUpdate.Description" rows="10" placeholder="Optional information about the scope." AriaDescribedBy="scopeDescriptionHelpBlock" />
+                            <div id="scopeDescriptionHelpBlock" class="form-text">Provide a meaningful description in @Constants.Limits.ApiScope.Description.MaxLength characters or less</div>
+                            <TelerikValidationMessage For="@(() => dtoUpdate.Description)" />
+                        </Template>
+                    </FormItem>
+                </FormItems>
+            </EditableFieldModal>
+        }
+
+        @if (string.IsNullOrWhiteSpace(Scope.ApiScope?.Description))
+        {
+            <p class="m-0 form-control-plaintext"><i>Not provided</i></p>
+        }
+        else
+        {
+            <p id="scopeDescription" class="m-0 form-control-plaintext text-break">@Scope.ApiScope?.Description</p>
+        }
+    </div>
+
+    <div class="col-12">
+        <div class="row">
+            <div class="col my-auto">
+                <label for="scopeEnabled" class="k-label k-form-label">Is Enabled</label>
+            </div>
+            <div class="col my-auto">
+                <TelerikSwitch Value="@Scope.ApiScope!.Enabled" AriaDescribedBy="scopeEnabledHelpBlock" Id="scopeEnabled"
+                               OnLabel="True" OffLabel="False" Width="85px" ValueChanged="@((bool val) => ToggleIsEnabled(val))" Enabled="!IsReadonly" />
+            </div>
+        </div>
+        <div class="row">
+            <div id="scopeEnabledHelpBlock" class="col k-form-hint">The scope cannot be used until enabled. You can enable it later.</div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="row">
+            <div class="col my-auto">
+                <label for="scopeRequired" class="k-label k-form-label">Require scope</label>
+            </div>
+            <div class="col my-auto">
+                <TelerikSwitch Value="@Scope.ApiScope!.Required" AriaDescribedBy="scopeRequiredHelpBlock" Id="scopeRequired"
+                               OnLabel="True" OffLabel="False" Width="85px" ValueChanged="@((bool val) => ToggleIsRequired(val))" Enabled="!IsReadonly" />
+            </div>
+        </div>
+        <div class="row">
+            <div id="scopeRequiredHelpBlock" class="col k-form-hint">If 'required', the scope must always be requested by the applications.</div>
+        </div>
+    </div>
+
+    @if (awaitingOperationResults || awaitingClientResults)
+    {
+        <div>
+            <TelerikLoaderContainer />
+        </div>
+    }
+</div>
+
+<div class="row justify-content-center mt-3">
+    <div class="col-auto">
+        <TelerikButton ButtonType="ButtonType.Button" ThemeColor="secondary" OnClick="OnCancel">Close</TelerikButton>
+    </div>
+    <div class="col-auto">
+        @if (CanDelete())
+        {
+            <TelerikButton ButtonType="ButtonType.Button" ThemeColor="error" OnClick="DeleteApiResourceScopeAsync" Icon="SvgIcon.Trash">Delete</TelerikButton>
+        }
+        else
+        {
+            <TelerikButton ButtonType="ButtonType.Button" ThemeColor="error" Icon="SvgIcon.Lock"
+                           Enabled="false">Cannot delete</TelerikButton>
+        }
+    </div>
+</div>
+
+<div class="mt-4">
+    <h5 class="mb-3 fw-bold">Clients using this scope</h5>
+    <ClientList GridStateStorageKey="@GridStateStorageKeys.ApiResourceScopeClientsList"
+                ColumnSet="IsExpanded ? ClientList.ColumnSetKind.Wide : ClientList.ColumnSetKind.Narrow"
+                ScopeNameFilter="@Scope.Scope"
+                OnClientClick="@OnClientClick"
+                OnDataLoad="@UpdateClientReferences" />
+</div>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public ApiResourceDtoRead ApiResource { get; set; } = default!;
+
+    [Parameter]
+    [EditorRequired]
+    public int ScopeId { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback OnDelete { get; set; }
+
+    [Parameter]
+    public EventCallback OnUpdate { get; set; }
+
+    [Parameter]
+    public bool IsExpanded { get; set; }
+
+    private ApiResourcePropertyScopeDtoRead Scope = default!;
+    private ApiResourcePropertyScopeDtoUpdate dtoUpdate = new();
+    private bool hasClientReferences = true;
+    private string? errorMessage;
+    private bool awaitingOperationResults = false;
+    private bool awaitingClientResults = true;
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        Scope = Scope ?? ApiResource.Scopes?.FirstOrDefault(s => s.Id == ScopeId) ?? throw new InvalidOperationException($"Scope with ID {ScopeId} not found in ApiResource.");
+
+        dtoUpdate.Id = ScopeId;
+    }
+
+    private async Task UpdateApiResourceScopeAsync(ApiResourcePropertyScopeDtoUpdate dto, string fieldName)
+    {
+        if (IsReadonly) return;
+
+        awaitingOperationResults = true;
+        var callResult = await AdminApi.UpdateApiResourceScope(dto);
+        if (callResult.IsSuccess)
+        {
+            errorMessage = null;
+            ResetUpdateModel();
+            var modifiedScopeList = new List<ApiResourcePropertyScopeDtoRead>(ApiResource.Scopes ?? []);
+            var index = modifiedScopeList.FindIndex(s => s.Id == Scope.Id);
+            if (index != -1)
+            {
+                modifiedScopeList[index] = callResult.Result;
+            }
+            Scope = callResult.Result;
+            ApiResource.Scopes = modifiedScopeList;
+            NotificationService.ShowInfo($"Scope '{fieldName}' updated.");
+            await OnUpdate.InvokeAsync();
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+        awaitingOperationResults = false;
+    }
+
+    private async Task DeleteApiResourceScopeAsync()
+    {
+        if (IsReadonly) return;
+
+        var confirmed = await ConfirmationService.ConfirmAsync("Delete Confirmation",
+                                $"Are you sure you want to delete the scope '{Scope.Scope}'?");
+
+        if (!confirmed)
+        {
+            return;
+        }
+
+        awaitingOperationResults = true;
+        var callResult = await AdminApi.DeleteApiResourceScope(Scope);
+        if (callResult.IsSuccess)
+        {
+            errorMessage = null;
+            ApiResource.Scopes?.Remove(Scope);
+            NotificationService.ShowInfo($"Scope '{Scope.Scope}' deleted.");
+            await OnDelete.InvokeAsync();
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+        awaitingOperationResults = false;
+    }
+
+    private Task ToggleIsEnabled(bool newValue)
+    {
+        return UpdateApiResourceScopeAsync(new ApiResourcePropertyScopeDtoUpdate { Id = ScopeId, Enabled = newValue }, "'Is Enabled' setting");
+    }
+
+    private Task ToggleIsRequired(bool newValue)
+    {
+        return UpdateApiResourceScopeAsync(new ApiResourcePropertyScopeDtoUpdate { Id = ScopeId, Required = newValue }, "'Is Required' setting");
+    }
+
+    private void ResetUpdateModel()
+    {
+        dtoUpdate = new ApiResourcePropertyScopeDtoUpdate { Id = ScopeId };
+    }
+
+    private void OnClientClick(int clientId)
+    {
+        NavigationManager.NavigateTo(PageRoutes.ApplicationsEdit(clientId));
+    }
+
+    private void UpdateClientReferences(int loadedClients)
+    {
+        hasClientReferences = loadedClients > 0;
+        awaitingClientResults = false;
+    }
+
+    private bool CanDelete() => !IsReadonly && !(awaitingOperationResults || awaitingClientResults) && !hasClientReferences;
+}

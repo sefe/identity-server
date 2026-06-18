@@ -1,0 +1,57 @@
+@using IdentityServer.Abstraction;
+
+<div class="top-row navbar">
+    <div class="container-fluid">
+        <NavLink class="navbar-brand" href="" Match="NavLinkMatch.All">
+            <div class="d-flex flex-column">
+                <div class="d-flex align-items-center">
+                    <span class="logo-container-small"><Logo /></span>
+                    <span class="ms-2">Identity Server</span>
+                </div>
+                <span class="navbar-version">@GetVersion()</span>
+            </div>
+        </NavLink>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
+    <nav class="flex-column">
+        <div class="nav-item">
+            <NavLink class="nav-link px-3" href="@PageRoutes.Applications.TrimStart('/')" Match="NavLinkMatch.All">
+                <TelerikSvgIcon Icon="@SvgIcon.ListUnorderedSquare" class="me-1" Size="@ThemeConstants.SvgIcon.Size.ExtraLarge" />&nbsp;Applications
+            </NavLink>
+        </div>
+
+        <div class="nav-item">
+            <NavLink class="nav-link px-3" href="@PageRoutes.ApiResources.TrimStart('/')" Match="NavLinkMatch.All">
+                <TelerikSvgIcon Icon="@SvgIcon.Grid" class="me-1" Size="@ThemeConstants.SvgIcon.Size.ExtraLarge" />&nbsp;API Resources
+            </NavLink>
+        </div>
+
+        <div class="nav-item">
+            <NavLink class="nav-link px-3" href="@PageRoutes.SystemPermissions.TrimStart('/')" Match="NavLinkMatch.All">
+                <TelerikSvgIcon Icon="@SvgIcon.Lock" class="me-1" Size="@ThemeConstants.SvgIcon.Size.ExtraLarge" />&nbsp;System Permissions
+            </NavLink>
+        </div>
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    private static string GetVersion()
+    {
+        var version = CommonHelpers.GetEntryAssemblyVersion();
+        return version == null ? "" : $"v{version}";
+    }
+}

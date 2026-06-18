@@ -1,0 +1,200 @@
+﻿@using Telerik.DataSource
+@inherits EditableComponentBase
+
+@inject IAdminApiService AdminApi
+@inject IConfirmationService ConfirmationService
+
+<div class="card mb-3">
+    <div class="card-body">
+
+        <div class="row justify-content-between mb-3">
+            <div class="col-auto">
+                <span class="h3 text-break">Cloning API Resource '@existingResourceDisplayName'</span>
+                <span class="text-muted ms-3 text-break">(ID: @existingResourceIdentifier)</span>
+            </div>
+        </div>
+
+        <div class="alert alert-warning mb-3">
+            The following properties <strong>won't be copied</strong>.
+            <ul>
+                <li>Secrets</li>
+                <li>Role Mappings</li>
+            </ul>
+        </div>
+
+        <TelerikForm Model="@ApiResourceCopy" OnValidSubmit="@HandleValidSubmit" ButtonsLayout="FormButtonsLayout.Center">
+            <FormValidation>
+                <DataAnnotationsValidator />
+            </FormValidation>
+            <FormItems>
+                <FormGroup Columns="@FormGroupColumns" ColumnSpacing="@FormGroupColumnSpacing">
+                    <FormItem>
+                        <Template>
+                            <RequiredFieldLabel ForTarget="apiResourceId" LabelText="Identifier" />
+                            <TelerikTextBox id="apiResourceId" ariadescribedby="apiResourceIdHelpBlock" @bind-Value="ApiResourceCopy.Name" />
+                            <div id="apiResourceIdHelpBlock" class="k-form-hint">@Constants.Limits.ApiResource.Name.PatternInfo</div>
+                            <TelerikValidationMessage For="@(() => ApiResourceCopy.Name)" />
+                            @if (!string.IsNullOrEmpty(validationMessageForId))
+                            {
+                                <span class="k-form-error k-invalid-msg" id="customValidationError" role="alert">@validationMessageForId</span>
+                            }
+                        </Template>
+                    </FormItem>
+                    <FormItem>
+                        <Template>
+                            <RequiredFieldLabel ForTarget="apiResourceDisplayName" LabelText="Display Name" />
+                            <TelerikTextBox id="apiResourceDisplayName" ariadescribedby="apiResourceDisplayNameHelpBlock" @bind-Value="ApiResourceCopy.DisplayName" />
+                            <div id="apiResourceDisplayNameHelpBlock" class="k-form-hint">Human-readable name. Keep it short and clear.</div>
+                            <TelerikValidationMessage For="@(() => ApiResourceCopy.DisplayName)" />
+                        </Template>
+                    </FormItem>
+                    <FormItem>
+                        <Template>
+                            <RequiredFieldLabel ForTarget="apiResourceSystemPermission" LabelText="System Permission" />
+                            <SystemPermissionEnvironmentPicker Id="apiResourceSystemPermission"
+                                                               @bind-Value="@ApiResourceCopy.SystemPermissionEnvironmentId"
+                                                               OnError="@(msg => errorMessage = msg)" />
+                            <TelerikValidationMessage For="@(() => ApiResourceCopy.SystemPermissionEnvironmentId)" />
+                        </Template>
+                    </FormItem>
+                </FormGroup>
+            </FormItems>
+            <FormButtons>
+                <TelerikButton ButtonType="ButtonType.Button" ThemeColor="secondary" OnClick="CheckDirtyAndCancel">Cancel</TelerikButton>
+                <TelerikButton ButtonType="ButtonType.Submit" ThemeColor="primary">Create</TelerikButton>
+            </FormButtons>
+        </TelerikForm>
+
+        <TelerikMediaQuery Media="@LargeScreenMediaQuery" OnChange="@((bool matches) => { IsLargeScreen = matches; ConfigureFormLayout(); })" />
+
+        <ErrorAlert @bind-ErrorMessage="@errorMessage" CssClass="mt-2" />
+
+        <TelerikLoaderContainer Visible="@awaitingResults" />
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int ApiResourceId { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback<ApiResourceDtoRead> OnSave { get; set; }
+
+    private string? validationMessageForId;
+
+    private string? existingResourceIdentifier;
+    private string? existingResourceDisplayName;
+
+    private readonly ApiResourceDtoClone ApiResourceCopy = new()
+    {
+        Name = string.Empty,
+        DisplayName = string.Empty,
+    };
+    private string? errorMessage;
+    protected bool awaitingResults = true;
+
+    private int FormGroupColumns { get; set; } = 1;
+    private string FormGroupColumnSpacing { get; set; } = string.Empty;
+    private string LargeScreenMediaQuery { get; set; } = "(min-width: 992px)"; // matches Bootstrap lg qualifier
+    private bool IsLargeScreen { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        ApiResourceCopy.Id = ApiResourceId;
+
+        awaitingResults = true;
+        var callResult = await AdminApi.GetApiResource(ApiResourceId);
+        if (callResult.IsSuccess)
+        {
+            existingResourceIdentifier = callResult.Result.Name ?? string.Empty;
+            existingResourceDisplayName = callResult.Result.DisplayName ?? string.Empty;
+
+            ApiResourceCopy.Name = existingResourceIdentifier;
+            ApiResourceCopy.DisplayName = existingResourceDisplayName;
+
+            ValidateCustomRules();
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+        awaitingResults = false;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        var hasErrors = ValidateCustomRules();
+        if (!hasErrors)
+        {
+            await DoClone(ApiResourceCopy);
+        }
+    }
+
+    private bool ValidateCustomRules()
+    {
+        validationMessageForId = null;
+
+        var hasErrors = false;
+
+        if (string.Equals(existingResourceIdentifier, ApiResourceCopy.Name))
+        {
+            validationMessageForId = "Please provide a new unique identifier.";
+            hasErrors = true;
+        }
+
+        return hasErrors;
+    }
+
+    private async Task DoClone(ApiResourceDtoClone cloningRequest)
+    {
+        awaitingResults = true;
+        var callResult = await AdminApi.CloneApiResource(cloningRequest);
+        if (callResult.IsSuccess)
+        {
+            errorMessage = null;
+            await OnSave.InvokeAsync(callResult.Result);
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+        awaitingResults = false;
+    }
+
+    private async Task CheckDirtyAndCancel()
+    {
+        if (IsMeaningful(ApiResourceCopy.Name, existingResourceIdentifier) || IsMeaningful(ApiResourceCopy.DisplayName, existingResourceDisplayName))
+        {
+            var confirmed = await ConfirmationService.ConfirmLeavingDirtyPageAsync();
+            if (!confirmed)
+            {
+                return;
+            }
+        }
+        await OnCancel.InvokeAsync();
+    }
+
+    private static bool IsMeaningful(string? value, string? defaultValue)
+    {
+        return !string.IsNullOrEmpty(value) && value != defaultValue;
+    }
+
+    private void ConfigureFormLayout()
+    {
+        if (IsLargeScreen)
+        {
+            FormGroupColumns = 3;
+            FormGroupColumnSpacing = "2em";
+        }
+        else
+        {
+            FormGroupColumns = 1;
+            FormGroupColumnSpacing = string.Empty;
+        }
+    }
+}

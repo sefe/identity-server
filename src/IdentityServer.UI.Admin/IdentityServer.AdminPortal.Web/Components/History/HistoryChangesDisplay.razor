@@ -1,0 +1,53 @@
+@using IdentityServer.Abstraction.DTO.History
+@using IdentityServer.Abstraction.Enums
+
+@code {
+    [Parameter]
+    public List<FieldChangeDto>? Changes { get; set; }
+    
+    [Parameter]
+    public HistoryEventType? EventType { get; set; }
+}
+
+@if (Changes == null || !Changes.Any())
+{
+    <span class="text-muted">No field changes</span>
+}
+else
+{
+    <div class="field-changes">
+        @foreach (var change in Changes)
+        {
+            <div class="mb-1">
+                <strong>@change.FieldName: </strong>
+                @if (EventType == HistoryEventType.Deleted)
+                {
+                    @if (!string.IsNullOrEmpty(change.OldValue))
+                    {
+                        <span class="text-danger">@change.OldValue</span>
+                    }
+                    else
+                    {
+                        <span class="text-muted fst-italic">(empty)</span>
+                    }
+                }
+                else
+                {
+                    @if (!string.IsNullOrEmpty(change.OldValue))
+                    {
+                        <span class="text-decoration-line-through text-danger">@change.OldValue</span>
+                        <span class="mx-1">→</span>
+                    }
+                    @if (!string.IsNullOrEmpty(change.NewValue))
+                    {
+                        <span class="fw-bold text-success">@change.NewValue</span>
+                    }
+                    else
+                    {
+                        <span class="text-muted fst-italic">(empty)</span>
+                    }
+                }
+            </div>
+        }
+    </div>
+}

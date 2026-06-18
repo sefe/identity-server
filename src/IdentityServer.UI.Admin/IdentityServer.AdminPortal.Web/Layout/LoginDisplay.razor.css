@@ -1,0 +1,44 @@
+.username-container {
+    display: flex;
+    align-items: center;
+}
+
+.username-container span {
+    white-space: normal;
+}
+
+.auth-controls {
+    display: flex;
+    align-items: center;
+}
+
+@media (max-width: 640px) {
+    .username-container {
+        flex-basis: 100%;
+        justify-content: center;
+        margin-bottom: 0.5rem;
+        max-width: 100%;
+    }
+
+    .username-container span {
+        white-space: normal;
+        word-wrap: break-word;
+    }
+
+    .auth-controls {
+        flex-shrink: 0;
+    }
+}
+
+@media (min-width: 641px) and (max-width: 840px) {
+    .username-container span {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .auth-controls {
+        flex-shrink: 0;
+    }
+}

@@ -1,0 +1,395 @@
+﻿@page "/systempermissions/edit/{SystemPermissionId:int}"
+@inherits UserRoleBasePage
+
+@inject IAdminApiService AdminApi
+@inject NavigationManager NavigationManager
+@inject NotificationService NotificationService
+@inject IConfirmationService ConfirmationService
+@inject ISystemOwnerService SystemOwnerService
+
+<div class="container">
+    <ErrorAlert @bind-ErrorMessage="@errorMessage" />
+
+    @if (SystemPermission == null)
+    {
+        <p>
+            <em>Loading...</em>
+        </p>
+    }
+    else
+    {
+        <NavigationHeader Address="@PageRoutes.SystemPermissions" Title="Back to the list of System Permissions" />
+
+        <div class="d-flex flex-wrap justify-content-between align-items-start mb-3">
+            <h3 class="me-auto text-break">System Permission '@SystemPermission.Name'</h3>
+            <div class="d-flex flex-wrap gap-2 ms-auto">
+                <SystemPermissionViewRegistrationsButton Title="@($"View Registrations ({SystemPermission.TotalRegistrations})")" OnClick="ShowResourcesDialog" Size="@ThemeConstants.Button.Size.Medium" />
+                <HistoryButton SystemPermissionId="SystemPermissionId" Size="@ThemeConstants.Button.Size.Medium" />
+                @if (CanUpdate)
+                {
+                    <TelerikButton ButtonType="ButtonType.Button" OnClick="DeleteSelfAsync" Icon="@SvgIcon.Trash" ThemeColor="error" Size="@ThemeConstants.Button.Size.Medium">Delete</TelerikButton>
+                }
+            </div>
+        </div>
+
+        <LastModifiedInfo Created="SystemPermission.Created" Updated="SystemPermission.Updated" UpdateReason="@SystemPermission.UpdateReason" />
+
+        <SystemPermissionInfo Permission="SystemPermission" OnPermissionUpdate="UpdateSystemPermission" OnEnvironmentCreate="CreateEnvironmentsAsync" OnEnvironmentDelete="DeleteEnvironmentAsync" IsReadonly="!CanUpdate" />
+
+        @if (SystemPermission.Environments?.Any() == true)
+        {
+            foreach (var env in SystemPermission.Environments.OrderBy(
+            en => SystemPermissionEnvironmentNames.OrderedEnvironments.TryGetValue(en.Environment, out int order) ? order : int.MaxValue))
+            {
+                <SystemPermissionEnvironmentInfo @key=env.Id PermissionEnvironment="env" RoleDeletionCallback="DeleteSystemPermissionRole" OnNewRole="OnNewSystemPermissionRole" IsReadonly="!(CanUpdate || CanEditEnvironment(env))" />
+            }
+        }
+
+        <NavigationFooter Address="@PageRoutes.SystemPermissions" Title="Back to the list of System Permissions" />
+    }
+
+</div>
+
+
+<SystemPermissionRolePicker @ref=RolePicker OnRoleCreate="CreateSystemPermissionRole" OnRoleUpdate="UpdateSystemPermissionRole"></SystemPermissionRolePicker>
+
+<SystemPermissionEnvironmentResourcesDialog @ref="ResourcesDialog" />
+
+@code {
+
+    [Parameter]
+    public int SystemPermissionId { get; set; }
+
+    private SystemPermissionDtoRead? SystemPermission;
+
+    private string? errorMessage;
+
+    private SystemPermissionRolePicker RolePicker = default!;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        if (SystemPermission != null)
+        {
+            return;
+        }
+
+        if (SystemPermissionId == 0)
+        {
+            errorMessage = "The specified entity was not found.";
+            return;
+        }
+
+        (SystemPermission, errorMessage) = await AdminApi.GetSystemPermission(SystemPermissionId);
+
+        if (string.IsNullOrEmpty(errorMessage) && SystemPermission != null)
+        {
+            // Reader role always has read-only access to this page
+            // Admin, Security roles always have full access to this page
+            // User role access can vary. User with Writer assignment in each environment has full edit access to this page.
+            UpdatePageAccess();
+        }
+    }
+
+    private bool HasAccess(SystemPermissionEnvironmentDtoRead? systemPermissionEnvironment, SystemPermissionRoleType roleType)
+    {
+        if (systemPermissionEnvironment == null) return false;
+        return HasAdmin || systemPermissionEnvironment.Permissions.Any(p => p.OId == UserObjectId && p.RoleType == roleType);
+    }
+
+    private bool CanEditEnvironment(SystemPermissionEnvironmentDtoRead? systemPermissionEnvironment)
+    {
+        return HasAccess(systemPermissionEnvironment, SystemPermissionRoleType.Writer);
+    }
+
+    private bool CanReadEnvironment(SystemPermissionEnvironmentDtoRead? systemPermissionEnvironment)
+    {
+        return CanEditEnvironment(systemPermissionEnvironment) || HasAccess(systemPermissionEnvironment, SystemPermissionRoleType.Reader);
+    }
+
+    private bool CanEditAllEnvironments()
+    {
+        return SystemPermission?.Environments == null || SystemPermission.Environments.Count == 0 || SystemPermission.Environments.Where(e => e.Permissions.Count > 0).All(CanEditEnvironment);
+    }
+
+    private bool CanReadAnyEnvironment()
+    {
+        return SystemPermission?.Environments == null || SystemPermission.Environments.Count == 0 || SystemPermission.Environments.All(e => e.Permissions.Count == 0) || SystemPermission.Environments.Any(CanReadEnvironment);
+    }
+
+    private void UpdatePageAccess()
+    {
+        if (IsUser)
+        {
+            CanUpdate = CanUpdate && CanEditAllEnvironments();
+        }
+    }
+
+    private Task UpdateSystemPermission(SystemPermissionDtoRead permission)
+    {
+        if (permission != null)
+        {
+            SystemPermission = permission;
+            NotificationService.ShowInfo($"System Permission '{permission.Name}' updated.");
+            StateHasChanged();
+        }
+        return Task.CompletedTask;
+    }
+
+    private async Task CreateEnvironmentsAsync(IEnumerable<string> envs)
+    {
+        if (SystemPermission == null) return;
+        foreach (var env in envs)
+        {
+            var toCreate = new SystemPermissionEnvironmentDtoCreate { Environment = env, SystemPermissionId = SystemPermission.Id };
+            var callResult = await AdminApi.CreateSystemPermissionEnvironment(toCreate);
+            if (callResult.IsSuccess)
+            {
+                errorMessage = null;
+                SystemPermission = callResult.Result;
+                NotificationService.ShowInfo($"Environment '{env}' created.");
+            }
+            else
+            {
+                errorMessage = callResult.ErrorMessage;
+                break;
+            }
+        }
+        StateHasChanged();
+    }
+
+    private async Task DeleteEnvironmentAsync(IEnumerable<SystemPermissionEnvironmentDtoRead> envs)
+    {
+        if (SystemPermission == null)
+        {
+            return;
+        }
+        var blockedEnvs = envs.Where(e => e.IsInUse).ToList();
+        if (blockedEnvs.Count > 0)
+        {
+            await ConfirmationService.ConfirmAsync("Unable to Remove",
+                (
+                    (blockedEnvs.Count == 1) ?
+                        $"This System Permission Environment '{blockedEnvs[0].Environment}' has" :
+                        $"This System Permission Environments '{string.Join(", ", blockedEnvs.Select(b => b.Environment))}' have"
+                )
+                + $" {blockedEnvs.Sum(b => b.TotalRegistrations)} resources, please delete all resources before removing environment(s)."
+                , false);
+            return;
+        }
+
+        foreach (var env in envs)
+        {
+            var confirmed = await ConfirmationService.ConfirmAsync("Delete Confirmation",
+                $"Are you sure you want to delete the '{env.Environment}' environment with all assignments?");
+            if (!confirmed)
+            {
+                return;
+            }
+
+            var callResult = await AdminApi.DeleteSystemPermissionEnvironment(env);
+            if (callResult.IsSuccess)
+            {
+                errorMessage = null;
+                SystemPermission.Environments.Remove(env);
+                UpdateLastModified("Environments");
+                NotificationService.ShowInfo($"Environment '{env.Environment}' removed.");
+                StateHasChanged();
+            }
+            else
+            {
+                errorMessage = callResult.ErrorMessage;
+                break;
+            }
+        }
+    }
+
+    private void OnNewSystemPermissionRole(SystemPermissionEnvironmentDtoRead systemPermissionEnvironment)
+    {
+        RolePicker.OpenRolePicker(systemPermissionEnvironment);
+    }
+
+    private async Task CreateSystemPermissionRole(SystemPermissionRoleDtoCreate role)
+    {
+        if (SystemPermission == null)
+        {
+            return;
+        }
+        var roleEnvironment = SystemPermission.Environments.Single(e => e.Id == role.SystemPermissionEnvironmentId);
+
+        if (!(CanUpdate || CanEditEnvironment(roleEnvironment)))
+        {
+            errorMessage = ModificationNotAllowedError;
+            return;
+        }
+
+        var callResult = await AdminApi.CreateSystemPermissionRole(role);
+        if (callResult.IsSuccess)
+        {
+            errorMessage = null;
+            var createdRole = callResult.Result;
+            roleEnvironment.Permissions.Add(createdRole);
+            UpdateLastModified("Roles");
+            NotificationService.ShowInfo($"Granted {createdRole.RoleType} Role to '{createdRole.Name}' in {roleEnvironment.Environment}.");
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+        UpdatePageAccess();
+        StateHasChanged();
+    }
+
+    private async Task UpdateSystemPermissionRole(SystemPermissionRoleDtoUpdate role)
+    {
+        if (SystemPermission == null)
+        {
+            return;
+        }
+        var roleEnvironment = SystemPermission.Environments.Single(e => e.Permissions.Any(er => er.Id == role.Id));
+
+        if (!(CanUpdate || CanEditEnvironment(roleEnvironment)))
+        {
+            errorMessage = ModificationNotAllowedError;
+            return;
+        }
+
+        var callResult = await AdminApi.UpdateSystemPermissionRole(role);
+        if (callResult.IsSuccess)
+        {
+            errorMessage = null;
+            var updatedRole = callResult.Result;
+            var sourceItem = roleEnvironment.Permissions.Single(er => er.Id == role.Id);
+            var index = roleEnvironment.Permissions.IndexOf(sourceItem);
+            roleEnvironment.Permissions.RemoveAt(index);
+            roleEnvironment.Permissions.Insert(index, updatedRole);
+            UpdateLastModified("Roles");
+
+            NotificationService.ShowInfo($"Updated '{updatedRole.Name}' in {roleEnvironment.Environment} to {updatedRole.RoleType}.");
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+        UpdatePageAccess();
+        StateHasChanged();
+    }
+
+    private async Task<string?> DeleteSystemPermissionRole(SystemPermissionRoleDtoRead role)
+    {
+        if (SystemPermission == null)
+        {
+            return "System Permission object cannot be updated. A page reload might fix this issue.";
+        }
+
+        var roleEnvironment = SystemPermission.Environments.Single(e => e.Id == role.SystemPermissionEnvironmentId);
+
+        if (!(CanUpdate || CanEditEnvironment(roleEnvironment)))
+        {
+            return ModificationNotAllowedError;
+        }
+
+        var confirmed = await SystemOwnerService.CheckUserAssignmentRemovalConditions(SystemPermission, roleEnvironment, role);
+        if (!confirmed)
+        {
+            return null;
+        }
+
+        var callResult = await AdminApi.DeleteSystemPermissionRole(role);
+        if (callResult.IsSuccess)
+        {
+            errorMessage = null;
+            roleEnvironment.Permissions.Remove(role);
+            UpdateLastModified("Roles");
+            NotificationService.ShowInfo($"{role.RoleType} Role for '{role.Name}' in {roleEnvironment.Environment} removed.");
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+        UpdatePageAccess();
+
+        if (!CanReadAnyEnvironment())
+        {
+            NotificationService.ShowInfo($"You no longer have access to System Permission '{SystemPermission.Name}'");
+            GoBack();
+        }
+        StateHasChanged();
+
+        return errorMessage;
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo(PageRoutes.SystemPermissions);
+    }
+
+    private async Task DeleteSelfAsync()
+    {
+
+        if (!CanUpdate)
+        {
+            errorMessage = ModificationNotAllowedError;
+            return;
+        }
+
+        if (SystemPermission == null)
+        {
+            errorMessage = "System Permission object cannot be updated. A page reload might fix this issue.";
+            return;
+        }
+
+        if (SystemPermission.IsInUse)
+        {
+            await ConfirmationService.ConfirmAsync("System Permissions",
+                "This system permission is already assigned to one or more resources and so can not be deleted", false);
+
+            return;
+        }
+
+        var confirmed = await ConfirmationService.ConfirmAsync("Delete Confirmation",
+            "Are you sure you want to delete this system permission?");
+
+        if (SystemPermission == null || !confirmed)
+        {
+            return;
+        }
+
+        var callResult = await AdminApi.DeleteSystemPermission(SystemPermission);
+        if (callResult.IsSuccess)
+        {
+            errorMessage = null;
+            NotificationService.ShowInfo($"System Permission '{SystemPermission.Name}' {MutationType.Deleted.ToString()}.");
+            GoBack();
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+    }
+
+    private void UpdateLastModified(string reason)
+    {
+        if (SystemPermission == null)
+        {
+            return;
+        }
+        SystemPermission.Updated = DateTime.UtcNow;
+        SystemPermission.UpdateReason = reason;
+    }
+
+    private SystemPermissionEnvironmentResourcesDialog ResourcesDialog = default!;
+
+    private void ShowResourcesDialog()
+    {
+        if (SystemPermission == null)
+        {
+            return;
+        }
+
+        var title = string.Format("System Permission '{0}' Registrations", SystemPermission.Name);
+        var subtitle = "Across all environments.";
+        ResourcesDialog.OpenDialog(title, subtitle, SystemPermission.Environments.Select(e => e.Id).ToHashSet());
+    }
+}

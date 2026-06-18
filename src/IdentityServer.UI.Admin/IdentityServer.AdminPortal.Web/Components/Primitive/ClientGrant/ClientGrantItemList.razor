@@ -1,0 +1,34 @@
+@using Microsoft.AspNetCore.Components
+
+@inherits EditableComponentBase
+
+<div class="row mb-1 align-items-center">
+    <div class="col-auto">
+        <span>@Label</span>
+    </div>
+    @if (Items != null && Items.Any())
+    {
+        @foreach (var item in Items)
+        {
+            <div class="col-auto">
+                <PillButton IsAdd="@IsAdd"
+                            IsReadonly="@(IsReadonly || item.IsReadonly)"
+                            OnClick="item.OnClick"
+                            Text="@item.Text"
+                            Tooltip="@item.Tooltip" />
+            </div>
+        }
+    }
+    else
+    {
+        <div class="col-auto">
+            <PillButton IsReadonly="true" Text="None" />
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Label { get; set; } = string.Empty;
+    [Parameter] public IEnumerable<ClientGrantItemListItem> Items { get; set; } = Enumerable.Empty<ClientGrantItemListItem>();
+    [Parameter] public bool IsAdd { get; set; } = false;
+}

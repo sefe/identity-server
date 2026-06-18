@@ -1,0 +1,69 @@
+@using IdentityServer.Abstraction.DTO.History
+@using IdentityServer.Abstraction.Enums
+@using Telerik.Blazor.Components
+
+<div class="timeline-group">
+    <div class="timeline-month-label">@MonthLabel</div>
+    <div class="timeline-dots">
+        @if (ShowContinuationLeft)
+        {
+            <div class="timeline-continuation-indicator" title="Continued from previous row">
+                <div class="continuation-arrow"><TelerikSvgIcon Icon="SvgIcon.ChevronLeft" Size="small" /></div>
+            </div>
+        }
+        @foreach (var entry in Entries)
+        {
+            var color = entry.EventType.GetBadgeColor();
+            <div class="timeline-dot-wrapper"
+                 @onmouseenter="@(() => OnDotHover.InvokeAsync(entry))"
+                 @onmouseleave="@OnDotLeave">
+                <div class="timeline-dot bg-@color"></div>
+                @if (HoveredEntry == entry && ShowHoverCard)
+                {
+                    <TimelineHoverCard Entry="@entry"
+                                       BadgeColor="@color"
+                                       OnMouseEnter="OnCardHover"
+                                       OnMouseLeave="OnCardLeave" />
+                }
+            </div>
+        }
+        @if (ShowContinuationRight)
+        {
+            <div class="timeline-continuation-indicator" title="Continued on next row">
+                <div class="continuation-arrow"><TelerikSvgIcon Icon="SvgIcon.ChevronRight" Size="small" /></div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string MonthLabel { get; set; } = string.Empty;
+
+    [Parameter]
+    public List<HistoryEntryDto> Entries { get; set; } = new();
+
+    [Parameter]
+    public bool ShowContinuationLeft { get; set; }
+
+    [Parameter]
+    public bool ShowContinuationRight { get; set; }
+
+    [Parameter]
+    public HistoryEntryDto? HoveredEntry { get; set; }
+
+    [Parameter]
+    public bool ShowHoverCard { get; set; }
+
+    [Parameter]
+    public EventCallback<HistoryEntryDto> OnDotHover { get; set; }
+
+    [Parameter]
+    public EventCallback OnDotLeave { get; set; }
+
+    [Parameter]
+    public EventCallback OnCardHover { get; set; }
+
+    [Parameter]
+    public EventCallback OnCardLeave { get; set; }
+}

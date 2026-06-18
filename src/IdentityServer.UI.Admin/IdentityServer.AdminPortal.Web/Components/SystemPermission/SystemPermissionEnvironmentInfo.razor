@@ -1,0 +1,138 @@
+﻿@inherits EditableComponentBase
+
+@inject IConfirmationService ConfirmationService
+
+@if (PermissionEnvironment == null)
+{
+    <div class="alert alert-danger">
+        <strong>Error!</strong> Failed to load the System Permission Environment details. Page refresh may resolve this issue.
+    </div>
+}
+else
+{
+    <div class="card mb-3">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="ms-2 me-auto my-auto align-middle">
+                    <h5 class="my-0">Roles - @PermissionEnvironment.Environment</h5>
+                </div>
+                <div class="ms-auto pe-2">
+                    <SystemPermissionViewRegistrationsButton Title="@($"View Registrations ({PermissionEnvironment.TotalRegistrations})")"
+                                                             OnClick="ShowResourcesDialog" />
+                </div>
+                <div class="pe-2">
+                    <HistoryButton SystemPermissionId="PermissionEnvironment.SystemPermissionId" EntityIdFilter="@PermissionEnvironment.Environment" />
+                </div>
+                @if (!IsReadonly)
+                {
+                    <div>
+                        <TelerikButton ButtonType="ButtonType.Button" OnClick="ShowNewRoleDetails" ThemeColor="primary" Size="@ThemeConstants.Button.Size.Small">Add User</TelerikButton>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="card-body">
+            <ErrorAlert @bind-ErrorMessage="@errorMessage" />
+
+            @if (PermissionEnvironment.Permissions == null || !PermissionEnvironment.Permissions.Any())
+            {
+                <span>None</span>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Object Id</th>
+                                <th>Role</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var role in PermissionEnvironment.Permissions.OrderByDescending(p => p.RoleType).ThenBy(p => p.Name))
+                            {
+                                <tr>
+                                    <td>
+                                        @role.Name
+                                    </td>
+                                    <td>
+                                        @role.OId
+                                    </td>
+                                    <td>
+                                        @role.RoleType.ToString()
+                                    </td>
+                                    <td>
+                                        @if (!IsReadonly)
+                                        {
+                                            <div class="d-flex">
+                                                <TelerikButton ButtonType="ButtonType.Button" OnClick="() => RoleDeletion(role)" Icon="@SvgIcon.Trash"
+                                                               ThemeColor="error" FillMode="outline" Class="ms-auto" Enabled=@(!awaitingResults) />
+                                            </div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <SystemPermissionEnvironmentResourcesDialog @ref="ResourcesDialog" />
+}
+
+
+@code {
+    [Parameter]
+    public SystemPermissionEnvironmentDtoRead PermissionEnvironment { get; set; } = default!;
+
+    [Parameter]
+    public Func<SystemPermissionRoleDtoRead, Task<string?>> RoleDeletionCallback { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<SystemPermissionEnvironmentDtoRead> OnNewRole { get; set; }
+
+    private string? errorMessage;
+    private bool awaitingResults = false;
+
+    private SystemPermissionEnvironmentResourcesDialog ResourcesDialog = default!;
+
+    private void ShowResourcesDialog()
+    {
+        var title = string.Format("'{0}' Environment Registrations", PermissionEnvironment.SystemPermissionName);
+        var subtitle = string.Format("System Permission '{0}'", PermissionEnvironment.SystemPermissionName);
+        ResourcesDialog.OpenDialog(title, subtitle, new HashSet<int> { PermissionEnvironment.Id });
+    }
+
+    private void ShowNewRoleDetails()
+    {
+        OnNewRole.InvokeAsync(PermissionEnvironment);
+    }
+
+    private async Task RoleDeletion(SystemPermissionRoleDtoRead role)
+    {
+        if (IsReadonly || awaitingResults) return;
+
+        if (role.RoleType == SystemPermissionRoleType.Writer
+            && PermissionEnvironment.Permissions.Count(_ => _.RoleType == SystemPermissionRoleType.Writer) == 1)
+        {
+            await ConfirmationService.ConfirmAsync("Warning!",
+                "Last Writer cannot be removed from the Environment. Consider assigning another writer first.",
+                false);
+            return;
+        }
+
+        awaitingResults = true;
+        try
+        {
+            errorMessage = await RoleDeletionCallback(role);
+        }
+        finally
+        {
+            awaitingResults = false;
+        }
+    }
+}

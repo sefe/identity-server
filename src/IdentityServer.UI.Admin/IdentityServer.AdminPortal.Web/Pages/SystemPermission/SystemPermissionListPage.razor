@@ -1,0 +1,140 @@
+﻿@page "/systempermissions"
+@using Telerik.Blazor.Components
+@using Telerik.DataSource
+@inherits GridListBasePage<SystemPermissionShortDtoRead>
+
+@inject IAdminApiService AdminApi
+@inject NavigationManager NavigationManager
+@inject ISystemOwnerService SystemOwnerService
+
+<div class="container-fluid">
+    <div class="row justify-content-between mb-3">
+        <div class="col-auto">
+            <h3>System Permissions</h3>
+        </div>
+        @if (CanUpdate)
+        {
+            <div class="col-auto">
+                <a href="@PageRoutes.SystemPermissionsNew" class="btn btn-primary">Create New System Permission</a>
+            </div>
+        }
+    </div>
+
+    <ErrorAlert @bind-ErrorMessage="@ErrorMessage" />
+
+    <div style="position:relative">
+        @*
+            This LoaderContainer is used only during initial data load.
+            The position:relative style on the parent DIV makes the LoaderContainer cover only the Grid.
+            The LoaderContainer configuration and Template matches the built-in Grid loading animation.
+        *@
+        <TelerikLoaderContainer OverlayThemeColor="@ThemeConstants.Loader.ThemeColor.Light"
+                                Visible="@IsFirstLoad">
+            <Template>
+                <TelerikLoader Type="@LoaderType.InfiniteSpinner"
+                               Size="@ThemeConstants.Loader.Size.Large" />
+            </Template>
+        </TelerikLoaderContainer>
+
+        <TelerikGrid TItem="SystemPermissionShortDtoRead"
+                     Pageable="true"
+                     Sortable="true"
+                     FilterMode="GridFilterMode.FilterRow"
+                     PageSize="@PageSize"
+                     PageSizeChanged="@OnPageSizeChanged"
+                     OnRead="@ReadItems"
+                     ShowColumnMenu="true"
+                     @ref="GridRef"
+                     OnStateInit="@((GridStateEventArgs<SystemPermissionShortDtoRead> args) => OnStateInitHandler(args))"
+                     OnStateChanged="@((GridStateEventArgs<SystemPermissionShortDtoRead> args) => OnStateChangedHandler(args))">
+            <GridSettings>
+                <GridColumnMenuSettings FilterMode="@ColumnMenuFilterMode.None"
+                                        Groupable="false"
+                                        Lockable="false"
+                                        Reorderable="false"
+                                        Sortable="false"
+                                        ShowColumnChooser="true">
+                </GridColumnMenuSettings>
+                <GridPagerSettings PageSizes="@PageSizes">
+                </GridPagerSettings>
+            </GridSettings>
+            <GridToolBar>
+                <GridToolBarSearchBoxTool Fields="@SearchAllFieldsList" Placeholder="Search by Identifier or Description" Width="100%" />
+                <GridToolBarCustomTool>
+                    <ShowMyItemsToggle Visible="@ShowMyItemsToggleVisible"
+                                       Value="@ShowOnlyMyItems"
+                                       ValueChanged="@((bool v) => OnShowMyItemsChanged(v))"
+                                       Label="My System Permissions" />
+                    <TelerikButton ButtonType="ButtonType.Button" OnClick="@ResetFilters" Icon="SvgIcon.FilterClear" ThemeColor="secondary" FillMode="outline" Size="sm">Reset all filters</TelerikButton>
+                    <TelerikButton ButtonType="ButtonType.Button" OnClick="@ResetState" Icon="SvgIcon.XCircle" ThemeColor="secondary" FillMode="outline" Size="sm">Reset grid</TelerikButton>
+                </GridToolBarCustomTool>
+            </GridToolBar>
+            <GridColumns>
+                <GridColumn Field="@(nameof(SystemPermissionShortDtoRead.Name))" Title="Identifier" VisibleInColumnChooser="false">
+                    <Template>
+                        @{
+                            if (context is SystemPermissionShortDtoRead sysPermission)
+                            {
+                                <AccessLevelEntityLink AccessLevel="@sysPermission.AccessLevel" Text="@sysPermission.Name"
+                                                       OnLinkClick="@(() => NavigationManager.NavigateTo(PageRoutes.SystemPermissionsEdit(sysPermission.Id)))"
+                                                       SystemPermission="@sysPermission" />
+                            }
+                        }
+                    </Template>
+                </GridColumn>
+                <GridColumn Field="@(nameof(SystemPermissionShortDtoRead.Description))" Title="Description" />
+                <GridColumn Field="@(nameof(SystemPermissionShortDtoRead.EnvironmentNames))" Title="Environments"
+                            Sortable="false"
+                            DefaultFilterOperator="FilterOperator.Contains"
+                            FilterOperators="@ContainsOrNotLimitedFilterOperators" />
+                <GridColumn Field="@(nameof(SystemPermissionShortDtoRead.Created))" Title="Created At" Visible="false" DefaultFilterOperator="FilterOperator.IsEqualTo" />
+                <GridColumn Field="@(nameof(SystemPermissionShortDtoRead.Updated))" Title="Updated At" Visible="false" Filterable="false" />
+                <GridColumn Field="@(nameof(SystemPermissionShortDtoRead.Owners))" Title="Owners" Sortable="false"
+                            DefaultFilterOperator="FilterOperator.Contains"
+                            FilterOperators="@ContainsOrNotLimitedFilterOperators" />
+                <GridColumn Field="@(nameof(SystemPermissionShortDtoRead.TotalRegistrations))" Title="Registrations" Visible="false" Filterable="false" Sortable="false">
+                    <Template>
+                        @{
+                            if (context is SystemPermissionShortDtoRead sysPermission)
+                            {
+                                <SystemPermissionViewRegistrationsButton Title="@sysPermission.TotalRegistrations.ToString()"
+                                                                         OnClick="() => ShowResourcesDialog(sysPermission)" />
+                            }
+                        }
+                    </Template>
+                </GridColumn>
+            </GridColumns>
+            <NoDataTemplate>
+                <div class="col-auto">
+                    <span class="form-control-plaintext text-muted">None</span>
+                </div>
+            </NoDataTemplate>
+        </TelerikGrid>
+    </div>
+
+    <SystemPermissionEnvironmentResourcesDialog @ref="ResourcesDialog" />
+</div>
+
+@code {
+    protected override Task<ApiCallResult<DataEnvelope<SystemPermissionShortDtoRead>>> GetData(DataSourceRequest request)
+    {
+        return AdminApi.GetSystemPermissionsPaged(request);
+    }
+
+    protected override string GridUniqueStorageKey => GridStateStorageKeys.SystemPermissionListPage;
+
+    private SystemPermissionEnvironmentResourcesDialog ResourcesDialog = default!;
+
+    private readonly List<string> SearchAllFieldsList = new()
+    {
+        nameof(SystemPermissionShortDtoRead.Name),
+        nameof(SystemPermissionShortDtoRead.Description),
+    };
+
+    private void ShowResourcesDialog(SystemPermissionShortDtoRead sysPerm)
+    {
+        var title = string.Format("System Permission '{0}' Registrations", sysPerm.Name);
+        var subtitle = "Across all environments.";
+        ResourcesDialog.OpenDialog(title, subtitle, sysPerm.EnvironmentIds.ToHashSet());
+    }
+}

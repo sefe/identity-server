@@ -1,0 +1,61 @@
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+	 xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util"
+	 xmlns:iis="http://wixtoolset.org/schemas/v4/wxs/iis"
+	 xmlns:Json="http://schemas.hegsie.com/wix/JsonExtension">
+	<Fragment>
+		<Component Id="IdpAdmComponent" Guid="{90891238-788B-460C-A875-FB9B16D47642}" Directory="AdminPortalFolder">
+
+			<Json:JsonFile Id="AppSettings01" File="[#IdpWebConfigJson]" ElementPath="$.System.EnableLoggingDiagnosticsToConsole" Value="[ENABLELOGGINGDIAGNOSTICSTOCONSOLE]" />
+			<Json:JsonFile Id="AppSettings02" File="[#IdpWebConfigJson]" ElementPath="$.System.EnableLoggingDiagnosticsToFile" Value="[ENABLELOGGINGDIAGNOSTICSTOFILE]" />
+			<Json:JsonFile Id="AppSettings03" File="[#IdpWebConfigJson]" ElementPath="$.System.EnvironmentTier" Value="[ENVIRONMENTTIER]" />
+			<Json:JsonFile Id="AppSettings04" File="[#IdpWebConfigJson]" ElementPath="$.System.Environment" Value="[ENVIRONMENTNAME]" />
+            <Json:JsonFile Id="AppSettings0402" File="[#IdpWebConfigJson]" ElementPath="$.System.LoadBalancer.IpRange" Value="[LB.RANGE]" />
+            <Json:JsonFile Id="AppSettings0403" File="[#IdpWebConfigJson]" ElementPath="$.System.LoadBalancer.Mask" Value="[LB.MASK]" />
+
+<Json:JsonFile Id="AppSettings05" File="[#IdpWebConfigJson]" ElementPath="$.ConnectionStrings.IDPDBConnectionString" Value="Server=[DBSERVER];Database=[DBNAME];Integrated Security=true;TrustServerCertificate=true" />
+
+			<Json:JsonFile Id="AppSettings06" File="[#IdpWebConfigJson]" ElementPath="$.Kestrel.Endpoints.IDPHttpsEndpoint.Url" Value="[ISADMURL]" />
+			<Json:JsonFile Id="AppSettings07" File="[#IdpWebConfigJson]" ElementPath="$.Kestrel.Endpoints.IDPHttpsEndpoint.Certificate.Subject" Value="[ADMCERTSUBJECT]" />
+			<Json:JsonFile Id="AppSettings08" File="[#IdpWebConfigJson]" ElementPath="$.Kestrel.Endpoints.IDPHttpsEndpoint.Certificate.Store" Value="My" />
+			<Json:JsonFile Id="AppSettings09" File="[#IdpWebConfigJson]" ElementPath="$.Kestrel.Endpoints.IDPHttpsEndpoint.Certificate.Location" Value="LocalMachine" />
+			<Json:JsonFile Id="AppSettings10" File="[#IdpWebConfigJson]" ElementPath="$.Kestrel.Endpoints.IDPHttpsEndpoint.Certificate.AllowInvalid" Value="false" />
+
+			<Json:JsonFile Id="AppSettings11" File="[#IdpWebConfigJson]" ElementPath="$.Serilog.WriteTo[\[]0[\]].Args.SinkConfig.requestUri" Value="[ELK.REQUESTURI]" />
+			<Json:JsonFile Id="AppSettings12" File="[#IdpWebConfigJson]" ElementPath="$.Serilog.WriteTo[\[]0[\]].Args.SinkConfig.username" Value="[ELK.USERNAME]" />
+			<Json:JsonFile Id="AppSettings13" File="[#IdpWebConfigJson]" ElementPath="$.Serilog.WriteTo[\[]0[\]].Args.SinkConfig.password" Value="[ELK.PASSWORD]" />
+
+			<Json:JsonFile Id="AppSettings14" File="[#IdpWebConfigJson]" ElementPath="$.MicrosoftEntra.ClientId" Value="[ENTRA.CLIENTID]" />
+			<Json:JsonFile Id="AppSettings15" File="[#IdpWebConfigJson]" ElementPath="$.MicrosoftEntra.TenantId" Value="[ENTRA.TENANTID]" />
+
+			<Json:JsonFile Id="AppSettings17" File="[#IdpWebConfigJson]" ElementPath="$.HttpRetryPolicy.RetryCount" Value="3" />
+			<Json:JsonFile Id="AppSettings18" File="[#IdpWebConfigJson]" ElementPath="$.HttpRetryPolicy.GrowthFactorInSeconds" Value="1.5" />
+
+			<Json:JsonFile Id="AppSettings21" File="[#IdpWebConfigJson]" ElementPath="$.IdentityServerProvider.Authority" Value="[IS.AUTHORITY]" />
+
+			<Json:JsonFile Id="AppSettings26" File="[#IdpWebConfigJson]" ElementPath="$.Auth.ContributorGroupId" Value="[AUTH.CONTRIBUTORGROUPID]" />
+			<Json:JsonFile Id="AppSettings27" File="[#IdpWebConfigJson]" ElementPath="$.Auth.ReaderGroupId" Value="[AUTH.READERGROUPID]" />
+
+			<Json:JsonFile Id="AppSettingsWww01" File="[#IdpWebConfigWwwJson]" ElementPath="$.IdentityServer.Authority" Value="[IS.AUTHORITY]" />
+            <Json:JsonFile Id="AppSettingsWww0102" File="[#IdpWebConfigWwwJson]" ElementPath="$.IdentityServer.CachingOptions.Enabled" Value="[IDS.CACHE.ENABLED]" />
+			<Json:JsonFile Id="AppSettingsWww02" File="[#IdpWebConfigWwwJson]" ElementPath="$.System.Environment" Value="[ENVIRONMENTNAME]" />
+			<Json:JsonFile Id="AppSettingsWww03" File="[#IdpWebConfigWwwJson]" ElementPath="$.System.EnvironmentTier" Value="[ENVIRONMENTTIER]" />
+			<Json:JsonFile Id="AppSettingsWww04" File="[#IdpWebConfigWwwJson]" ElementPath="$.Theme.BackgroundColor" Value="[THEME.BACKGROUNDCOLOR]" />
+			<Json:JsonFile Id="AppSettingsWww05" File="[#IdpWebConfigWwwJson]" ElementPath="$.Features.MaxVisibleResourceWriters" Value="[MAXVISIBLERESOURCEWRITERS]" />
+			<Json:JsonFile Id="AppSettingsWww06" File="[#IdpWebConfigWwwJson]" ElementPath="$.System.SupportEmailAddress" Value="[SUPPORTEMAILADDRESS]" />
+
+			<Json:JsonFile Id="AppSettings29" File="[#IdpWebConfigJson]" ElementPath="$.OnePassword.BaseUrl" Value="[1P_INTERNAL.BASEURL]" />
+			<Json:JsonFile Id="AppSettings30" File="[#IdpWebConfigJson]" ElementPath="$.OnePassword.AccessToken" Value="[1P_INTERNAL.TOKEN]" />
+			<Json:JsonFile Id="AppSettings31" File="[#IdpWebConfigJson]" ElementPath="$.OnePassword.VaultId" Value="[1P_INTERNAL.VAULT]" />
+			<Json:JsonFile Id="AppSettings3201" File="[#IdpWebConfigJson]" ElementPath="$.OnePassword.Secrets.MicrosoftEntra__ClientSecret" Value="[1P_INTERNAL.ENTRASECRETID]" />
+			<Json:JsonFile Id="AppSettings3202" File="[#IdpWebConfigJson]" ElementPath="$.OnePassword.Secrets.IdentityServer__CachingOptions__Provider__Password" Value="[1P_INTERNAL.VALKEYPASSWORD]" />
+
+			<Json:JsonFile Id="AppSettings33" File="[#IdpWebConfigJson]" ElementPath="$.Features.EnableRequestBodyLogging" Value="[ENABLEREQUESTBODYLOGGING]" />
+
+			<Json:JsonFile Id="AppSettings34" File="[#IdpWebConfigJson]" ElementPath="$.SecretExpiration.MaxValidityYears" Value="[IDS.SECRET.MAXVALIDYEARS]" />
+
+			<Json:JsonFile Id="AppSettings3501" File="[#IdpWebConfigWwwJson]" ElementPath="$.SecretExpiration.MaxValidityYears" Value="[IDS.SECRET.MAXVALIDYEARS]" />
+			<Json:JsonFile Id="AppSettings3502" File="[#IdpWebConfigWwwJson]" ElementPath="$.SecretExpiration.DaysBeforeExpirationNotification" Value="[IDS.SECRET.DAYSBEFOREEXPIRATIONNOTIFICATION]" />
+
+		</Component>
+	</Fragment>
+</Wix>

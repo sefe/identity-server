@@ -1,0 +1,71 @@
+@using IdentityServer.AdminPortal.Web.Constants
+@inject NavigationManager NavigationManager
+
+<TelerikButton ButtonType="ButtonType.Button"
+               OnClick="NavigateToHistory"
+               Icon="@SvgIcon.Clock"
+               ThemeColor="@ThemeConstants.Button.ThemeColor.Base"
+               FillMode="@ThemeConstants.Button.FillMode.Outline"
+               Size="@Size">
+    @ButtonText
+</TelerikButton>
+
+@code {
+    [Parameter]
+    public int? ApplicationId { get; set; }
+
+    [Parameter]
+    public int? ApiResourceId { get; set; }
+
+    [Parameter]
+    public int? SystemPermissionId { get; set; }
+
+    [Parameter]
+    public string? EntityTypeFilter { get; set; }
+
+    [Parameter]
+    public string? EntityIdFilter { get; set; }
+
+    [Parameter]
+    public string ButtonText { get; set; } = "History";
+
+    [Parameter]
+    public string Size { get; set; } = "small";
+
+    private void NavigateToHistory()
+    {
+        string url;
+
+        if (ApplicationId.HasValue)
+        {
+            url = PageRoutes.ApplicationsHistory(ApplicationId.Value);
+        }
+        else if (ApiResourceId.HasValue)
+        {
+            url = PageRoutes.ApiResourceHistory(ApiResourceId.Value);
+        }
+        else if (SystemPermissionId.HasValue)
+        {
+            url = PageRoutes.SystemPermissionHistory(SystemPermissionId.Value);
+        }
+        else
+        {
+            return;
+        }
+
+        var hasQuery = false;
+        if (!string.IsNullOrEmpty(EntityTypeFilter))
+        {
+            url += $"?entityType={Uri.EscapeDataString(EntityTypeFilter)}";
+            hasQuery = true;
+        }
+
+        if (!string.IsNullOrEmpty(EntityIdFilter))
+        {
+            url += hasQuery ? "&" : "?";
+            url += $"entityId={Uri.EscapeDataString(EntityIdFilter)}";
+        }
+
+        NavigationManager.NavigateTo(url);
+    }
+}

@@ -1,0 +1,64 @@
+﻿@typeparam TModel
+
+<TelerikButton Icon="@SvgIcon.Pencil" OnClick="@OpenEditDialog" Title="Edit" Class="m-0 p-0 mx-3 tooltip-target" Size="sm" ButtonType="ButtonType.Button" />
+
+<TelerikWindow @bind-Visible="@IsDialogVisible"
+               MinWidth="300px"
+               MinHeight="250px"
+               Modal="true">
+    <WindowContent>
+        <div class="modal-header">
+            <h4>@Title</h4>
+        </div>
+        <TelerikForm Model="@Model" OnValidSubmit="@SaveChanges" FormItems="@FormItems" ButtonsLayout="@FormButtonsLayout.Stretch">
+            <FormValidation>
+                <DataAnnotationsValidator />
+                <TelerikValidationSummary />
+            </FormValidation>
+            <FormButtons>
+                <TelerikButton ButtonType="@ButtonType.Button" OnClick="@CancelChanges" ThemeColor="secondary">Cancel</TelerikButton>
+                <TelerikButton ButtonType="@ButtonType.Submit" ThemeColor="primary">Submit</TelerikButton>
+            </FormButtons>
+        </TelerikForm>
+    </WindowContent>
+</TelerikWindow>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = "Please update the values below";
+
+    [Parameter]
+    public TModel Model { get; set; } = default!;
+
+    [Parameter]
+    public RenderFragment FormItems { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<TModel> OnSave { get; set; }
+
+    [Parameter]
+    public EventCallback<TModel> OnOpen { get; set; }
+
+    [Parameter]
+    public EventCallback<TModel> OnCancel { get; set; }
+
+    private bool IsDialogVisible { get; set; }
+
+    private async Task OpenEditDialog()
+    {
+        await OnOpen.InvokeAsync(Model);
+        IsDialogVisible = true;
+    }
+
+    private async Task SaveChanges()
+    {
+        await OnSave.InvokeAsync(Model);
+        IsDialogVisible = false;
+    }
+
+    private async Task CancelChanges()
+    {
+        await OnCancel.InvokeAsync(Model);
+        IsDialogVisible = false;
+    }
+}

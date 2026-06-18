@@ -1,0 +1,154 @@
+<div class="mb-3">
+    <h4>Role Comparison</h4>
+</div>
+<div class="mb-3">
+    <TelerikGrid Data="@RoleComparisons" Pageable="false" Sortable="true"
+                 FilterMode="@GridFilterMode.FilterMenu"
+                 OnRowRender="@OnGridRowRender">
+        <GridColumns>
+            <GridColumn Field="RoleName" Title="Role Name" />
+            <GridColumn Field="RoleState" Title="Role State" />
+            <GridColumn Field="RoleMappingState" Title="Mapping State" />
+        </GridColumns>
+    </TelerikGrid>
+</div>
+
+<div class="mb-3">
+    <h4>Role Mappings Comparison</h4>
+</div>
+@if (@RoleMappingComparisons[ComparisonState.Unchanged].Count > 0)
+{
+    <div class="mb-3">
+        <h5>Unchanged</h5>
+        <TelerikGrid Data="@RoleMappingComparisons[ComparisonState.Unchanged]" Pageable="false" Sortable="true"
+                     FilterMode="@GridFilterMode.FilterMenu"
+                     OnRowRender="@OnGridRowRender">
+            <GridColumns>
+                <GridColumn Field="Parent.RoleName" Title="Role Name" />
+                <GridColumn Field="State" Title="State" />
+                <GridColumn Field="Existing.MappingType" Title="Mapping Type" />
+                <GridColumn Field="Existing.Value" Title="Value" />
+                <GridColumn Field="Existing.Description" Title="Description" />
+            </GridColumns>
+        </TelerikGrid>
+    </div>
+}
+@if (@RoleMappingComparisons[ComparisonState.Added].Count > 0)
+{
+    <div class="mb-3">
+        <h5>Added</h5>
+        <TelerikGrid Data="@RoleMappingComparisons[ComparisonState.Added]" Pageable="false" Sortable="true"
+                     FilterMode="@GridFilterMode.FilterMenu"
+                     OnRowRender="@OnGridRowRender">
+            <GridColumns>
+                <GridColumn Field="Parent.RoleName" Title="Role Name" />
+                <GridColumn Field="State" Title="State" />
+                <GridColumn Field="Imported.MappingType" Title="Mapping Type" />
+                <GridColumn Field="Imported.Value" Title="Value" />
+                <GridColumn Field="Imported.Description" Title="Description" />
+            </GridColumns>
+        </TelerikGrid>
+    </div>
+}
+@if (@RoleMappingComparisons[ComparisonState.Removed].Count > 0)
+{
+    <div class="mb-3">
+        <h5>Removed</h5>
+        <TelerikGrid Data="@RoleMappingComparisons[ComparisonState.Removed]" Pageable="false" Sortable="true"
+                     FilterMode="@GridFilterMode.FilterMenu"
+                     OnRowRender="@OnGridRowRender">
+            <GridColumns>
+                <GridColumn Field="Parent.RoleName" Title="Role Name" />
+                <GridColumn Field="State" Title="State" />
+                <GridColumn Field="Existing.MappingType" Title="Mapping Type" />
+                <GridColumn Field="Existing.Value" Title="Value" />
+                <GridColumn Field="Existing.Description" Title="Description" />
+            </GridColumns>
+        </TelerikGrid>
+    </div>
+}
+@if (@RoleMappingComparisons[ComparisonState.Changed].Count > 0)
+{
+    <div class="mb-3">
+        <h5>Changed</h5>
+        <TelerikGrid Data="@RoleMappingComparisons[ComparisonState.Changed]"
+                     Pageable="false" Sortable="true"
+                     FilterMode="@GridFilterMode.FilterMenu"
+                     OnRowRender="@OnGridRowRender">
+            <GridColumns>
+                <GridColumn Field="Parent.RoleName" Title="Role Name" />
+                <GridColumn Field="State" Title="State" />
+                <GridColumn Field="Existing.MappingType" Title="Mapping Type" />
+                <GridColumn Field="Existing.Value" Title="Old Value" />
+                <GridColumn Field="Imported.Value" Title="New Value" />
+                <GridColumn Field="Existing.Description" Title="Old Description" />
+                <GridColumn Field="Imported.Description" Title="New Description" />
+            </GridColumns>
+        </TelerikGrid>
+    </div>
+}
+
+@if (@RoleMappingComparisons[ComparisonState.Conflict].Count > 0)
+{
+    <div class="mb-3">
+        <h5 class="text-uppercase fw-bold" style="color: red">Conflicts</h5>
+        <TelerikGrid Data="@RoleMappingComparisons[ComparisonState.Conflict]"
+                     Pageable="false" Sortable="true"
+                     FilterMode="@GridFilterMode.FilterMenu"
+                     OnRowRender="@OnGridRowRender">
+            <GridColumns>
+                <GridColumn Field="Parent.RoleName" Title="Role Name" />
+                <GridColumn Field="State" Title="State" />
+                <GridColumn Field="Existing.MappingType" Title="Mapping Type" />
+                <GridColumn Field="Existing.Value" Title="Old Value" />
+                <GridColumn Field="Imported.Value" Title="New Value" />
+                <GridColumn Field="Existing.Description" Title="Old Description" />
+                <GridColumn Field="Imported.Description" Title="New Description" />
+            </GridColumns>
+        </TelerikGrid>
+    </div>
+}
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public List<RoleComparisonModel> RoleComparisons { get; set; } = new();
+
+    private Dictionary<ComparisonState, List<RoleMappingComparisonModel>> RoleMappingComparisons = new();
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        RoleMappingComparisons = new Dictionary<ComparisonState, List<RoleMappingComparisonModel>>(
+            RoleComparisons
+            .SelectMany(rc => rc.Mappings)
+            .GroupBy(m => m.State)
+            .ToDictionary(g => g.Key, g => g.ToList())
+            .UnionBy(Enum.GetValues<ComparisonState>().ToDictionary(g => g, g => new List<RoleMappingComparisonModel>()), k => k.Key));
+    }
+
+    private static void OnGridRowRender(GridRowRenderEventArgs args)
+    {
+        if (args.Item is RoleComparisonModel item)
+        {
+            args.Class = GetRoleRowClass(item.RoleState);
+        }
+        else if (args.Item is RoleMappingComparisonModel mapping)
+        {
+            args.Class = GetRoleRowClass(mapping.State);
+        }
+    }
+
+    private static string GetRoleRowClass(ComparisonState state)
+    {
+        return state switch
+        {
+            ComparisonState.Added => "row-added",
+            ComparisonState.Removed => "row-removed",
+            ComparisonState.Changed => "row-changed",
+            ComparisonState.Conflict => "row-conflict",
+            _ => "row-unchanged"
+        };
+    }
+}

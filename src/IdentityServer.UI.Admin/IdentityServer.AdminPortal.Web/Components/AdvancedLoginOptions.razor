@@ -1,0 +1,77 @@
+﻿@using Microsoft.Extensions.Options
+
+@inject IOptions<FeatureOptions> features
+@inject UserRoleFilteringService roleFilteringService
+
+@if (isVisible)
+{
+    <div class="my-1">
+        <span class="btn btn-sm btn-link" @onclick=ToggleExpanded>@(isExpanded ? "Less" : "More") login options</span>
+
+        @if (isExpanded && features.Value.FilterUserRoleOnLogin)
+        {
+            <div>
+                <div>
+                    <span>Allowed user roles:</span>
+                </div>
+                <div class="row">
+                    @if (allowedRoles.Count > 0)
+                    {
+                        @foreach (var item in allowedRoles)
+                        {
+                            <div class="col-auto">
+                                <PillButton IsAdd="false" OnClick=@(() => allowedRoles.Remove(item)) Text="@item" />
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <small class="text-secondary">All user roles are restricted.</small>
+                    }
+                </div>
+                <div class="mt-1">
+                    <span>Restricted user roles:</span>
+                </div>
+                <div class="row">
+                    @if (allowedRoles.Count < UserRoleFilteringService.AllRoles.Count)
+                    {
+                        @foreach (var item in UserRoleFilteringService.AllRoles.Except(allowedRoles))
+                        {
+                            <div class="col-auto">
+                                <PillButton IsAdd="true" OnClick=@(() => allowedRoles.Add(item)) Text="@item" />
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <small class="text-secondary">All user roles are allowed.</small>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private readonly List<string> allowedRoles = UserRoleFilteringService.AllRoles;
+
+    private bool isVisible = false;
+    private bool isExpanded = false;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        isVisible = features.Value.FilterUserRoleOnLogin;
+    }
+
+    public async Task SaveOptions()
+    {
+        await roleFilteringService.SetAllowedRoles(allowedRoles);
+    }
+
+    private void ToggleExpanded(MouseEventArgs _)
+    {
+        isExpanded = !isExpanded;
+    }
+}

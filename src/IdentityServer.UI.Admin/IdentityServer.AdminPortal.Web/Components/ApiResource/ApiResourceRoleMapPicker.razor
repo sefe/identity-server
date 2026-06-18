@@ -1,0 +1,190 @@
+@using Group = IdentityServer.Abstraction.Entities.EntraEntities.Group
+@using User = Abstraction.Entities.EntraEntities.User
+@using IdentityServer.AdminPortal.Web.Services.Search
+
+@inject ISearchProvider<Group> GroupSearchProvider
+@inject ISearchProvider<ClientShortDtoRead> ClientProvider
+@inject ISearchProvider<User> UserSearchProvider
+
+@if (isOpen)
+{
+    <div class="offcanvas offcanvas-end show" data-bs-scroll="false" style="visibility: visible; width: 550px;" id="apiRoleMapPickerOffcanvas"
+         aria-labelledby="apiRoleMapEditorTitle" aria-modal="true" role="dialog">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="apiRoleMapEditorTitle">
+                @(Title())
+            </h5>
+            <button type="button" class="btn-close" aria-label="Close" @onclick="CloseEditorDrawer"></button>
+        </div>
+
+        @if (SelectedRole != null)
+        {
+            <div class="offcanvas-header border-bottom">
+                <h6 class="mb-0">Role: @SelectedRole.RoleName</h6>
+            </div>
+        }
+
+        <ErrorAlert @bind-ErrorMessage="@errorMessage" />
+
+        @if (SelectedRoleMapping != null)
+        {
+            @if (SelectedRole == null)
+            {
+                <div class="offcanvas-header px-3 py-1">
+                    <span>Please select an API role to start mapping setup:</span>
+                </div>
+                <div class="offcanvas-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Api Resource Role</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var apiResourceRoleObj in ExistingRoles.OrderBy(a => a.RoleName))
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="btn btn-link p-0 text-break" @onclick="() => SetSelectedRole(apiResourceRoleObj)">@apiResourceRoleObj.RoleName</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+            else
+            {
+                if (SelectedRoleMapping.MappingType == RoleMapType.SecurityGroup)
+                {
+                    <SearchPickList TId=string TItem=Group SearchProvider="GroupSearchProvider" ExcludeItems="AlreadyAssignedGroups">
+                        <ItemTemplate Context="group">
+                            <div class="list-item border-start border-5 border-light-subtle my-1" @key="group.Id">
+                                <div class="border-bottom">
+                                    <span class="btn btn-link text-start text-break" @onclick="() => SetSelectedEntraGroup(group)">@group.DisplayName</span>
+                                    <p class="text-muted ms-4 mb-1">ID @group.Id</p>
+                                </div>
+                            </div>
+                        </ItemTemplate>
+                    </SearchPickList>
+                }
+                else if (SelectedRoleMapping.MappingType == RoleMapType.ClientId)
+                {
+                    <SearchPickList TItem="ClientShortDtoRead" TId="int" SearchProvider="ClientProvider" ExcludeItems="AlreadyAssignedClients" ExcludeItemsComparer="FieldEqualityComparer.For<ClientShortDtoRead>(c => c.ClientId)"
+                                   ItemSingularDisplayName="Client" Prefetch="true">
+                        <ItemTemplate Context="client">
+                            <div class="list-item border-start border-5 border-light-subtle my-1" @key="client.Id">
+                                <div class="border-bottom">
+                                    <span class="btn btn-link text-start text-break" @onclick="() => SetSelectedClient(client)">@client.ClientName</span>
+                                    <p class="text-muted ms-4 mb-1">ID @client.ClientId</p>
+                                </div>
+                            </div>
+                        </ItemTemplate>
+                    </SearchPickList>
+                }
+                else if (SelectedRoleMapping.MappingType == RoleMapType.UserObjectId)
+                {
+                    <SearchPickList TId=string TItem=User SearchProvider="UserSearchProvider" ExcludeItems="AlreadyAssignedUsers" ShowLoadMoreResults="false">
+                        <ItemTemplate Context="user">
+                            <div class="list-item border-start border-5 border-light-subtle my-1" @key="user.OId">
+                                <div class="border-bottom">
+                                    <span class="btn btn-link text-start text-break" @onclick="() => SetSelectedUser(user)">@user.DisplayName</span>
+                                    <p class="text-muted ms-4 mb-1">ID @user.OId</p>
+                                </div>
+                            </div>
+                        </ItemTemplate>
+                    </SearchPickList>
+                }
+            }
+        }
+    </div>
+
+    <div class="offcanvas-backdrop fade show"></div>
+}
+
+@code {
+    [Parameter]
+    public List<ApiResourcePropertyRoleDtoRead> ExistingRoles { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<ApiResourcePropertyRoleMappingDtoCreate> OnRoleMappingConfirmed { get; set; }
+
+    private ApiResourcePropertyRoleDtoRead? SelectedRole;
+    private ApiResourcePropertyRoleMappingDtoCreate SelectedRoleMapping = new() { Value = string.Empty };
+
+    private bool isOpen = false;
+    private string? errorMessage = null;
+
+    private List<Group> AlreadyAssignedGroups = [];
+    private List<ClientShortDtoRead> AlreadyAssignedClients = [];
+    private List<User> AlreadyAssignedUsers = [];
+
+    public void CloseEditorDrawer()
+    {
+        SelectedRoleMapping = new ApiResourcePropertyRoleMappingDtoCreate { Value = string.Empty };
+        SelectedRole = null;
+        errorMessage = null;
+        isOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task CompleteNewMappingSetup()
+    {
+        await OnRoleMappingConfirmed.InvokeAsync(SelectedRoleMapping);
+        CloseEditorDrawer();
+    }
+
+    public void OpenRoleMappingPicker(ApiResourcePropertyRoleMappingDtoCreate roleMapping)
+    {
+        SelectedRoleMapping = roleMapping;
+        SelectedRole = null;
+        isOpen = true;
+        StateHasChanged();
+    }
+
+    private void SetSelectedRole(ApiResourcePropertyRoleDtoRead role)
+    {
+        SelectedRole = role;
+        SelectedRoleMapping.ApiResourceRoleId = role.Id;
+
+        AlreadyAssignedGroups = role.Mappings?.Where(x => x.MappingType == RoleMapType.SecurityGroup).Select(x => new Group { Id = x.Value }).ToList() ?? [];
+        AlreadyAssignedClients = role.Mappings?.Where(x => x.MappingType == RoleMapType.ClientId).Select(x => new ClientShortDtoRead { ClientId = x.Value, ClientName = string.Empty }).ToList() ?? [];
+        AlreadyAssignedUsers = role.Mappings?.Where(x => x.MappingType == RoleMapType.UserObjectId).Select(x => new User { OId = x.Value }).ToList() ?? [];
+
+        StateHasChanged();
+    }
+
+    internal async Task SetSelectedClient(ClientShortDtoRead client)
+    {
+        SelectedRoleMapping.Value = client.ClientId;
+        await CompleteNewMappingSetup();
+    }
+
+    internal async Task SetSelectedEntraGroup(Group entraGroup)
+    {
+        SelectedRoleMapping.Value = entraGroup.Id;
+        await CompleteNewMappingSetup();
+    }
+
+    internal async Task SetSelectedUser(User user)
+    {
+        SelectedRoleMapping.Value = user.OId;
+        await CompleteNewMappingSetup();
+    }
+
+    private string Title()
+    {
+        string starter = "New";
+        string? type = (SelectedRoleMapping?.MappingType) switch
+        {
+            RoleMapType.SecurityGroup => "Security Group",
+            RoleMapType.ClientId => "Client",
+            RoleMapType.UserObjectId => "User",
+            _ => null
+        };
+
+        return string.Join(" ", starter, type, "Role Mapping");
+    }
+}

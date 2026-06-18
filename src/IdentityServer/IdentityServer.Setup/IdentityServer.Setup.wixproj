@@ -1,0 +1,69 @@
+<Project Sdk="WixToolset.Sdk/6.0.0">
+	<PropertyGroup>
+		<Platform Condition=" '$(Platform)' == '' ">x64</Platform>
+		<Name>IdentityServer.Setup</Name>
+		<IdpWebDir>..\IdentityServer\bin\$(Configuration)\net8.0</IdpWebDir>
+		<ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+	</PropertyGroup>
+	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
+		<DefineConstants>Debug;IdpWebDir=$(IdpWebDir)</DefineConstants>
+		<SuppressValidation>True</SuppressValidation>
+	</PropertyGroup>
+	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
+		<DefineConstants>IdpWebDir=$(IdpWebDir)</DefineConstants>
+		<SuppressValidation>True</SuppressValidation>
+	</PropertyGroup>
+	<PropertyGroup>
+		<AppVersion Condition=" '$(AppVersion)' == '' ">1.0.0.0</AppVersion>
+		<!--<IdentityServerFolder Condition=" '$(IdentityServerFolder)' == '' ">IdentityServer</IdentityServerFolder>   ;IdentityServerFolder=$(IdentityServerFolder)-->
+		<DefineConstants>AppVersion=$(AppVersion);IdpWebDir=$(IdpWebDir)</DefineConstants>
+	</PropertyGroup>
+	<ItemGroup>
+		<Content Include="Dependencies.wxi" />
+	</ItemGroup>
+	<ItemGroup>
+		<Content Include="IdentityServer.Setup.msi.json">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
+		<None Include="Web\IdentityServer\HeatTransform.xslt" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\IdentityServer\IdentityServer.csproj">
+			<Name>IdentityServer</Name>
+			<Project>{4339718F-06F5-44E4-B8DF-4D9737A2A7B1}</Project>
+			<Private>True</Private>
+			<DoNotHarvest>True</DoNotHarvest>
+			<RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+			<RefTargetDir>INSTALLFOLDER</RefTargetDir>
+		</ProjectReference>
+	</ItemGroup>
+	<Target Name="PublishProjects" AfterTargets="BeforeResolveReferences">
+		<Exec Command="dotnet publish &quot;..\IdentityServer\IdentityServer.csproj&quot; -c $(Configuration) -o $(IdpWebDir)" />
+	</Target>
+	<ItemGroup>
+		<HarvestDirectory Include="$(IdpWebDir)">
+			<DirectoryRefId>IdentityServerFolder</DirectoryRefId>
+			<ComponentGroupName>IdpApiComGroup</ComponentGroupName>
+			<Transforms>$(ProjectDir)Web\IdentityServer\HeatTransform.xslt</Transforms>
+			<PreprocessorVariable>var.IdpWebDir</PreprocessorVariable>
+			<SuppressCom>true</SuppressCom>
+			<SuppressRootDirectory>true</SuppressRootDirectory>
+			<SuppressRegistry>true</SuppressRegistry>
+		</HarvestDirectory>
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="WixJsonFileExtension" Version="6.0.0.46" />
+		<PackageReference Include="WixToolset.Heat" Version="6.0.0" />
+		<PackageReference Include="WixToolset.Util.wixext" Version="6.0.0" />
+		<PackageReference Include="WixToolset.Iis.wixext" Version="6.0.0" />
+	</ItemGroup>
+	<PropertyGroup>
+		<SuppressSpecificWarnings>1070;1071</SuppressSpecificWarnings>
+	</PropertyGroup>
+	<Target Name="CopyJsonFiles" AfterTargets="Build">
+		<Copy SourceFiles="$(ProjectDir)IdentityServer.Setup.msi.json" 
+		      DestinationFolder="$(OutDir)" 
+		      Condition="Exists('$(ProjectDir)IdentityServer.Setup.msi.json')" 
+		      ContinueOnError="true" />
+	</Target>
+</Project>

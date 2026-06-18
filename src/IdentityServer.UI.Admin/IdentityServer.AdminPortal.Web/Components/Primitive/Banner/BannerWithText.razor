@@ -1,0 +1,18 @@
+﻿<div class="row justify-content-between my-3 alert alert-info">
+    <div class="col-auto my-auto">
+        @if (!string.IsNullOrEmpty(Title))
+        {
+            <strong>@Title</strong>
+            <br />
+        }
+        <small>@Text</small>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Text { get; set; } = string.Empty;
+}

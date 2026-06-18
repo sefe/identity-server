@@ -1,0 +1,4 @@
+﻿/* gets rid of the client-id and client-secret fields */
+.auth-container .wrapper {
+    display: none;
+}

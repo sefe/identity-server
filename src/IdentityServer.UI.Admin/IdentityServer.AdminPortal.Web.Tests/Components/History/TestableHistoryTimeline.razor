@@ -1,0 +1,25 @@
+@using IdentityServer.Abstraction.DTO.History
+@using IdentityServer.AdminPortal.Web.Components.History
+@using IdentityServer.AdminPortal.Web.Services.History
+@inherits HistoryTimeline
+
+@* 
+    Test wrapper component that inherits from HistoryTimeline.
+    This allows unit tests to trigger re-renders by calling TriggerStateHasChanged().
+*@
+
+@{
+    // Display the base component markup
+    base.BuildRenderTree(__builder);
+}
+
+@code {
+    /// <summary>
+    /// Exposes InvokeAsync for unit testing purposes.
+    /// Use this to ensure StateHasChanged is called on the correct synchronization context.
+    /// </summary>
+    public Task InvokeStateHasChangedAsync()
+    {
+        return InvokeAsync(StateHasChanged);
+    }
+}

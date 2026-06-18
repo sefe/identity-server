@@ -1,0 +1,111 @@
+﻿@inherits EditableComponentBase
+
+<div class="card mb-3">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="ms-2 me-auto my-auto align-middle">
+                <h5 class="my-0">Scopes</h5>
+            </div>
+            <div class="ms-auto pe-2">
+                <HistoryButton ApiResourceId="ApiResource.Id" EntityTypeFilter="@HistoryEntryDtoExtensions.GetDisplayName(HistoryEntryDtoExtensions.KnownEntityTypes.ApiScope)" />
+            </div>
+            @if (!IsReadonly && ApiResource.Id != 0)
+            {
+                <div>
+                    <TelerikButton Size="small" ButtonType="ButtonType.Button" OnClick="ShowNewScopeDetails" ThemeColor="primary">Create New Scope</TelerikButton>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="card-body">
+        @if (ApiResource.Scopes == null || ApiResource.Scopes.Count == 0)
+        {
+            <span>None</span>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Identifier</th>
+                            <th>Display Name</th>
+                            <th>Enabled</th>
+                            <th>Required</th>
+                            <th>Client Apps</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var scope in ApiResource.Scopes)
+                        {
+                            <tr @key="@scope.Id">
+                                <td>
+                                    <div class="row align-items-center">
+                                        <div class="col-auto">
+                                            <CopyToClipboardButton ValueToCopy="@scope.Scope" />
+                                        </div>
+                                        <div class="col">
+                                            <button type="button" class="btn btn-link text-start" @onclick="() => ShowScopeDetails(scope.Id)">
+                                                <span class="text-break">@scope.Scope</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="text-break">@scope.ApiScope?.DisplayName</span>
+                                </td>
+                                <td>
+                                    @if (scope.ApiScope?.Enabled == true)
+                                    {
+                                        <span>Yes</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="fw-bold">No</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (scope.ApiScope?.Required == true)
+                                    {
+                                        <span class="fw-bold">Yes</span>
+                                    }
+                                    else
+                                    {
+                                        <span>No</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span>@(scope.ApiScope?.ClientCount ?? 0)</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<ApiResourceScopeEditor @ref="scopeEditor" ApiResource="ApiResource" IsReadonly="IsReadonly" OnApiResourceUpdate="OnApiResourceUpdate" />
+
+@code {
+    [Parameter]
+    public ApiResourceDtoRead ApiResource { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnApiResourceUpdate { get; set; }
+
+    private ApiResourceScopeEditor scopeEditor = default!;
+
+    private void ShowNewScopeDetails()
+    {
+        if (IsReadonly) return;
+
+        scopeEditor.OpenDrawerForNewScope();
+    }
+
+    private void ShowScopeDetails(int scopeId)
+    {
+        scopeEditor.OpenDrawerForExistingScope(scopeId);
+    }
+}

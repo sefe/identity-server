@@ -1,0 +1,161 @@
+﻿@using Microsoft.Extensions.Options
+@inherits EditableComponentBase
+
+@inject IAdminApiService AdminApi
+@inject NotificationService NotificationService
+@inject IConfirmationService ConfirmationService
+@inject NavigationManager NavigationManager
+
+<div class="row justify-content-between my-3">
+    <div class="col-auto my-auto">
+        <h5 class="my-0">Role Mappings</h5>
+    </div>
+    <div class="col text-end">
+        @if (ApiResource.Roles.Count > 0)
+        {
+            <ApiResourceRoleExport ApiResource="@ApiResource" UserObjectId="@UserObjectId" UserName="@UserName" Class="me-2" />
+        }
+        @if (!IsReadonly)
+        {
+            <TelerikButton Size="small" OnClick="NavigateToRoleImportPage"
+                           ButtonType="ButtonType.Button" FillMode="link" Icon="@SvgIcon.HyperlinkOpen">Import</TelerikButton>
+        }
+    </div>
+</div>
+
+<ErrorAlert @bind-ErrorMessage="@errorMessage" />
+
+<ApiResourceRoleList ApiResource="ApiResource" IsReadonly="IsReadonly" OnApiResourceUpdate="NotifyRolesUpdatedAsync" />
+
+<ApiResourceRoleMapListItem IsReadonly="IsReadonly || ApiResource.Roles.Count == 0" OnCreateNew="() => CreateMapping(RoleMapType.SecurityGroup)"
+                            MapType="RoleMapType.SecurityGroup" MappedRoles="GetMappedRoles(RoleMapType.SecurityGroup)" OnDeleteRoleMapping="DeleteRoleMapping" />
+<ApiResourceRoleMapListItem IsReadonly="IsReadonly || ApiResource.Roles.Count == 0" OnCreateNew="() => CreateMapping(RoleMapType.ClientId)"
+                            MapType="RoleMapType.ClientId" MappedRoles="GetMappedRoles(RoleMapType.ClientId)" OnDeleteRoleMapping="DeleteRoleMapping" />
+<ApiResourceRoleMapListItem IsReadonly="IsReadonly || ApiResource.Roles.Count == 0" OnCreateNew="() => CreateMapping(RoleMapType.UserObjectId)"
+                            MapType="RoleMapType.UserObjectId" MappedRoles="GetMappedRoles(RoleMapType.UserObjectId)" OnDeleteRoleMapping="DeleteRoleMapping" />
+
+<ApiResourceRoleMapPicker @ref=RoleMapPicker ExistingRoles="ApiResource.Roles" OnRoleMappingConfirmed="HandleRoleMappingDetailsResult" />
+
+@code {
+    [Parameter]
+    public ApiResourceDtoRead ApiResource { get; set; } = default!;
+
+    [Parameter]
+    public string UserObjectId { get; set; } = string.Empty;
+    [Parameter]
+    public string UserName { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> OnApiResourceUpdate { get; set; }
+
+    private string? errorMessage;
+    private ApiResourceRoleMapPicker RoleMapPicker = default!;
+    private Task NotifyRolesUpdatedAsync() => OnApiResourceUpdate.InvokeAsync("Roles");
+    private Task NotifyRoleMappingsUpdatedAsync() => OnApiResourceUpdate.InvokeAsync("Role Mappings");
+
+    private async Task HandleRoleMappingDetailsResult(ApiResourcePropertyRoleMappingDtoCreate newRoleMapping)
+    {
+        if (IsReadonly)
+        {
+            return;
+        }
+        if (ApiResource == null)
+        {
+            return;
+        }
+
+        var callResult = await AdminApi.AddApiResourceRoleMapping(newRoleMapping);
+        if (callResult.IsSuccess)
+        {
+            errorMessage = null;
+            var role = ApiResource.Roles.Find(r => r.Id == newRoleMapping.ApiResourceRoleId);
+            if (role != null)
+            {
+                role.Mappings ??= new List<ApiResourcePropertyRoleMappingDtoRead>();
+                var roleMapping = callResult.Result;
+                role.Mappings.Add(roleMapping);
+                NotificationService.ShowInfo($"Role Mapping for '{roleMapping.Description}' created.");
+                await NotifyRoleMappingsUpdatedAsync();
+            }
+            else
+            {
+                errorMessage = "The specified role was not found.";
+            }
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+    }
+
+    private IEnumerable<ApiResourceMappedRole> GetMappedRoles(RoleMapType mapType)
+    {
+        return ApiResource.Roles.SelectMany(role => role.Mappings, (role, mapping) => new ApiResourceMappedRole
+        {
+            ApiResourceRoleId = role.ApiResourceId,
+            ApiResourceRoleName = role.RoleName,
+            RoleMapping = mapping
+        }).Where(r => r.RoleMapping.MappingType == mapType);
+    }
+
+    private async Task DeleteRoleMapping(ApiResourcePropertyRoleMappingDtoRead roleMapping)
+    {
+        if (IsReadonly)
+        {
+            return;
+        }
+
+        var confirmed = await ConfirmationService.ConfirmAsync("Delete Confirmation",
+            "Are you sure you want to delete this role mapping?");
+
+        if (!confirmed)
+        {
+            return;
+        }
+
+        var callResult = await AdminApi.DeleteApiResourceRoleMapping(roleMapping);
+        if (callResult.IsSuccess)
+        {
+            errorMessage = null;
+            ApiResource.Roles.Find(r => r.Id == roleMapping.ApiResourceRoleId)!.Mappings!.Remove(roleMapping);
+            NotificationService.ShowInfo($"Role Mapping for '{roleMapping.Description}' deleted.");
+            await NotifyRoleMappingsUpdatedAsync();
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+    }
+
+    private void CreateMapping(RoleMapType roleMapType)
+    {
+        if (IsReadonly)
+        {
+            return;
+        }
+
+        if (ApiResource.Roles == null || ApiResource.Roles.Count == 0)
+        {
+            return;
+        }
+
+        var roleMapping = new ApiResourcePropertyRoleMappingDtoCreate() { ApiResourceId = ApiResource.Id, MappingType = roleMapType, Value = string.Empty };
+
+        OpenRoleMappingPicker(roleMapping);
+    }
+
+    private void OpenRoleMappingPicker(ApiResourcePropertyRoleMappingDtoCreate roleMapping)
+    {
+        if (IsReadonly)
+        {
+            return;
+        }
+
+        RoleMapPicker.OpenRoleMappingPicker(roleMapping);
+    }
+
+    private void NavigateToRoleImportPage()
+    {
+        NavigationManager.NavigateTo(PageRoutes.ApiResourcesImportRoles(ApiResource.Id));
+    }
+}

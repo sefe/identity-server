@@ -1,0 +1,283 @@
+@using IdentityServer.Abstraction.Extensions
+
+@inherits EditableComponentBase
+
+@inject IAdminApiService AdminApi
+@inject NotificationService NotificationService
+@inject IConfirmationService ConfirmationService
+
+<div class="card mb-3">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="ms-2 me-auto my-auto align-middle">
+                <h5 class="my-0">Redirect URIs</h5>
+            </div>
+            <div class="ms-auto pe-2">
+                <HistoryButton ApplicationId="Application.Id" EntityTypeFilter="@HistoryEntryDtoExtensions.GetDisplayName(HistoryEntryDtoExtensions.KnownEntityTypes.ClientRedirectUri)" />
+            </div>
+            @if (!IsReadonly && !showAddControls)
+            {
+                <div>
+                    <TelerikButton OnClick="ShowAddNewItemMenu" ButtonType="ButtonType.Button" ThemeColor="primary" Size="small">Add New</TelerikButton>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Information Section -->
+        <div>
+            <div class="info-box border rounded p-3 d-flex align-items-start mb-3">
+                <div>
+                    Redirect URI is a case-sensitive path specific to your application where the user will be redirected after successful authorization. Usually its value is driven by SDK. <br />
+                    It is required for Auth Code, Implicit, Hybrid grant flows. The localhost addresses are handled with nuances described in the <a href="https://wiki/spaces/gde/pages/582989848/MWPTI+-+IdentityServer+-+UserGuide+-+Create+an+Application#MWPTIIdentityServerUserGuideCreateanApplication-RedirectURI" target="_blank" class="ms-1">user guide</a>.
+                </div>
+            </div>
+        </div>
+
+        @if (!IsReadonly && showAddControls)
+        {
+            <TelerikForm Model="@newValue" OnValidSubmit="@AddClientRedirect" Class="w-100 mt-3">
+                <FormValidation>
+                    <DataAnnotationsValidator />
+                </FormValidation>
+                <FormItems>
+                    <FormItem>
+                        <Template>
+                            <div class="row">
+                                <div class="col">
+                                    <TelerikTextBox Value="@newValue.RedirectUri"
+                                                    ValueExpression="@(() => newValue.RedirectUri)"
+                                                    ValueChanged="@(t => { UpdateRedirectValue(t); })"
+                                                    Placeholder="Enter new Redirect URI here"
+                                                    Class="me-2" Width="100%"
+                                                    Enabled="@(!awaitingResults)">
+                                    </TelerikTextBox>
+                                    <TelerikValidationMessage For="@(() => newValue.RedirectUri)" />
+                                </div>
+                                <div class="col-auto">
+                                    <TelerikButton ButtonType="@ButtonType.Submit" ThemeColor="primary" Enabled="@(!awaitingResults)">Add</TelerikButton>
+                                    <TelerikButton ButtonType="@ButtonType.Button" ThemeColor="secondary" OnClick="OnCancel" Enabled="@(!awaitingResults)">Cancel</TelerikButton>
+                                </div>
+                            </div>
+                        </Template>
+                    </FormItem>
+                </FormItems>
+                <FormButtons />
+            </TelerikForm>
+        }
+
+        <ErrorAlert @bind-ErrorMessage="@errorMessage" CssClass="mt-2" />
+
+        @if (Application?.RedirectUris?.Count > 0)
+        {
+            var index = 0;
+            @foreach (var item in Application.RedirectUris.OrderBy(ru => ru.RedirectUri))
+            {
+                var textBoxAdornment = "border-light-subtle";
+                @if (!Uri.TryCreate(item.RedirectUri, UriKind.Absolute, out var parsedUri))
+                {
+                    textBoxAdornment = "border-danger";
+                }
+
+                <div class="row gx-1 pb-1 mb-1 align-items-center border-bottom @($"{textBoxAdornment}") custom-row-hover" @key="@item.Id">
+                    <div class="col-auto">
+                        <CopyToClipboardButton ValueToCopy="@item.RedirectUri" />
+                    </div>
+                    <div class="col overflow-x-auto">
+                        <div class="w-100">
+                            <span class="col-12 me-2 text-nowrap">@item.RedirectUri</span>
+                        </div>
+                    </div>
+                    <div class="col-auto my-auto">
+                        @if (parsedUri == null)
+                        {
+                            <span class="badge bg-danger tooltip-target" title="This Redirect URI is not a valid absolute URI.">Invalid</span>
+                        }
+                        else
+                        {
+                            @if (parsedUri.IsLoopbackUri() && parsedUri.IsDynamicPortAllowed())
+                            {
+                                <span class="badge bg-success tooltip-target" title="This Redirect URI can be used with any port value.">Any Port</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary tooltip-target" title="This Redirect URI must be used exactly as shown.">Literal</span>
+                            }
+
+                            @if (!parsedUri.IsLoopbackUri() && parsedUri.Scheme == Uri.UriSchemeHttp)
+                            {
+                                <span class="badge bg-warning text-dark tooltip-target" title="Follow the security best practice and use HTTPS.">Insecure</span>
+                            }
+
+                            @if (parsedUri.Scheme != Uri.UriSchemeHttp && parsedUri.Scheme != Uri.UriSchemeHttps)
+                            {
+                                <span class="badge bg-warning text-dark tooltip-target" title="This Redirect URI uses a non-HTTP/HTTPS scheme. Verify if this is expected.">Non-HTTP(S)</span>
+                            }
+                        }
+                    </div>
+                    @if (!IsReadonly)
+                    {
+                        <div class="col-auto my-auto">
+                            <TelerikButton ButtonType="ButtonType.Button" OnClick="() => DeleteClientRedirect(item)" Icon="@SvgIcon.Trash" ThemeColor="error" FillMode="outline" Enabled="@(!awaitingResults)" />
+                        </div>
+                    }
+                </div>
+
+                index = index + 1;
+            }
+        }
+        else
+        {
+            <div class="col-auto my-auto">
+                <span class="form-control-plaintext">None</span>
+            </div>
+        }
+
+        @if (awaitingResults)
+        {
+            <div>
+                <TelerikLoaderContainer />
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public ClientDtoRead Application { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnApplicationUpdate { get; set; }
+
+    private string? errorMessage;
+    private bool awaitingResults;
+    private bool showAddControls;
+    private ClientPropertyRedirectUriDtoCreateWrapper newValue = default!;
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        if (Application != null)
+        {
+            ResetFormModel();
+        }
+    }
+
+    private void ResetFormModel()
+    {
+        newValue = new ClientPropertyRedirectUriDtoCreateWrapper
+        {
+            ClientId = Application.Id,
+            RedirectUri = string.Empty,
+            AlreadyExistingUniquePropertyValues = Application.RedirectUris.Select(r => r.RedirectUri).ToHashSet(StringComparer.OrdinalIgnoreCase),
+        };
+    }
+
+    private void ShowAddNewItemMenu()
+    {
+        showAddControls = true;
+    }
+    private void HideAddNewItemMenu()
+    {
+        showAddControls = false;
+    }
+
+    private async Task AddClientRedirect()
+    {
+        if (IsReadonly || awaitingResults) return;
+
+        @if (!Uri.TryCreate(newValue.RedirectUri, UriKind.Absolute, out var parsedUri))
+        {
+            await ConfirmationService.ConfirmAsync(
+                "Invalid Redirect URI",
+                "Redirect URI must be an absolute URI.",
+                false
+            );
+            return;
+        }
+
+        @if (!parsedUri.IsLoopbackUri() && parsedUri.Scheme == Uri.UriSchemeHttp)
+        {
+            var confirmed = await ConfirmationService.ConfirmAsync(
+                "Insecure Redirect URI",
+                "You're about to add an insecure Redirect URI which uses HTTP and is vulnerable to various attacks. " +
+                "By continuing you acknowledge the risks described in the Identity Server User Guide.",
+                "https://wiki/spaces/gde/pages/582989848/MWPTI+-+IdentityServer+-+UserGuide+-+Create+an+Application#:~:text=What%20if%20my%20application%20uses%20HTTP%3F"
+            );
+
+            if (!confirmed)
+            {
+                return;
+            }
+        }
+
+        awaitingResults = true;
+        try
+        {
+            newValue.ClientId = Application.Id;
+            var callResult = await AdminApi.AddClientRedirectUri(newValue);
+            if (callResult.IsSuccess)
+            {
+                errorMessage = null;
+                ResetFormModel();
+                Application.RedirectUris.Add(callResult.Result);
+                NotificationService.ShowInfo("Redirect URI added.");
+                HideAddNewItemMenu();
+                await OnApplicationUpdate.InvokeAsync();
+            }
+            else
+            {
+                errorMessage = callResult.ErrorMessage;
+            }
+        }
+        finally
+        {
+            awaitingResults = false;
+        }
+    }
+
+    private void OnCancel()
+    {
+        errorMessage = null;
+        ResetFormModel();
+        HideAddNewItemMenu();
+        StateHasChanged();
+    }
+
+    private async Task DeleteClientRedirect(ClientPropertyRedirectUriDtoRead value)
+    {
+        if (IsReadonly || awaitingResults) return;
+
+        var confirmed = await ConfirmationService.ConfirmAsync("Delete Confirmation",
+            $"Are you sure you want to delete the Redirect URI '{value.RedirectUri}'?");
+
+        if (!confirmed) return;
+
+        awaitingResults = true;
+        try
+        {
+            var callResult = await AdminApi.DeleteClientRedirectUri(value);
+            if (callResult.IsSuccess)
+            {
+                errorMessage = null;
+                Application.RedirectUris.Remove(value);
+                NotificationService.ShowInfo("Redirect URI removed.");
+                await OnApplicationUpdate.InvokeAsync();
+            }
+            else
+            {
+                errorMessage = callResult.ErrorMessage;
+            }
+        }
+        finally
+        {
+            awaitingResults = false;
+        }
+    }
+
+    private void UpdateRedirectValue(string text)
+    {
+        newValue.RedirectUri = text;
+    }
+}

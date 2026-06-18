@@ -1,0 +1,106 @@
+@using System.ComponentModel.DataAnnotations
+@using IdentityServer.AdminPortal.Web.Services.Search
+
+@typeparam TId
+@typeparam TItem where TItem : IHasId<TId>
+@inherits BasePickList<TId, TItem>
+
+<div class="@HeaderCssClass pt-2 pb-0">
+    <TelerikForm Model="@formModel" OnValidSubmit="@StartNewSearch" Class="w-100">
+        <FormValidation>
+            <DataAnnotationsValidator />
+        </FormValidation>
+        <FormItems>
+            <FormItem>
+                <Template>
+                    <div class="row">
+                        <div class="col">
+                            <TelerikTextBox @bind-Value="@formModel.SearchTerm"
+                                            Placeholder="@($"Enter {ItemSingularDisplayName} name to search. Min. {SearchFormModel.MinSearchSymbols} symbols.")"
+                                            Class="me-2" Width="100%">
+                            </TelerikTextBox>
+                            <TelerikValidationMessage For="@(() => formModel.SearchTerm)" />
+                        </div>
+                        <div class="col-auto">
+                            <TelerikButton ButtonType="ButtonType.Submit" ThemeColor="@ThemeConstants.Button.ThemeColor.Primary">Search</TelerikButton>
+                        </div>
+                    </div>
+                </Template>
+            </FormItem>
+        </FormItems>
+        <FormButtons />
+    </TelerikForm>
+</div>
+
+@if (dataLoaded && Data.Count == 0)
+{
+    <div class="@BodyCssClass">
+        @if (totalResultsReceived > 0)
+        {
+            <p>All found @(GetItemDisplayName()) are already assigned.</p>
+        }
+        else
+        {
+            <p>The search yielded no results.</p>
+        }
+    </div>
+}
+
+@{
+    // Display the base component markup
+    base.BuildRenderTree(__builder);
+}
+
+@if (dataLoaded && totalResultsReceived > 0)
+{
+    <div class="@HeaderCssClass ms-auto border-top">
+        @if (ExcludeItems.Count > 0)
+        {
+            <small>Loaded @totalResultsReceived @(GetItemDisplayName(@totalResultsReceived)) (@ExcludeItems.Count excluded).</small>
+        }
+        else
+        {
+            <small>Loaded @totalResultsReceived @(GetItemDisplayName(@totalResultsReceived)).</small>
+        }
+
+        @if (ShowLoadMoreResults && skipToken != null)
+        {
+            <TelerikButton @onclick="ContinueSearch" Class="ms-1" ButtonType="ButtonType.Button" ThemeColor="@ThemeConstants.Button.ThemeColor.Primary" Size="Small">Load more</TelerikButton>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public bool ShowLoadMoreResults { get; set; } = true;
+
+    [Parameter]
+    public bool Prefetch { get; set; }
+
+    private readonly SearchFormModel formModel = new SearchFormModel();
+
+    private string currentSearchTerm = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        if (Prefetch)
+        {
+            await GetDataAsync(string.Empty);
+        }
+    }
+
+    private async Task StartNewSearch()
+    {
+        currentSearchTerm = formModel.SearchTerm;
+
+        await Clear();
+        await GetDataAsync(currentSearchTerm);
+    }
+
+    private async Task ContinueSearch()
+    {
+        await GetDataAsync(currentSearchTerm);
+    }
+}

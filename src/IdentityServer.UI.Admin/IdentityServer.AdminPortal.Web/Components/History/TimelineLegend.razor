@@ -1,0 +1,16 @@
+@using IdentityServer.Abstraction.Enums
+
+<div class="timeline-legend">
+    <span class="legend-item">
+        <span class="legend-dot bg-@(HistoryEventType.Created.GetBadgeColor())"></span>
+        <span class="legend-label">Created</span>
+    </span>
+    <span class="legend-item">
+        <span class="legend-dot bg-@(HistoryEventType.Updated.GetBadgeColor())"></span>
+        <span class="legend-label">Updated</span>
+    </span>
+    <span class="legend-item">
+        <span class="legend-dot bg-@(HistoryEventType.Deleted.GetBadgeColor())"></span>
+        <span class="legend-label">Deleted</span>
+    </span>
+</div>

@@ -1,0 +1,73 @@
+@using IdentityServer.Abstraction.DTO
+
+@typeparam TImportDto where TImportDto : IDtoImport, new()
+@typeparam TImportModel where TImportModel : ImportModel<TImportDto>
+
+<div class="m-2">
+    <h5 class="my-0">File Data Validation</h5>
+    <TelerikLoader Visible="@awaitingResults" />
+</div>
+<div class="p-3">
+    @if (ImportModel.FileDataValidationStatus.IsCompleted)
+    {
+        <OperationStatusInfo Status="@(ImportModel.FileDataValidationStatus)" />
+    }
+    else
+    {
+        <i>Validating file data...</i>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public TImportModel ImportModel { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public Func<TImportDto, OperationStatus, bool> ClientSideDataValidator { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public Func<TImportModel, Task> ServerSideDataValidator { get; set; } = default!;
+
+    private bool awaitingResults = false;
+
+    private Task inProgress = default!;
+
+    protected override void OnInitialized()
+    {
+        inProgress = inProgress ?? ValidateDataAsync();
+    }
+
+    private async Task ValidateDataAsync()
+    {
+        if (!ImportModel.FileParsingStatus.IsCompleted || ImportModel.FileParsingStatus.HasErrors)
+        {
+            ImportModel.FileDataValidationStatus.Errors = new() { "File parsing is not complete or has errors." };
+            return;
+        }
+
+        ImportModel.FileDataValidationStatus.Errors.Clear();
+        ImportModel.FileDataValidationStatus.Warnings.Clear();
+        ImportModel.FileDataValidationStatus.IsCompleted = false;
+
+        awaitingResults = true;
+
+        try
+        {
+            // validate client-side first
+            ClientSideDataValidator.Invoke(ImportModel.FileParsingStatus.Result, ImportModel.FileDataValidationStatus);
+            // no reason to go to backend if there are errors
+            if (ImportModel.FileDataValidationStatus.Errors.Any())
+            {
+                return;
+            }
+            // if all is good, proceed to backend validation
+            await ServerSideDataValidator.Invoke(ImportModel);
+        }
+        finally
+        {
+            awaitingResults = false;
+            ImportModel.FileDataValidationStatus.IsCompleted = true;
+            StateHasChanged();
+        }
+    }
+}

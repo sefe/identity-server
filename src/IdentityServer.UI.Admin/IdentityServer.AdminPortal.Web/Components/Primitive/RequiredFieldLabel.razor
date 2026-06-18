@@ -1,0 +1,14 @@
+﻿@using System.ComponentModel.DataAnnotations
+
+<label for="@ForTarget" class="k-label k-form-label">
+    @LabelText
+    <span style="color:red">&nbsp;*</span>
+</label>
+
+@code {
+    [Parameter, Required]
+    public string LabelText { get; set; } = null!;
+
+    [Parameter]
+    public string? ForTarget { get; set; }
+}

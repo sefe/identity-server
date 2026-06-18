@@ -1,0 +1,222 @@
+@inherits EditableComponentBase
+
+@inject IAdminApiService AdminApi
+@inject NotificationService NotificationService
+@inject IConfirmationService ConfirmationService
+
+<div class="card mb-3">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="ms-2 me-auto my-auto align-middle">
+                <h5 class="my-0">CORS Origin URIs</h5>
+            </div>
+            <div class="ms-auto pe-2">
+                <HistoryButton ApplicationId="Application.Id" EntityTypeFilter="@HistoryEntryDtoExtensions.GetDisplayName(HistoryEntryDtoExtensions.KnownEntityTypes.ClientCorsOrigin)" />
+            </div>
+            @if (!IsReadonly && !showAddControls)
+            {
+                <div>
+                    <TelerikButton OnClick="ShowAddNewItemMenu" ButtonType="ButtonType.Button" ThemeColor="primary" Size="small">Add New</TelerikButton>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Information Section -->
+        <div class="info-box border rounded p-3 d-flex align-items-start mb-3">
+            <div>
+                Ensure the CORS (Cross-Origin Resource Sharing) URL matches the origin (scheme, host, and port) of the frontend application that will interact with IdentityServer.
+                For example, if your app is hosted at https://myapp.example.com, use that exact URL (without a trailing slash).
+                This allows browsers to securely communicate with IdentityServer during authentication flows like login, logout, and token refresh.
+            </div>
+        </div>
+
+        @if (!IsReadonly && showAddControls)
+        {
+            <TelerikForm Model="@newValue" OnValidSubmit="@AddClientCorsOrigin" Class="w-100 mt-3">
+                <FormValidation>
+                    <DataAnnotationsValidator />
+                </FormValidation>
+                <FormItems>
+                    <FormItem>
+                        <Template>
+                            <div class="row">
+                                <div class="col">
+                                    <TelerikTextBox Value="@newValue.Origin"
+                                                    ValueExpression="@(() => newValue.Origin)"
+                                                    ValueChanged="@(t => { UpdateOriginValue(t); })"
+                                                    Placeholder="Enter new CORS Origin here"
+                                                    Class="me-2" Width="100%"
+                                                    Enabled="@(!awaitingResults)">
+                                    </TelerikTextBox>
+                                    <TelerikValidationMessage For="@(() => newValue.Origin)" />
+                                </div>
+                                <div class="col-auto">
+                                    <TelerikButton ButtonType="@ButtonType.Submit" ThemeColor="primary" Enabled="@(!awaitingResults)">Add</TelerikButton>
+                                    <TelerikButton ButtonType="@ButtonType.Button" ThemeColor="secondary" OnClick="OnCancel" Enabled="@(!awaitingResults)">Cancel</TelerikButton>
+                                </div>
+                            </div>
+                        </Template>
+                    </FormItem>
+                </FormItems>
+                <FormButtons />
+            </TelerikForm>
+        }
+
+        <ErrorAlert @bind-ErrorMessage="@errorMessage" CssClass="mt-2" />
+
+        @if (Application.AllowedCorsOrigins?.Count > 0)
+        {
+            var index = 0;
+            @foreach (var item in Application.AllowedCorsOrigins.OrderBy(uri => uri.Origin))
+            {
+                <div class="row gx-1 pb-1 mb-1 align-items-center border-bottom border-light-subtle custom-row-hover" @key="@item.Id">
+                    <div class="col-auto">
+                        <CopyToClipboardButton ValueToCopy="@item.Origin" />
+                    </div>
+                    <div class="col overflow-x-auto">
+                        <div class="w-100">
+                            <span class="col-12 me-2 text-nowrap">@item.Origin</span>
+                        </div>
+                    </div>
+                    @if (!IsReadonly)
+                    {
+                        <div class="col-auto my-auto">
+                            <TelerikButton ButtonType="ButtonType.Button" OnClick="() => DeleteClientCorsOrigin(item)" Icon="@SvgIcon.Trash" ThemeColor="error" FillMode="outline" Enabled="@(!awaitingResults)" />
+                        </div>
+                    }
+                </div>
+
+                index = index + 1;
+            }
+        }
+        else
+        {
+            <div class="col-auto my-auto">
+                <span class="form-control-plaintext">None</span>
+            </div>
+        }
+
+        @if (awaitingResults)
+        {
+            <div>
+                <TelerikLoaderContainer />
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public ClientDtoRead Application { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnApplicationUpdate { get; set; }
+
+    private string? errorMessage;
+    private bool awaitingResults = false;
+    private bool showAddControls;
+    private ClientPropertyCorsOriginDtoCreateWrapper newValue = default!;
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        if (Application != null)
+        {
+            ResetFormModel();
+        }
+    }
+
+    private void ResetFormModel()
+    {
+        newValue = new ClientPropertyCorsOriginDtoCreateWrapper
+        {
+            ClientId = Application.Id,
+            Origin = string.Empty,
+            AlreadyExistingUniquePropertyValues = Application.AllowedCorsOrigins.Select(r => r.Origin).ToHashSet(StringComparer.OrdinalIgnoreCase),
+        };
+    }
+
+    private void ShowAddNewItemMenu()
+    {
+        showAddControls = true;
+    }
+    private void HideAddNewItemMenu()
+    {
+        showAddControls = false;
+    }
+
+    private async Task AddClientCorsOrigin()
+    {
+        if (IsReadonly || awaitingResults) return;
+
+        awaitingResults = true;
+        try
+        {
+            newValue.ClientId = Application.Id;
+            var callResult = await AdminApi.AddClientCorsUri(newValue);
+            if (callResult.IsSuccess)
+            {
+                errorMessage = null;
+                ResetFormModel();
+                Application.AllowedCorsOrigins.Add(callResult.Result);
+                NotificationService.ShowInfo("CORS Origin URI added.");
+                HideAddNewItemMenu();
+                await OnApplicationUpdate.InvokeAsync();
+            }
+            else
+            {
+                errorMessage = callResult.ErrorMessage;
+            }
+        }
+        finally
+        {
+            awaitingResults = false;
+        }
+    }
+
+    private void OnCancel()
+    {
+        errorMessage = null;
+        ResetFormModel();
+        HideAddNewItemMenu();
+        StateHasChanged();
+    }
+
+    private async Task DeleteClientCorsOrigin(ClientPropertyCorsOriginDtoRead value)
+    {
+        if (IsReadonly || awaitingResults) return;
+
+        var confirmed = await ConfirmationService.ConfirmAsync("Delete Confirmation",
+            $"Are you sure you want to delete the CORS Origin URI '{value.Origin}'?");
+
+        if (!confirmed) return;
+
+        awaitingResults = true;
+        try
+        {
+            var callResult = await AdminApi.DeleteClientCorsUri(value);
+            if (callResult.IsSuccess)
+            {
+                errorMessage = null;
+                Application.AllowedCorsOrigins.Remove(value);
+                NotificationService.ShowInfo("CORS Origin URI removed.");
+                await OnApplicationUpdate.InvokeAsync();
+            }
+            else
+            {
+                errorMessage = callResult.ErrorMessage;
+            }
+        }
+        finally
+        {
+            awaitingResults = false;
+        }
+    }
+
+    private void UpdateOriginValue(string text)
+    {
+        newValue.Origin = text;
+    }
+}

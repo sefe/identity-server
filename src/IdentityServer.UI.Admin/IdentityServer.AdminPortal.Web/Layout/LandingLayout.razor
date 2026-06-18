@@ -1,0 +1,83 @@
+@using IdentityServer.Abstraction.Configs
+
+@inherits LayoutComponentBase
+
+@inject ISystemConfig SystemConfig
+@inject IThemeService ThemeService
+@implements IDisposable
+
+<TelerikRootComponent>
+    <div class="page">
+        <main>
+            <section class="vh-100">
+                <div class="container py-3 py-md-5 h-100">
+                    <div class="row d-flex justify-content-center align-items-center h-100">
+                        <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+                            <div class="card" style="border-radius: 1rem">
+                                <div class="card-body px-4 pt-4 pb-1 text-center" style="background-color: var(--bs-card-cap-bg);">
+                                    <div class="mb-3 logo-container">
+                                        <Logo />
+                                    </div>
+                                    <div>
+                                        <h2 class="fw-bold text-uppercase">Identity Server</h2>
+                                    </div>
+                                    <div class="my-4">
+                                        @Body
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(SystemConfig.SupportEmailAddress))
+                                    {
+                                        <div>
+                                            <p class="m-0">
+                                                Need help? <a href="mailto:@SystemConfig.SupportEmailAddress" class="text-50 fw-bold">Mail us!</a>
+                                            </p>
+                                        </div>
+                                    }
+                                </div>
+                                <div class="card-footer text-center">
+                                    <p class="m-0 fst-italic">@SystemConfig.SecurityNotice</p>
+                                    <p class="m-0 text-secondary lh-sm" style="font-size: 0.875em">
+                                        @SystemConfig.SecurityDisclaimerText
+                                    </p>
+                                    <p class="m-0 fs-6 font-monospace">@GetVersion()</p>
+                                    <div class="col-auto">
+                                        <ThemeToggle />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+</TelerikRootComponent>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (firstRender)
+        {
+            // Initialize theme service
+            await ThemeService.InitializeAsync();
+            ThemeService.OnThemeChanged += OnThemeChanged;
+        }
+    }
+
+    private void OnThemeChanged(object? sender, ThemeMode mode)
+    {
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= OnThemeChanged;
+    }
+
+    private static string GetVersion()
+    {
+        var version = CommonHelpers.GetEntryAssemblyVersion();
+        return version == null ? "" : $"v{version}";
+    }
+}

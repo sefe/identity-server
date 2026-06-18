@@ -1,0 +1,236 @@
+@using Telerik.DataSource
+@using IdentityServer.AdminPortal.Web.Pages.Grid
+@using User = IdentityServer.Abstraction.Entities.EntraEntities.User
+
+@inherits GridListBasePage<User>
+
+@inject IAdminApiService AdminApi
+
+@if (isOpen)
+{
+    <div class="offcanvas offcanvas-end show @(isExpanded ? "" : "pager-compact-view")"
+         style="visibility: visible; width: @(isExpanded ? "70%" : "550px");"
+         id="systemPermissionRolePickerOffcanvas"
+         aria-labelledby="systemPermissionRoleEditorTitle"
+         aria-modal="true"
+         role="dialog">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="systemPermissionRoleMapEditorTitle">
+                New System Permission Role for '@SystemPermissionEnvironment.Environment'
+            </h5>
+            <button type="button" class="btn-close" aria-label="Close" @onclick="CloseEditorDrawer"></button>
+        </div>
+
+        @if (SelectedRole != null)
+        {
+            <div class="offcanvas-subheader p-3 border-bottom">
+                <h6>Role: @SelectedRole.RoleType.ToString()</h6>
+                @{
+                    var selectedCount = SelectedUsers.Count();
+                    if (selectedCount > 0)
+                    {
+                        <div class="d-flex align-items-center my-auto">
+                            <span>Users: @selectedCount selected</span>
+                            <TelerikButton ButtonType="ButtonType.Button" OnClick="SetSelectedUser" Class="ms-auto" Size="sm" ThemeColor="primary"
+                                           Enabled="!IsFirstLoad">Assign Role</TelerikButton>
+                        </div>
+                    }
+                    else
+                    {
+                        <h6>Users: <i>not selected</i></h6>
+                    }
+                }
+            </div>
+        }
+
+        <div class="offcanvas-body position-relative">
+            <ErrorAlert @bind-ErrorMessage="@ErrorMessage" />
+
+            @if (SelectedRole == null)
+            {
+                <span>Please select a system-permission role to start mapping setup:</span>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>System Permission Role</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            @foreach (var permission in Enum.GetValues<SystemPermissionRoleType>().Where(x => x != SystemPermissionRoleType.None).OrderBy(p => p.ToString()))
+                            {
+                                <tr>
+                                    <td>
+                                        <span class="btn btn-link" @onclick="() => SetSelectedRole(permission)">@permission</span>
+                                    </td>
+                                </tr>
+                            }
+
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                @*
+                        This LoaderContainer is used only during initial data load.
+                        The position:relative style on the parent DIV makes the LoaderContainer cover only the Grid.
+                        The LoaderContainer configuration and Template matches the built-in Grid loading animation.
+                    *@
+                <TelerikLoaderContainer OverlayThemeColor="@ThemeConstants.Loader.ThemeColor.Light"
+                                        Visible="@IsFirstLoad">
+                    <Template>
+                        <TelerikLoader Type="@LoaderType.InfiniteSpinner"
+                                       Size="@ThemeConstants.Loader.Size.Large" />
+                    </Template>
+                </TelerikLoaderContainer>
+
+                <TelerikGrid TItem="User"
+                             Pageable="true"
+                             Sortable="true"
+                             FilterMode="GridFilterMode.None"
+                             PageSize="@PageSize"
+                             PageSizeChanged="@OnPageSizeChanged"
+                             OnRead="@ReadItems"
+                             ShowColumnMenu="false"
+                             @bind-SelectedItems="@SelectedUsers"
+                             SelectionMode="GridSelectionMode.Multiple"
+                             OnStateInit="@((GridStateEventArgs<User> args) => OnStateInitHandler(args))"
+                             @ref="GridRef">
+                    <GridSettings>
+                        <GridPagerSettings PageSizes="@PageSizes">
+                        </GridPagerSettings>
+                        <GridSelectionSettings SelectionType="GridSelectionType.Row" />
+                    </GridSettings>
+                    <GridToolBar>
+                        <GridToolBarSearchBoxTool />
+                    </GridToolBar>
+                    <GridColumns>
+                        <GridCheckboxColumn SelectAll="false" CheckBoxOnlySelection="true" Width="35px" />
+                        <GridColumn Field="@(nameof(User.DisplayName))" Title="Name" />
+                        <GridColumn Field="@(nameof(User.OId))" Title="Object ID" />
+                    </GridColumns>
+                    <NoDataTemplate>
+                        <div class="col-auto">
+                            <span class="form-control-plaintext">No users matching criteria.</span>
+                            <span class="form-control-plaintext text-muted">Users must be able to access this application before they can be assigned a role.</span>
+                        </div>
+                    </NoDataTemplate>
+                </TelerikGrid>
+            }
+        </div>
+
+        <TelerikMediaQuery Media="@LargeScreenMediaQuery" OnChange="@((bool matches) => { IsLargeScreen = matches; ResetDrawerWidthOnSmallScreen(); })" />
+        <DrawerExpanderButton IsExpanded="@isExpanded" OnToggleClicked="ToggleRolePickerWidth" IsVisible="IsLargeScreen" />
+    </div>
+
+    <div class="offcanvas-backdrop fade show"></div>
+}
+
+@code {
+    [Parameter]
+    public SystemPermissionEnvironmentDtoRead SystemPermissionEnvironment { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<SystemPermissionRoleDtoCreate> OnRoleCreate { get; set; }
+
+    [Parameter]
+    public EventCallback<SystemPermissionRoleDtoUpdate> OnRoleUpdate { get; set; }
+
+    private SystemPermissionRoleDtoCreate? SelectedRole;
+
+    private IEnumerable<User> SelectedUsers { get; set; } = Enumerable.Empty<User>();
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        PageSize = 10;
+    }
+
+    private bool isOpen = false;
+    private bool isExpanded = false;
+
+    private bool IsLargeScreen { get; set; }
+    private string LargeScreenMediaQuery { get; set; } = "(min-width: 786px)";
+
+    private void ToggleRolePickerWidth()
+    {
+        isExpanded = !isExpanded;
+    }
+
+    private void ResetDrawerWidthOnSmallScreen()
+    {
+        if (!IsLargeScreen)
+        {
+            isExpanded = false;
+        }
+    }
+
+    private void SetSelectedRole(SystemPermissionRoleType roleType)
+    {
+        SelectedRole = new SystemPermissionRoleDtoCreate { RoleType = roleType, SystemPermissionEnvironmentId = SystemPermissionEnvironment.Id };
+    }
+
+    protected override Task<ApiCallResult<DataEnvelope<User>>> GetData(DataSourceRequest request)
+    {
+        return AdminApi.FindEligibleAssignmentsPaged(request, SelectedRole!.SystemPermissionEnvironmentId, SelectedRole!.RoleType);
+    }
+
+    protected override string GridUniqueStorageKey => "idp.admin.system.role.list.gs";
+
+    private async Task SetSelectedUser()
+    {
+        if (SelectedUsers == null)
+        {
+            return;
+        }
+
+        foreach (var selectedUser in SelectedUsers.Where(s => s != null))
+        {
+            SelectedRole!.OId = selectedUser.OId;
+            await CompleteMutatedMappingSetup();
+        }
+
+        CloseEditorDrawer();
+    }
+
+    private async Task CompleteMutatedMappingSetup()
+    {
+        IsFirstLoad = true;
+        var existingPermission = SystemPermissionEnvironment.Permissions.FirstOrDefault(x => x.OId.Match(SelectedRole!.OId) && x.RoleType == SystemPermissionRoleType.Reader);
+
+        if (existingPermission != default && SelectedRole is { RoleType: SystemPermissionRoleType.Writer })
+        {
+            existingPermission.RoleType = SystemPermissionRoleType.Writer;
+            await OnRoleUpdate.InvokeAsync(new SystemPermissionRoleDtoUpdate
+            {
+                Id = existingPermission.Id,
+                OId = existingPermission.OId,
+                RoleType = SystemPermissionRoleType.Writer
+            });
+        }
+        else
+        {
+            await OnRoleCreate.InvokeAsync(SelectedRole);
+        }
+    }
+
+    public void CloseEditorDrawer()
+    {
+        SelectedRole = null;
+        SelectedUsers = Enumerable.Empty<User>();
+        ErrorMessage = null;
+        isOpen = false;
+        isExpanded = false;
+    }
+
+    public void OpenRolePicker(SystemPermissionEnvironmentDtoRead systemPermissionEnvironment)
+    {
+        SystemPermissionEnvironment = systemPermissionEnvironment;
+        SelectedRole = null;
+        SelectedUsers = Enumerable.Empty<User>();
+        ErrorMessage = null;
+        isOpen = true;
+    }
+}

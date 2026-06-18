@@ -1,0 +1,55 @@
+﻿@inject NavigationManager NavigationManager
+@inject SessionStorageService SessionStorageService
+
+@code {
+    [Parameter]
+    public string Target { get; set; } = string.Empty;
+    [Parameter]
+    public bool SaveCurrentUrl { get; set; } = false;
+    [Parameter]
+    public bool RestoreCurrentUrl { get; set; } = false;
+
+    private const string ReturnUrlStorageKey = "returnUrl";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        if (SaveCurrentUrl && RestoreCurrentUrl)
+        {
+            throw new InvalidOperationException("Save and Restore enabled at the same time are equivalent to direct Navigation.");
+        }
+
+        if (string.IsNullOrEmpty(Target))
+        {
+            throw new InvalidOperationException("Navigation target cannot be empty.");
+        }
+
+        if (SaveCurrentUrl)
+        {
+            var currentAbsoluteUriString = NavigationManager.Uri;
+
+            if (Uri.TryCreate(currentAbsoluteUriString, UriKind.Absolute, out var currentAbsoluteUri) &&
+                currentAbsoluteUri.PathAndQuery != "/")
+            {
+                await SessionStorageService.SetItem(ReturnUrlStorageKey, currentAbsoluteUri.PathAndQuery);
+            }
+        }
+
+        if (RestoreCurrentUrl)
+        {
+            var restoredUrl = await SessionStorageService.GetItem<string>(ReturnUrlStorageKey);
+            if (!string.IsNullOrEmpty(restoredUrl))
+            {
+                await SessionStorageService.RemoveItem(ReturnUrlStorageKey);
+                NavigationManager.NavigateTo(restoredUrl);
+                return;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(Target))
+        {
+            NavigationManager.NavigateTo(Target);
+        }
+    }
+}

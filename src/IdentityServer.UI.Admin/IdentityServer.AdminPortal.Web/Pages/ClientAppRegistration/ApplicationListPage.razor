@@ -1,0 +1,27 @@
+﻿@page "/applications"
+@inherits UserRoleBasePage
+
+@inject NavigationManager NavigationManager
+
+<div class="container-fluid">
+    <div class="row justify-content-between mb-3">
+        <div class="col-auto">
+            <h3>Applications</h3>
+        </div>
+        @if (CanUpdate)
+        {
+            <div class="col-auto">
+                <a href="@PageRoutes.ApplicationsNew" class="btn btn-primary">Create New Application</a>
+            </div>
+        }
+    </div>
+
+    <ClientList OnClientClick="GoToApplicationEditPage" GridStateStorageKey="@GridStateStorageKeys.ClientListPage" ColumnSet="ClientList.ColumnSetKind.Wide" />
+</div>
+
+@code {
+    private void GoToApplicationEditPage(int clientId)
+    {
+        NavigationManager.NavigateTo(PageRoutes.ApplicationsEdit(clientId));
+    }
+}

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
+        <ExcludeFromCodeCoverage>true</ExcludeFromCodeCoverage>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="StackExchange.Redis" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\IdentityServer.Abstraction\IdentityServer.Abstraction.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="IdentityServer.Data.Test" />
+    </ItemGroup>
+
+</Project>

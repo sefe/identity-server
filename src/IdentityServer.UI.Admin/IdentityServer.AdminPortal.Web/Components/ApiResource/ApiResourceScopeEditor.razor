@@ -1,0 +1,110 @@
+@using IdentityServer.AdminPortal.Web.Components.ClientAppRegistration
+@using IdentityServer.AdminPortal.Web.Constants
+
+@inherits EditableComponentBase
+
+@if (isOpen)
+{
+    <div class="offcanvas offcanvas-end show @(isExpanded ? "" : "pager-compact-view")"
+         style="visibility: visible; width: @(isExpanded ? "70%" : "550px");"
+         id="scopeEditorOffcanvas"
+         aria-labelledby="scopeEditorTitle"
+         aria-modal="true"
+         role="dialog">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="scopeEditorTitle">
+                @(ExistingScopeId == null ? "New API Scope" : $"Scope: {GetScopeDisplayName()}")
+            </h5>
+            <button type="button" class="btn-close" aria-label="Close" @onclick="@Cancel"></button>
+        </div>
+        <div class="offcanvas-body">
+            @if (ExistingScopeId == null)
+            {
+                <ApiResourceScopeInfoNew ApiResource="ApiResource" OnCreate="@OnCreateOrDelete" OnCancel="@Cancel" />
+            }
+            else
+            {
+                <ApiResourceScopeInfoEdit ApiResource="ApiResource" ScopeId="@ExistingScopeId.Value" IsReadonly="@IsReadonly" OnDelete="@OnCreateOrDelete" OnUpdate="@OnUpdate" OnCancel="@Cancel" IsExpanded="isExpanded" />
+
+                <TelerikMediaQuery Media="@LargeScreenMediaQuery" OnChange="@((bool matches) => { IsLargeScreen = matches; ResetDrawerWidthOnSmallScreen(); })" />
+                <DrawerExpanderButton IsExpanded="@isExpanded" OnToggleClicked="ToggleScopeEditorWidth" IsVisible="IsLargeScreen" />
+            }
+        </div>
+    </div>
+    <div class="offcanvas-backdrop fade show"></div>
+}
+
+@code {
+    [Parameter]
+    public ApiResourceDtoRead ApiResource { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnApiResourceUpdate { get; set; }
+
+    private bool isOpen = false;
+    private bool isExpanded = false;
+    private int? ExistingScopeId;
+
+    private bool IsLargeScreen { get; set; }
+    private string LargeScreenMediaQuery { get; set; } = "(min-width: 786px)";
+
+    private void ToggleScopeEditorWidth()
+    {
+        isExpanded = !isExpanded;
+    }
+
+    private void ResetDrawerWidthOnSmallScreen()
+    {
+        if (!IsLargeScreen)
+        {
+            isExpanded = false;
+        }
+    }
+
+    public void OpenDrawerForNewScope()
+    {
+        ExistingScopeId = null;
+        OpenDrawer();
+    }
+
+    private string GetScopeDisplayName()
+    {
+        if (ExistingScopeId == null) return "New API Scope";
+        var scope = ApiResource.Scopes?.FirstOrDefault(s => s.Id == ExistingScopeId);
+        return scope?.ApiScope?.DisplayName ?? scope?.Scope ?? "Unknown Scope";
+    }
+
+    public void OpenDrawerForExistingScope(int apiResourceScopeId)
+    {
+        ExistingScopeId = apiResourceScopeId;
+        OpenDrawer();
+    }
+
+    private void OpenDrawer()
+    {
+        isOpen = true;
+    }
+
+    public void CloseEditorDrawer()
+    {
+        isOpen = false;
+        isExpanded = false;
+        ExistingScopeId = null;
+    }
+
+    private async Task OnUpdate()
+    {
+        await OnApiResourceUpdate.InvokeAsync();
+    }
+
+    private async Task OnCreateOrDelete()
+    {
+        await OnApiResourceUpdate.InvokeAsync();
+        CloseEditorDrawer();
+    }
+
+    private void Cancel()
+    {
+        CloseEditorDrawer();
+    }
+}

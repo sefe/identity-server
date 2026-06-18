@@ -1,0 +1,52 @@
+.timeline-container {
+    position: relative;
+    padding: 20px 0;
+    margin: 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 110px;
+}
+
+    .timeline-container::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .timeline-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .timeline-container::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+    }
+
+        .timeline-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+.timeline-row {
+    position: relative;
+    width: 100%;
+}
+
+.timeline-line {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: var(--bs-gray-300,#dee2e6);
+    transform: translateY(-50%);
+    z-index: 0;
+}
+
+.timeline-groups {
+    position: relative;
+    display: flex;
+    gap: 0px;
+    align-items: stretch;
+    min-width: min-content;
+    flex-wrap: nowrap;
+}

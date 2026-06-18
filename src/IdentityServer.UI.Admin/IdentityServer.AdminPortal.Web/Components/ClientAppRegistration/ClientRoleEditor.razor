@@ -1,0 +1,58 @@
+﻿@inherits EditableComponentBase
+
+@if (isOpen)
+{
+    <div class="offcanvas offcanvas-end show" style="visibility: visible; width: 550px;" id="roleEditorOffcanvas" aria-labelledby="roleEditorTitle" aria-modal="true" role="dialog">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="roleEditorTitle">
+                New Application Role
+            </h5>
+        </div>
+        <div class="offcanvas-body">
+            <ClientRoleInfoNew Client="Client" OnSave="@OnSave" OnCancel="@Cancel" />
+        </div>
+    </div>
+    <div class="offcanvas-backdrop fade show"></div>
+}
+
+@code {
+    [Parameter]
+    public ClientDtoRead Client { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnClientUpdate { get; set; }
+
+    private bool isOpen = false;
+
+    public void OpenDrawerForNewRole()
+    {
+        OpenDrawer();
+    }
+
+    private void OpenDrawer()
+    {
+        isOpen = true;
+        StateHasChanged();
+    }
+
+    public void CloseEditorDrawer()
+    {
+        isOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task OnSave()
+    {
+        if (IsReadonly)
+        {
+            return;
+        }
+        await OnClientUpdate.InvokeAsync();
+        CloseEditorDrawer();
+    }
+
+    private void Cancel()
+    {
+        CloseEditorDrawer();
+    }
+}

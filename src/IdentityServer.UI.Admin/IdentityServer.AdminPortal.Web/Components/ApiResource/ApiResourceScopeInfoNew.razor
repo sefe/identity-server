@@ -1,0 +1,148 @@
+﻿@inherits EditableComponentBase
+
+@inject IAdminApiService AdminApi
+@inject IConfirmationService ConfirmationService
+@inject NotificationService NotificationService
+
+@if (Scope != null)
+{
+    <TelerikForm Model="@Scope" OnValidSubmit="@HandleValidSubmit" ButtonsLayout="FormButtonsLayout.Stretch">
+        <FormValidation>
+            <DataAnnotationsValidator />
+        </FormValidation>
+        <FormItems>
+            <FormItem Field="@nameof(Scope.Name)" Enabled="!IsReadonly">
+                <Template>
+                    <RequiredFieldLabel ForTarget="scopeName" LabelText="Identifier" />
+                    <TelerikTextBox Id="scopeName" @bind-Value="@Scope.Name" />
+                    <div id="scopeNameHelpBlock" class="form-text">@Constants.Limits.ApiScope.Name.PatternInfo</div>
+                    <TelerikValidationMessage For="@(() => Scope.Name)" />
+                    <p class="form-text">
+                        @if (string.IsNullOrEmpty(Scope.Name))
+                        {
+                            <span>Start typing the scope name to see the full scope identifier</span>
+                        }
+                        else
+                        {
+                            <span>The full scope identifier will be <code>@ApiResource.Name.@Scope.Name</code></span>
+                        }
+                    </p>
+                </Template>
+            </FormItem>
+            <FormItem Field="@nameof(Scope.DisplayName)" Enabled="!IsReadonly">
+                <Template>
+                    <RequiredFieldLabel ForTarget="scopeDisplayName" LabelText="Display Name" />
+                    <TelerikTextBox Id="scopeDisplayName" @bind-Value="@Scope.DisplayName" />
+                    <div id="scopeDisplayNameHelpBlock" class="form-text">Human-readable name. Keep it short and clear.</div>
+                    <TelerikValidationMessage For="@(() => Scope.DisplayName)" />
+                </Template>
+            </FormItem>
+            <FormItem Field="@nameof(Scope.Description)" Enabled="!IsReadonly"
+                      Hint="Optional information about the scope."></FormItem>
+            <FormItem Field="@nameof(Scope.Enabled)">
+                <Template>
+                    <div class="row">
+                        <div class="col my-auto">
+                            <label for="scopeEnabled" class="k-label k-form-label my-auto">Is Enabled</label>
+                        </div>
+                        <div class="col my-auto">
+                            <TelerikSwitch @bind-Value="@Scope.Enabled" AriaDescribedBy="scopeEnabledHelpBlock" Id="scopeEnabled"
+                                           OnLabel="True" OffLabel="False" Width="85px" Enabled="!IsReadonly" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div id="scopeEnabledHelpBlock" class="col k-form-hint">The scope cannot be used until enabled. You can enable it later.</div>
+                    </div>
+                </Template>
+            </FormItem>
+            <FormItem Field="@nameof(Scope.Required)">
+                <Template>
+                    <div class="row">
+                        <div class="col my-auto">
+                            <label for="scopeRequired" class="k-label k-form-label my-auto">Is Required</label>
+                        </div>
+                        <div class="col my-auto">
+                            <TelerikSwitch @bind-Value="@Scope.Required" AriaDescribedBy="scopeRequiredHelpBlock" Id="scopeRequired"
+                                           OnLabel="True" OffLabel="False" Width="85px" Enabled="!IsReadonly" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div id="scopeRequiredHelpBlock" class="col k-form-hint">If 'required', the scope must always be requested by the applications.</div>
+                    </div>
+                </Template>
+            </FormItem>
+        </FormItems>
+        <FormButtons>
+            <TelerikButton ButtonType="ButtonType.Button" ThemeColor="secondary" OnClick="CheckDirtyAndCancel">Cancel</TelerikButton>
+            <TelerikButton ButtonType="ButtonType.Submit" ThemeColor="primary" Enabled="!IsReadonly">Create</TelerikButton>
+        </FormButtons>
+    </TelerikForm>
+
+    <ErrorAlert @bind-ErrorMessage="@errorMessage" CssClass="mt-2" />
+
+    @if (awaitingResults)
+    {
+        <div>
+            <TelerikLoaderContainer />
+        </div>
+    }
+}
+
+@code {
+    [Parameter]
+    public ApiResourceDtoRead ApiResource { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback OnCreate { get; set; }
+
+    private ApiResourcePropertyScopeDtoCreateWrapper Scope { get; set; } = default!;
+    private string? errorMessage;
+    private bool awaitingResults = false;
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        Scope = new ApiResourcePropertyScopeDtoCreateWrapper
+        {
+            ApiResourceId = ApiResource.Id,
+            AlreadyExistingUniquePropertyValues = ApiResource.Scopes?.Select(s => s.Scope[(ApiResource.Name.Length + 1)..])
+                .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        };
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        // If we get here, the form is valid
+        errorMessage = null;
+        awaitingResults = true;
+        (var createdDto, errorMessage) = await AdminApi.AddApiResourceScope(Scope);
+        if (string.IsNullOrEmpty(errorMessage))
+        {
+            if (ApiResource.Scopes == null)
+            {
+                ApiResource.Scopes = new List<ApiResourcePropertyScopeDtoRead>();
+            }
+            ApiResource.Scopes.Add(createdDto);
+            await OnCreate.InvokeAsync();
+            NotificationService.ShowInfo($"Scope '{createdDto.Scope}' created.");
+        }
+        awaitingResults = false;
+    }
+
+    private async Task CheckDirtyAndCancel()
+    {
+        if (!IsReadonly && (!string.IsNullOrEmpty(Scope.DisplayName) || !string.IsNullOrEmpty(Scope.Description)))
+        {
+            var confirmed = await ConfirmationService.ConfirmLeavingDirtyPageAsync();
+            if (!confirmed)
+            {
+                return;
+            }
+        }
+        await OnCancel.InvokeAsync();
+    }
+}

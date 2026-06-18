@@ -1,0 +1,124 @@
+@using Telerik.Blazor.Components
+
+@inject NavigationManager NavigationManager
+
+<TelerikWindow @bind-Visible="@IsVisible"
+               Modal="true"
+               Width="@WindowWidth"
+               Height="@WindowHeight"
+               CloseOnOverlayClick="true">
+    <WindowActions>
+        <WindowAction Name="Maximize" />
+        <WindowAction Name="Close" OnClick="@CloseDialog" />
+    </WindowActions>
+    <WindowTitle>
+        <strong class="my-0">@Title</strong>
+        @if (!string.IsNullOrEmpty(Subtitle))
+        {
+            <br />
+            <small class="my-0">@Subtitle</small>
+        }
+    </WindowTitle>
+    <WindowContent>
+        @if (EnvironmentIds == null || !EnvironmentIds.Any())
+        {
+            <p>No environments selected.</p>
+        }
+        else
+        {
+            <div>
+                <h3 class="pb-2">API Resources</h3>
+                <ApiResourceList AllowedEnvironments="EnvironmentIds" OnApiResourceClick="@GoToApiResourceEditPage"
+                                 ColumnSet="@ApiResourceListColumnSet" GridStateStorageKey="@GridStateStorageKeys.SystemPermissionEnvironmentResourcesDialogApis" />
+            </div>
+            <div class="mt-2">
+                <h3 class="pb-2">Applications</h3>
+                <ClientList AllowedEnvironments="EnvironmentIds" OnClientClick="@GoToApplicationEditPage"
+                            ColumnSet="@ClientListColumnSet" GridStateStorageKey="@GridStateStorageKeys.SystemPermissionEnvironmentResourcesDialogClients" />
+            </div>
+        }
+    </WindowContent>
+</TelerikWindow>
+
+<TelerikMediaQuery Media="@SmallScreenMediaQuery" OnChange="@((bool matches) => { IsSmallScreen = matches; ConfigureWindowSize(); })" />
+<TelerikMediaQuery Media="@MediumScreenMediaQuery" OnChange="@((bool matches) => { IsMediumScreen = matches; ConfigureWindowSize(); })" />
+<TelerikMediaQuery Media="@LargeScreenMediaQuery" OnChange="@((bool matches) => { IsLargeScreen = matches; ConfigureWindowSize(); })" />
+
+@code {
+    private bool IsVisible { get; set; }
+
+    private HashSet<int> EnvironmentIds { get; set; } = new();
+
+    private string Title { get; set; } = "Registrations";
+    private string Subtitle { get; set; } = string.Empty;
+
+    // Responsive sizing
+    private string WindowWidth { get; set; } = "800px";
+    private string WindowHeight { get; set; } = "600px";
+
+    private string SmallScreenMediaQuery { get; set; } = "(max-width: 575px)";
+    private string MediumScreenMediaQuery { get; set; } = "(min-width: 576px) and (max-width: 991px)";
+    private string LargeScreenMediaQuery { get; set; } = "(min-width: 992px)";
+
+    private bool IsSmallScreen { get; set; }
+    private bool IsMediumScreen { get; set; }
+    private bool IsLargeScreen { get; set; } = true; // Default to large screen
+
+    private ClientList.ColumnSetKind ClientListColumnSet { get; set; } = ClientList.ColumnSetKind.Narrow;
+    private ApiResourceList.ColumnSetKind ApiResourceListColumnSet { get; set; } = ApiResourceList.ColumnSetKind.Narrow;
+
+    public void OpenDialog(string title, string subtitle, HashSet<int> environmentIds)
+    {
+        Title = title;
+        Subtitle = subtitle;
+        EnvironmentIds = environmentIds ?? new();
+        IsVisible = true;
+        StateHasChanged();
+    }
+
+    private void CloseDialog()
+    {
+        IsVisible = false;
+        StateHasChanged();
+    }
+
+    private void GoToApiResourceEditPage(int apiId)
+    {
+        NavigationManager.NavigateTo(PageRoutes.ApiResourcesEdit(apiId));
+    }
+
+    private void GoToApplicationEditPage(int clientId)
+    {
+        NavigationManager.NavigateTo(PageRoutes.ApplicationsEdit(clientId));
+    }
+
+    private void ConfigureWindowSize()
+    {
+        if (IsSmallScreen)
+        {
+            // Small screens: nearly full viewport
+            WindowWidth = "95vw";
+            WindowHeight = "90vh";
+            ClientListColumnSet = ClientList.ColumnSetKind.Narrow;
+            ApiResourceListColumnSet = ApiResourceList.ColumnSetKind.Narrow;
+        }
+        else if (IsMediumScreen)
+        {
+            // Medium screens: slightly smaller than full
+            WindowWidth = "90vw";
+            WindowHeight = "80vh";
+            ClientListColumnSet = ClientList.ColumnSetKind.Narrow;
+            ApiResourceListColumnSet = ApiResourceList.ColumnSetKind.Narrow;
+        }
+        else
+        {
+            // Large screens: fixed comfortable size
+            WindowWidth = "80vw";
+            WindowHeight = "70vh";
+            ClientListColumnSet = ClientList.ColumnSetKind.Wide;
+            ApiResourceListColumnSet = ApiResourceList.ColumnSetKind.Wide;
+        }
+
+        StateHasChanged();
+    }
+}

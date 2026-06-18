@@ -1,0 +1,155 @@
+﻿@page "/applications/edit/{ApplicationId:int}"
+@inherits UserRoleBasePage
+
+@inject IAdminApiService AdminApi
+@inject NavigationManager NavigationManager
+@inject NotificationService NotificationService
+@inject IConfirmationService ConfirmationService
+
+<div class="container">
+
+    <ErrorAlert @bind-ErrorMessage="@errorMessage" />
+
+    @if (Application == null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <NavigationHeader Address="@PageRoutes.Applications" Title="Back to the list of Applications" />
+
+        <BannerAboutCache />
+
+        <BannerSecretExpired Secrets="Application.ClientSecrets" />
+
+        <BannerSecretExpiring Secrets="Application.ClientSecrets" />
+
+        <BannerSecretNoExpiration Secrets="Application.ClientSecrets" />
+
+        <div class="d-flex flex-wrap justify-content-between align-items-start mb-3">
+            <h3 class="me-auto text-break">Application '@Application.ClientName'</h3>
+            <div class="d-flex flex-wrap gap-2 ms-auto">
+                <HistoryButton ApplicationId="ApplicationId" Size="medium" />
+                <TelerikButton ButtonType="ButtonType.Button" OnClick="Clone" ThemeColor="secondary">Clone</TelerikButton>
+                @if (CanUpdate)
+                {
+                    <TelerikButton ButtonType="ButtonType.Button" OnClick="DeleteSelfAsync" Icon="@SvgIcon.Trash" ThemeColor="error">Delete</TelerikButton>
+                }
+            </div>
+        </div>
+
+        <LastModifiedInfo Created="Application.Created" Updated="Application.Updated" UpdateReason="@Application.UpdateReason" />
+
+        <ClientInfoEdit Application="Application" IsReadonly=!CanUpdate OnApplicationUpdate="UpdateApplication" />
+
+        <ClientGrantTypeList Application="Application" IsReadonly=!CanUpdate OnApplicationUpdate="@(reason => UpdateApplicationLastModified(reason))" />
+
+        <ClientScopeList Application="Application" IsReadonly=!CanUpdate LimitEnvironments=!HasAdmin OnApplicationUpdate="MarkScopesUpdated" OnApplicationDtoUpdate="UpdateApplication" />
+
+        <ClientRedirectUriList Application="Application" IsReadonly=!CanUpdate OnApplicationUpdate="MarkRedirectUrisUpdated" />
+
+        <ClientPostLogoutRedirectUriList Application="Application" IsReadonly=!CanUpdate OnApplicationUpdate="MarkPostLogoutRedirectUrisUpdated" />
+
+        <ClientCorsUriList Application="Application" IsReadonly=!CanUpdate OnApplicationUpdate="MarkCorsUpdated" />
+
+        <ClientSecretList Application="Application" IsReadonly=!CanUpdate OnApplicationUpdate="MarkSecretsUpdated" />
+
+        <hr class="py-3" />
+
+        <ClientRoleMapList Application="Application" IsReadonly="!CanUpdate" OnApplicationUpdate="@(reason => UpdateApplicationLastModified(reason))" UserObjectId="@UserObjectId" UserName="@UserName" />
+
+        <NavigationFooter Address="@PageRoutes.Applications" Title="Back to the list of Applications" />
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int ApplicationId { get; set; }
+
+    private ClientDtoRead Application = default!;
+    private string? errorMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        if (Application != null)
+        {
+            return;
+        }
+
+        if (ApplicationId == 0)
+        {
+            errorMessage = "The specified application was not found.";
+            return;
+        }
+
+        var callResult = await AdminApi.GetClient(ApplicationId);
+        if (callResult.IsSuccess)
+        {
+            errorMessage = null;
+            Application = callResult.Result;
+            base.UpdatePageAccessBasedOnRoleReturnedByApi(Application.AccessLevel);
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+    }
+
+    private async Task DeleteSelfAsync()
+    {
+        if (!CanUpdate) return;
+
+        var confirmed = await ConfirmationService.ConfirmAsync("Delete Confirmation",
+            "Are you sure you want to delete this application?");
+
+        if (Application == null || !confirmed)
+        {
+            return;
+        }
+
+        var callResult = await AdminApi.DeleteClient(Application);
+        if (callResult.IsSuccess)
+        {
+            errorMessage = null;
+            NotificationService.ShowInfo($"Application '{Application.ClientId}' deleted.");
+            GoBack();
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+    }
+
+    private void Clone()
+    {
+        NavigationManager.NavigateTo(PageRoutes.ApplicationsClone(ApplicationId));
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo(PageRoutes.Applications);
+    }
+
+    private void UpdateApplication(ClientDtoRead application)
+    {
+        Application = application;
+    }
+
+    private void MarkScopesUpdated() => UpdateApplicationLastModified("Scopes");
+
+    private void MarkRedirectUrisUpdated() => UpdateApplicationLastModified("Redirect URIs");
+
+    private void MarkPostLogoutRedirectUrisUpdated() => UpdateApplicationLastModified("Post Logout Redirect URIs");
+
+    private void MarkCorsUpdated() => UpdateApplicationLastModified("CORS Origins");
+
+    private void MarkSecretsUpdated() => UpdateApplicationLastModified("Secrets");
+
+    private void UpdateApplicationLastModified(string reason)
+    {
+        Application.Updated = DateTime.UtcNow;
+        Application.UpdateReason = reason;
+    }
+}

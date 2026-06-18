@@ -1,0 +1,30 @@
+﻿@page "/apiresources/clone/{ApiResourceId:int}"
+@inherits UserRoleBasePage
+
+@attribute [Authorize(Roles = "Admin, User")]
+
+@inject NavigationManager NavigationManager
+@inject NotificationService NotificationService
+
+<div class="container">
+
+    <ApiResourceInfoClone ApiResourceId="@ApiResourceId"
+                     OnSave="OpenClonedApi"
+                     OnCancel="GoBack" />
+</div>
+
+@code {
+    [Parameter]
+    public int ApiResourceId { get; set; }
+
+    private void OpenClonedApi(ApiResourceDtoRead clonedApp)
+    {
+        NotificationService.ShowInfo($"New API Resource '{clonedApp.Name}' created.");
+        NavigationManager.NavigateTo(PageRoutes.ApiResourcesEdit(clonedApp.Id));
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo(PageRoutes.ApiResourcesEdit(ApiResourceId));
+    }
+}

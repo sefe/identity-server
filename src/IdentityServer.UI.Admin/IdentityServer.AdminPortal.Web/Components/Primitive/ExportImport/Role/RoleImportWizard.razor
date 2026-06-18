@@ -1,0 +1,417 @@
+@using IdentityServer.Abstraction.DTO
+
+@typeparam TRoleMapping where TRoleMapping : RoleMappingValueObject
+@typeparam TDtoImport where TDtoImport : class, IDtoRoleImport<TRoleMapping>, new()
+@typeparam TImportModel where TImportModel : ImportRoleModel<TDtoImport, TRoleMapping>, new()
+
+@inject IConfirmationService ConfirmationService
+@inject ILogger<RoleImportWizard<TRoleMapping, TDtoImport, TImportModel>> Logger
+
+<NavigationLock ConfirmExternalNavigation="true"
+                OnBeforeInternalNavigation="OnBeforeInternalNavigation" />
+
+<div>
+    <TelerikWizard @bind-Value="@WizardValue">
+        <WizardSteps>
+            <WizardStep Label="Select File" Icon="@SvgIcon.File" Disabled="true">
+                <Content>
+                    <div class="my-3">
+                        @if (!currentImport.FileSelectionStatus.IsCompleted)
+                        {
+                            <div class="m-2">
+                                <h5 class="my-0">Please select a JSON file to import</h5>
+                            </div>
+                            <div class="m-2">
+                                <TelerikFileSelect Accept=".json" AllowedExtensions="@allowedExtensions" MaxFileSize="@MaxFileSize"
+                                                   OnSelect="@OnSelectHandler" Multiple="false" @ref="FileSelectRef" />
+                            </div>
+                        }
+
+                        @if (currentImport.FileParsingStatus.IsCompleted)
+                        {
+                            <!-- Display parsed file metadata (filename, count, etc.) -->
+
+                            <div class="m-2">
+                                <h5 class="my-0">Selected File Metadata</h5>
+                            </div>
+                            <p class="m-2 text-muted small">Please review the selected file metadata before proceeding with the import.</p>
+
+                            <div class="d-flex justify-content-around py-3">
+                                <table class="table table-sm table-bordered w-auto">
+                                    <tbody>
+                                        <tr>
+                                            <th scope="row">Import File Name</th>
+                                            <td>@(currentImport.FileSelectionStatus.Result.Name ?? "N/A")</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Roles in File, Total</th>
+                                            <td>@currentImport.FileParsingStatus.Result.Roles.Count</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Role Mappings in File, Total</th>
+                                            <td>@currentImport.FileParsingStatus.Result.Roles.SelectMany(r => r.Mappings).Count()</td>
+                                        </tr>
+
+                                        <MetadataTableInfo Metadata="@currentImport.FileParsingStatus.Result.Metadata" />
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+
+                        <TelerikLoaderContainer Visible="@awaitingResults" />
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(currentImport.ErrorMessage))
+                    {
+                        <div class="alert alert-danger mt-2">@currentImport.ErrorMessage</div>
+                    }
+                </Content>
+            </WizardStep>
+            <WizardStep Label="Validation" Icon="SvgIcon.Check" Disabled="true">
+                <Content>
+                    <div class="my-3">
+                        <RoleImportDataValidationRule
+                            TImportDto="TDtoImport"
+                            TImportModel="TImportModel"
+                            ImportModel="currentImport"
+                            ClientSideDataValidator="@ClientSideDataValidator"
+                            ServerSideDataValidator="@ServerSideDataValidator"/>
+                    </div>
+                </Content>
+            </WizardStep>
+            <WizardStep Label="Review" Icon="SvgIcon.Book" Disabled="true">
+                <Content>
+                    <div class="my-3">
+                        <div class="m-2">
+                            <h5 class="my-0">Planned changes review</h5>
+                        </div>
+
+                        <p class="m-2 text-muted small">Please review the planned changes before proceeding with the selected import type.</p>
+
+                        <div class="my-3">
+
+                            <div class="m-3">
+                                <h5 class="my-0">Choose import type:</h5>
+                            </div>
+
+                            <div class="p-3">
+                                <TelerikRadioGroup Data="@importStrategies"
+                                                   @bind-Value="@currentImport.FileParsingStatus.Result.ImportStrategy"
+                                                   ValueField="@nameof(ImportStrategyModel.Value)"
+                                                   TextField="@nameof(ImportStrategyModel.DisplayName)"
+                                                   OnChange="@UpdateImportStrategy" />
+                            </div>
+
+                            <div class="mt-2">
+                                @if (currentImport.FileParsingStatus.Result.ImportStrategy == ImportStrategy.Add)
+                                {
+                                    <div class="text-muted small">The <b>'Add'</b> strategy will only add new roles and role mappings without affecting existing ones.</div>
+                                }
+                                else if (currentImport.FileParsingStatus.Result.ImportStrategy == ImportStrategy.Replace)
+                                {
+                                    <div class="text-muted small">The <b>'Replace'</b> strategy will <span style="color:red;" class="text-uppercase">replace all existing roles and role mappings</span> with those from the import file.</div>
+                                }
+                            </div>
+                        </div>
+
+                        <hr />
+
+                        <div class="my-3">
+                            <p class="text-muted small">Please review the summary of the role changes. Then complete the import by clicking 'Import' button.</p>
+
+                            <RoleComparisonInfo RoleComparisons="@currentImport.RoleComparisons" />
+
+                            <TelerikLoaderContainer Visible="@awaitingResults" />
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(currentImport.ErrorMessage))
+                        {
+                            <div class="alert alert-danger mt-2">@currentImport.ErrorMessage</div>
+                        }
+                    </div>
+                </Content>
+            </WizardStep>
+            <WizardStep Label="Results" Icon="SvgIcon.Check" Disabled="true">
+                <Content>
+                    <div class="my-3">
+                        <div class="my-3">
+                            <h5 class="my-0">Import results</h5>
+                        </div>
+
+                        <div class="p-3">
+                            <OperationStatusInfo Status="@(currentImport.FileImportStatus)" />
+
+                            @if (currentImport.FileImportStatus.HasErrors)
+                            {
+                                // the import failed
+                                <div class="alert alert-danger">
+                                    <strong>Import failed!</strong>
+                                </div>
+                            }
+                            else
+                            {
+                                // the import was successful
+                                <div class="alert alert-success">
+                                    <strong>Import completed successfully!</strong>
+                                    <p>Roles and role mappings have been imported.</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </Content>
+            </WizardStep>
+        </WizardSteps>
+        <WizardButtons>
+            @{
+                var index = context;
+
+                // Always show the user their file selection can be reset
+                if (currentImport.FileSelectionStatus.IsCompleted && !currentImport.FileImportStatus.IsCompleted)
+                {
+                    <TelerikButton ThemeColor="secondary" ButtonType="ButtonType.Button" OnClick="@ClearFile">Reset Selected File</TelerikButton>
+                }
+
+                if (index == 0 && currentImport.FileSelectionStatus.IsCompleted && currentImport.FileParsingStatus.IsCompleted)
+                {
+                    <TelerikButton ThemeColor="primary" ButtonType="ButtonType.Button" OnClick="@Step0_DoProceed">Validate</TelerikButton>
+                }
+
+                if (index == 1)
+                {
+                    <TelerikButton ThemeColor="primary" ButtonType="ButtonType.Button" OnClick="@Step1_DoValidate">Proceed</TelerikButton>
+                }
+
+                if (index == 2)
+                {
+                    <TelerikButton ThemeColor="primary" ButtonType="ButtonType.Button" OnClick="@Step2_DoImport">Import</TelerikButton>
+                }
+
+                if (index == 3)
+                {
+                    <TelerikButton ThemeColor="primary" ButtonType="ButtonType.Button" OnClick="@OnImportCompleted">Complete Import</TelerikButton>
+                }
+            }
+        </WizardButtons>
+    </TelerikWizard>
+</div>
+
+
+@code {
+    [Parameter, EditorRequired]
+    public Func<TDtoImport, OperationStatus, bool> ClientSideDataValidator { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public Func<TImportModel, Task> ServerSideDataValidator { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public Func<TDtoImport, Task<OperationStatus>> PerformImportFunc { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public IRoleImportComparer<TRoleMapping> RoleImportComparer { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public EventCallback OnImportCompleted { get; set; }
+
+    public bool IsCompleted() => currentImport.FileImportStatus.IsCompleted;
+
+    private TelerikFileSelect FileSelectRef { get; set; } = default!;
+    private bool awaitingResults = false;
+    private readonly List<string> allowedExtensions = new() { ".json" };
+    private const int MaxFileSize = ImportRestrictions.MaxFileSize;
+
+    private TImportModel currentImport = new();
+    private int WizardValue { get; set; }
+
+    private sealed class ImportStrategyModel
+    {
+        public ImportStrategy Value { get; set; }
+        public required string DisplayName { get; set; }
+    }
+
+    private readonly List<ImportStrategyModel> importStrategies = new()
+    {
+        new ImportStrategyModel { Value = ImportStrategy.Add, DisplayName = "Add (Merge)" },
+        new ImportStrategyModel { Value = ImportStrategy.Replace, DisplayName = "Replace" }
+    };
+
+    private void ClearFile()
+    {
+        FileSelectRef.ClearFiles();
+        currentImport = new TImportModel();
+        WizardValue = 0;
+    }
+
+    private EventCallback OnFileSelectionCallback;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        OnFileSelectionCallback = EventCallback.Factory.Create(this, ParseImportFile);
+    }
+
+    private async Task OnSelectHandler(FileSelectEventArgs args)
+    {
+        awaitingResults = true;
+
+        try
+        {
+            currentImport.FileSelectionStatus.Errors.Clear();
+            currentImport.FileSelectionStatus.Warnings.Clear();
+            currentImport.FileSelectionStatus.IsCompleted = false;
+
+            var file = args.Files.FirstOrDefault();
+            if (file == null)
+            {
+                currentImport.FileSelectionStatus.Errors.Add("No file selected.");
+                return;
+            }
+            if (file.InvalidExtension)
+            {
+                currentImport.FileSelectionStatus.Errors.Add($"Invalid file extension. Allowed extensions: {string.Join(", ", allowedExtensions)}.");
+                return;
+            }
+            if (file.InvalidMaxFileSize)
+            {
+                currentImport.FileSelectionStatus.Errors.Add($"File size exceeds the maximum allowed size of {MaxFileSize / 1024 / 1024} MB.");
+                return;
+            }
+            using (file.Stream)
+            {
+                currentImport.FileSelectionStatus.Result = await FileSelectFileInfoWrapper.Create(file);
+            }
+            currentImport.FileSelectionStatus.IsCompleted = true;
+
+            await OnFileSelectionCallback.InvokeAsync();
+        }
+        finally
+        {
+            awaitingResults = false;
+        }
+    }
+
+    private async Task ParseImportFile()
+    {
+        awaitingResults = true;
+        try
+        {
+            currentImport.FileParsingStatus.Errors.Clear();
+            currentImport.FileParsingStatus.Warnings.Clear();
+            currentImport.FileParsingStatus.IsCompleted = false;
+
+            using (currentImport.FileSelectionStatus.Result)
+            {
+                var parsedFile = await JsonSerializer.DeserializeAsync<TDtoImport>(currentImport.FileSelectionStatus.Result.Stream);
+                if (parsedFile == null)
+                {
+                    currentImport.FileParsingStatus.Errors.Add("Failed to parse the JSON file.");
+                    return;
+                }
+                currentImport.FileParsingStatus.Result = parsedFile;
+                currentImport.FileParsingStatus.IsCompleted = true;
+            }
+
+            await UpdateImportStrategy(ImportStrategy.Add);
+        }
+        catch (JsonException ex)
+        {
+            currentImport.FileParsingStatus.Errors.Add("The provided file was not recognized as a valid role mappings data.");
+            Logger.LogError(ex, "Failed to parse role mappings JSON file");
+        }
+        catch (Exception ex)
+        {
+            currentImport.FileParsingStatus.Errors.Add("Failed to process the provided file.");
+            Logger.LogError(ex, "An unexpected error occurred while processing the user-provided file");
+        }
+        finally
+        {
+            awaitingResults = false;
+        }
+    }
+
+    private async Task Step0_DoProceed()
+    {
+        if (!currentImport.FileParsingStatus.IsCompleted)
+        {
+            await ConfirmationService.ConfirmAsync("File processing is still in progress.", "Please wait for file processing to complete.", false);
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(currentImport.ErrorMessage))
+        {
+            await ConfirmationService.ConfirmAsync("File processing has failed", "Please review the file processing messages.", false);
+            return;
+        }
+
+        WizardValue += 1;
+    }
+
+    private async Task Step1_DoValidate()
+    {
+        if (!currentImport.FileDataValidationStatus.IsCompleted)
+        {
+            await ConfirmationService.ConfirmAsync("Data validation is still in progress.", "Please wait for data validation to complete.", false);
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(currentImport.ErrorMessage))
+        {
+            await ConfirmationService.ConfirmAsync("Data has errors", "Please review and correct highlighted errors.", false);
+            return;
+        }
+
+        WizardValue += 1;
+    }
+
+    private async Task Step2_DoImport()
+    {
+        if (!string.IsNullOrEmpty(currentImport.ErrorMessage))
+        {
+            await ConfirmationService.ConfirmAsync("Errors encountered", "Please review and correct highlighted errors.", false);
+            return;
+        }
+
+        if (currentImport.RoleComparisons.SelectMany(r => r.Mappings).Any(rm => rm.State == ComparisonState.Conflict))
+        {
+            await ConfirmationService.ConfirmAsync("Data conflicts detected", "Please review and correct highlighted data conflicts.", false);
+            return;
+        }
+
+        await DoImportAsync();
+        WizardValue += 1;
+    }
+
+    private async Task DoImportAsync()
+    {
+        currentImport.FileImportStatus.Errors.Clear();
+        currentImport.FileImportStatus.Warnings.Clear();
+        currentImport.FileImportStatus.IsCompleted = false;
+
+        awaitingResults = true;
+        currentImport.FileImportStatus = await PerformImportFunc.Invoke(currentImport.FileParsingStatus.Result);
+        currentImport.FileImportStatus.IsCompleted = true;
+        awaitingResults = false;
+    }
+
+    private async Task OnBeforeInternalNavigation(LocationChangingContext context)
+    {
+        if (currentImport.FileSelectionStatus.IsCompleted && !(currentImport.FileImportStatus.IsCompleted && !currentImport.FileImportStatus.HasErrors))
+        {
+            var isConfirmed = await ConfirmationService.ConfirmLeavingDirtyPageAsync();
+            if (!isConfirmed)
+            {
+                context.PreventNavigation();
+            }
+        }
+    }
+
+    private async Task UpdateImportStrategy(object args)
+    {
+        if (args is ImportStrategy selectedStrategy)
+        {
+            awaitingResults = true;
+            currentImport.FileParsingStatus.Result.ImportStrategy = selectedStrategy;
+            currentImport.RoleComparisons = await RoleImportComparer.CompareWithAsync(currentImport.FileParsingStatus.Result, currentImport.FileParsingStatus.Result.ImportStrategy);
+            awaitingResults = false;
+        }
+    }
+}

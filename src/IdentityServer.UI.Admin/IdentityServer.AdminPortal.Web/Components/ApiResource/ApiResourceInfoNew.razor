@@ -1,0 +1,153 @@
+@inherits EditableComponentBase
+
+@inject IAdminApiService AdminApi
+@inject IConfirmationService ConfirmationService
+
+<div class="card mb-3">
+    <div class="card-body">
+        <TelerikForm Model="@ApiResource" OnValidSubmit="@HandleValidSubmit" ButtonsLayout="FormButtonsLayout.Center">
+            <FormValidation>
+                <DataAnnotationsValidator />
+            </FormValidation>
+            <FormItems>
+                <FormGroup Columns="@FormGroupColumns" ColumnSpacing="@FormGroupColumnSpacing">
+                    <FormItem>
+                        <Template>
+                            <RequiredFieldLabel ForTarget="apiResourceId" LabelText="Identifier" />
+                            <TelerikTextBox id="apiResourceId" ariadescribedby="apiResourceIdHelpBlock" @bind-Value="ApiResource.Name" />
+                            <div id="apiResourceIdHelpBlock" class="k-form-hint">@Constants.Limits.ApiResource.Name.PatternInfo</div>
+                            <TelerikValidationMessage For="@(() => ApiResource.Name)" />
+                            <NameHint />
+                        </Template>
+                    </FormItem>
+                    <FormItem>
+                        <Template>
+                            <RequiredFieldLabel ForTarget="apiResourceDisplayName" LabelText="Display Name" />
+                            <TelerikTextBox id="apiResourceDisplayName" ariadescribedby="apiResourceDisplayNameHelpBlock" @bind-Value="ApiResource.DisplayName" />
+                            <div id="apiResourceDisplayNameHelpBlock" class="k-form-hint">Human-readable name. Keep it short and clear.</div>
+                            <TelerikValidationMessage For="@(() => ApiResource.DisplayName)" />
+                        </Template>
+                    </FormItem>
+                    <FormItem>
+                        <Template>
+                            <RequiredFieldLabel ForTarget="apiResourceSystemPermission" LabelText="System Permission" />
+                            <SystemPermissionEnvironmentPicker Id="apiResourceSystemPermission"
+                                                               @bind-Value="@ApiResource.SystemPermissionEnvironmentId"
+                                                               OnError="@(msg => errorMessage = msg)" />
+                            <TelerikValidationMessage For="@(() => ApiResource.SystemPermissionEnvironmentId)" />
+                        </Template>
+                    </FormItem>
+                </FormGroup>
+                <FormItem>
+                    <Template>
+                        <label for="apiResourceDescription" class="k-label k-form-label">Description</label>
+                        <TelerikTextArea id="apiResourceDescription" @bind-Value="ApiResource.Description" placeholder="Optional information about the API Resource." />
+                        <TelerikValidationMessage For="@(() => ApiResource.Description)" />
+                    </Template>
+                </FormItem>
+                <FormGroup Columns="@FormGroupSwitchColumns" ColumnSpacing="@FormGroupColumnSpacing">
+                    <FormItem>
+                        <Template>
+                            <div class="row">
+                                <div class="col my-auto">
+                                    <label for="apiResourceEnabled" class="k-label k-form-label">Is Enabled</label>
+                                </div>
+                                <div class="col my-auto">
+                                    <TelerikSwitch @bind-Value="@ApiResource.Enabled" AriaDescribedBy="apiResourceEnabledHelpBlock" Id="apiResourceEnabled"
+                                                   OnLabel="True" OffLabel="False" Width="85px" />
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div id="apiResourceEnabledHelpBlock" class="col k-form-hint">The API Resource cannot be used until enabled.</div>
+                            </div>
+                        </Template>
+                    </FormItem>
+                </FormGroup>
+            </FormItems>
+            <FormButtons>
+                <TelerikButton ButtonType="ButtonType.Button" ThemeColor="secondary" OnClick="CheckDirtyAndCancel">Cancel</TelerikButton>
+                <TelerikButton ButtonType="ButtonType.Submit" ThemeColor="primary">Create</TelerikButton>
+            </FormButtons>
+        </TelerikForm>
+
+        <TelerikMediaQuery Media="@LargeScreenMediaQuery" OnChange="@((bool matches) => { IsLargeScreen = matches; ConfigureFormLayout(); })" />
+
+        <ErrorAlert @bind-ErrorMessage="@errorMessage" CssClass="mt-2" />
+
+        @if (awaitingResults)
+        {
+            <div>
+                <TelerikLoaderContainer />
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback<ApiResourceDtoRead> OnSave { get; set; }
+
+    private readonly ApiResourceDtoCreate ApiResource = new()
+        {
+            Name = string.Empty,
+            DisplayName = string.Empty
+        };
+
+    private string? errorMessage;
+    private bool awaitingResults = false;
+
+    private async Task HandleValidSubmit()
+    {
+        if (IsReadonly)
+        {
+            return;
+        }
+
+        errorMessage = null;
+        awaitingResults = true;
+        (var createdDto, errorMessage) = await AdminApi.CreateApiResource(ApiResource);
+        if (string.IsNullOrEmpty(errorMessage))
+        {
+            await OnSave.InvokeAsync(createdDto);
+        }
+        awaitingResults = false;
+    }
+
+    private async Task CheckDirtyAndCancel()
+    {
+        if (!IsReadonly && (!string.IsNullOrEmpty(ApiResource.Name) || !string.IsNullOrEmpty(ApiResource.DisplayName) || !string.IsNullOrEmpty(ApiResource.Description)))
+        {
+            var confirmed = await ConfirmationService.ConfirmLeavingDirtyPageAsync();
+            if (!confirmed)
+            {
+                return;
+            }
+        }
+        await OnCancel.InvokeAsync();
+    }
+
+    private int FormGroupColumns { get; set; } = 1;
+    private int FormGroupSwitchColumns { get; set; } = 1;
+    private string FormGroupColumnSpacing { get; set; } = string.Empty;
+    private string LargeScreenMediaQuery { get; set; } = "(min-width: 992px)"; // matches Bootstrap lg qualifier
+    private bool IsLargeScreen { get; set; }
+
+    private void ConfigureFormLayout()
+    {
+        if (IsLargeScreen)
+        {
+            FormGroupColumns = 3;
+            FormGroupSwitchColumns = 2;
+            FormGroupColumnSpacing = "2em";
+        }
+        else
+        {
+            FormGroupColumns = 1;
+            FormGroupSwitchColumns = 1;
+            FormGroupColumnSpacing = string.Empty;
+        }
+    }
+}

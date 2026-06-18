@@ -1,0 +1,49 @@
+@using Telerik.Blazor.Components
+@using Telerik.DataSource
+@using IdentityServer.AdminPortal.Web.Pages
+
+@inject ISystemOwnerService SystemOwnerService
+
+@if (AccessLevel == SystemPermissionRoleType.None)
+{
+    <div class="d-flex my-auto align-items-center">
+        <TelerikButton ButtonType="ButtonType.Button" Size="sm" Icon="SvgIcon.InfoCircle" ThemeColor="light"
+                       Class="border me-1" OnClick="@HandleInfoButtonClick">
+            No access
+        </TelerikButton>
+        <span class="text-break">@Text</span>
+    </div>
+}
+else
+{
+    <a class="btn btn-link text-start text-break text-decoration-underline" @onclick="@OnLinkClick">@Text</a>
+}
+
+@code {
+    [Parameter]
+    public SystemPermissionRoleType AccessLevel { get; set; }
+
+    [Parameter]
+    public int? SystemPermissionEnvironmentId { get; set; }
+
+    [Parameter]
+    public SystemPermissionShortDtoRead? SystemPermission { get; set; }
+
+    [Parameter]
+    public string Text { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback OnLinkClick { get; set; }
+
+    private void HandleInfoButtonClick()
+    {
+        if (SystemPermissionEnvironmentId != null)
+        {
+            SystemOwnerService.ShowContactsPopup(SystemPermissionEnvironmentId.Value);
+        }
+        else if (SystemPermission != null)
+        {
+            SystemOwnerService.ShowContactsPopup(SystemPermission);
+        }
+    }
+}

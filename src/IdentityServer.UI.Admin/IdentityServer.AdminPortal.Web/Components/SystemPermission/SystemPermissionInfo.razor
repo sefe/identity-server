@@ -1,0 +1,110 @@
+﻿@inherits EditableComponentBase
+
+@inject IAdminApiService AdminApi
+@inject NotificationService NotificationService
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row mx-auto gy-2">
+            <div class="col-12 col-lg-4">
+                <RequiredFieldLabel ForTarget="spName" LabelText="System Name" />
+                <InputText id="spName" class="form-control-plaintext" @bind-Value="@Permission.Name" readonly />
+            </div>
+
+            <div class="col-12 col-lg-8">
+                <label for="spEnvironment" class="form-label">Environments</label>
+                <TelerikMultiSelect Data="@Environments"
+                                    Value="@SelectedEnvironments"
+                                    ValueExpression="@(() => SelectedEnvironments)"
+                                    ValueChanged="@(async (List<string> newValues) => await OnMultiValueChanged(newValues))"
+                                    Class="form-control"
+                                    ShowClearButton="false" Enabled="@(!IsReadonly)" Placeholder="Click here to add environments">
+                    <MultiSelectSettings>
+                        <MultiSelectPopupSettings Height="auto" />
+                    </MultiSelectSettings>
+                </TelerikMultiSelect>
+            </div>
+
+            <div class="col-12">
+                <RequiredFieldLabel ForTarget="spDescription" LabelText="Description" />
+                @if (!IsReadonly)
+                {
+                    <EditableFieldModal TModel="SystemPermissionDtoUpdate" Model="@PermissionUpdateModel" OnSave="@UpdateSystemPermission" Title="Edit System Permission">
+                        <FormItems>
+                            <FormItem>
+                                <Template>
+                                    <label for="spDescription" class="form-label">Description</label>
+                                    <InputTextArea id="spDescription" class="form-control" @bind-Value="@PermissionUpdateModel.Description" rows="10" placeholder="Information about the System." />
+                                    <div id="spDescriptionHelpBlock" class="form-text">Provide a meaningful description in @Constants.Limits.SystemPermission.Description.MaxLength characters or less</div>
+                                    <TelerikValidationMessage For="@(() => PermissionUpdateModel.Description)" />
+                                </Template>
+                            </FormItem>
+                        </FormItems>
+                    </EditableFieldModal>
+                }
+                <p id="spDescription" class="m-0 form-control-plaintext text-break">@Permission.Description</p>
+            </div>
+
+            <ErrorAlert @bind-ErrorMessage="@errorMessage" CssClass="mt-2" />
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public SystemPermissionDtoRead Permission { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<SystemPermissionDtoRead> OnPermissionUpdate { get; set; }
+
+    [Parameter]
+    public EventCallback<IEnumerable<string>> OnEnvironmentCreate { get; set; }
+
+    [Parameter]
+    public EventCallback<IEnumerable<SystemPermissionEnvironmentDtoRead>> OnEnvironmentDelete { get; set; }
+
+    private List<string> Environments { get; set; } = new List<string>(SystemPermissionEnvironmentNames.EnvironmentNames);
+    private List<string> SelectedEnvironments { get; set; } = new List<string>();
+
+    private SystemPermissionDtoUpdate PermissionUpdateModel = default!;
+
+    private string? errorMessage;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        SelectedEnvironments = Permission?.Environments?.Select(x => x.Environment).ToList() ?? new List<string>();
+        PermissionUpdateModel = new SystemPermissionDtoUpdate { Id = Permission?.Id ?? 0, Description = Permission?.Description ?? string.Empty };
+    }
+
+    private async Task OnMultiValueChanged(List<string> newValues)
+    {
+        if (IsReadonly) return;
+        SelectedEnvironments = new List<string>(newValues);
+        await OnEnvironmentDelete.InvokeAsync(Permission.Environments.Where(e => !newValues.Any(x => x.Match(e.Environment))));
+        await OnEnvironmentCreate.InvokeAsync(newValues.Where(e => !Permission.Environments.Any(x => x.Environment.Match(e))));
+        SelectedEnvironments = new List<string>(Environments.Where(e => Permission?.Environments?.Any(pe => pe.Environment.Match(e)) == true));
+    }
+
+    private async Task UpdateSystemPermission()
+    {
+        if (IsReadonly) return;
+
+        if (Permission == null)
+        {
+            return;
+        }
+
+        var callResult = await AdminApi.UpdateSystemPermission(PermissionUpdateModel);
+        if (callResult.IsSuccess)
+        {
+            errorMessage = null;
+            await OnPermissionUpdate.InvokeAsync(callResult.Result);
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+    }
+}

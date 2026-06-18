@@ -1,0 +1,62 @@
+﻿@layout MainLayout
+
+@inject AuthenticationStateProvider AuthStateProvider
+
+@if (!_isAuthenticated)
+{
+    <RedirectTo SaveCurrentUrl="true" Target="/" />
+}
+
+@code {
+    protected const string ModificationNotAllowedError = "Insufficient permissions to make changes.";
+
+    protected string? ErrorMessage { get; set; }
+
+    protected bool CanUpdate { get; set; }
+
+    protected string UserObjectId { get; private set; } = string.Empty;
+    protected string UserName { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// True if the user has no other roles except this.
+    /// </summary>
+    protected bool IsReader { get; private set; }
+    /// <summary>
+    /// True if the user has no other roles except this.
+    /// </summary>
+    protected bool IsUser { get; private set; }
+    /// <summary>
+    /// True if the user has Admin role regardless of other roles.
+    /// </summary>
+    protected bool HasAdmin { get; private set; }
+
+    private bool _isAuthenticated = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState?.User?.Identity?.IsAuthenticated == true)
+        {
+            _isAuthenticated = true;
+            UserObjectId = authState.User.FindFirst("oid")?.Value ?? throw new InvalidOperationException("User mandatory claim 'oid' is missing. A re-login may fix this issue.");
+            UserName = authState.User.Identity.Name ?? "N/A";
+
+            HasAdmin = authState.User.IsInRole(Abstraction.Constants.RoleNames.Admin);
+            IsUser = authState.User.IsInRole(Abstraction.Constants.RoleNames.User) && !HasAdmin;
+            IsReader = !IsUser && !HasAdmin;
+
+            CanUpdate = IsUser || HasAdmin;
+        }
+        else
+        {
+            _isAuthenticated = false;
+        }
+    }
+
+    protected void UpdatePageAccessBasedOnRoleReturnedByApi(SystemPermissionRoleType role)
+    {
+        CanUpdate = role == SystemPermissionRoleType.Writer;
+    }
+}

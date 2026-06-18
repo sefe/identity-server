@@ -1,0 +1,1 @@
+﻿:r PostDeploymentAggregation.sqlscript

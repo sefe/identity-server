@@ -1,0 +1,127 @@
+@page "/systempermissions/{SystemPermissionId:int}/history"
+@inherits UserRoleBasePage
+@using IdentityServer.Abstraction.DTO.History
+@using IdentityServer.Abstraction.DTO.SystemPermissions
+@using IdentityServer.AdminPortal.Web.Components.History
+
+@inject IAdminApiService AdminApi
+@inject NavigationManager NavigationManager
+@inject NotificationService NotificationService
+
+<div class="container-fluid">
+    <ErrorAlert @bind-ErrorMessage="@errorMessage" />
+
+    @if (isLoading)
+    {
+        <p><em>Loading history...</em></p>
+    }
+    else if (historyData != null)
+    {
+        <NavigationHeader Address="@PageRoutes.SystemPermissionsEdit(SystemPermissionId)" Title="Back to System Permission" />
+
+        <div class="d-flex flex-wrap justify-content-between align-items-start mb-3">
+            <h3 class="me-auto text-break">History for '@historyData.EntityName'</h3>
+        </div>
+
+        <div class="alert alert-info mb-3">
+            <strong>Note:</strong> This page shows all historical changes to the system permission and its nested entities (environments, roles, etc.).
+        </div>
+
+        @if (historyData.History == null || !historyData.History.Any())
+        {
+            <div class="alert alert-warning">
+                No history records found for this system permission.
+            </div>
+        }
+        else
+        {
+            <HistoryTimeline HistoryEntries="historyData.History" 
+                             InitialEntityTypeFilter="@EntityType" 
+                             InitialEntityIdFilter="@EntityId" 
+                             ParentEntityId="@SystemPermissionId"
+                             CurrentSystemPermission="@currentSystemPermission"
+                             OnRefreshRequired="@LoadData" />
+        }
+
+        <NavigationFooter Address="@PageRoutes.SystemPermissionsEdit(SystemPermissionId)" Title="Back to System Permission" />
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int SystemPermissionId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? EntityType { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? EntityId { get; set; }
+
+    private HistoryResponseDto? historyData;
+    private SystemPermissionDtoRead? currentSystemPermission;
+    private string? errorMessage;
+    private bool isLoading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        if (!isLoading)
+        {
+            return;
+        }
+
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        if (SystemPermissionId == 0)
+        {
+            errorMessage = "Invalid system permission ID.";
+            isLoading = false;
+            return;
+        }
+
+        try
+        {
+            // Load history and current system permission data in parallel
+            var historyTask = AdminApi.GetSystemPermissionHistory(SystemPermissionId);
+            var systemPermissionTask = AdminApi.GetSystemPermission(SystemPermissionId);
+
+            await Task.WhenAll(historyTask, systemPermissionTask);
+
+            var historyResult = await historyTask;
+            var systemPermissionResult = await systemPermissionTask;
+
+            if (historyResult.IsSuccess)
+            {
+                historyData = historyResult.Result;
+            }
+            else
+            {
+                errorMessage = historyResult.ErrorMessage;
+            }
+
+            if (systemPermissionResult.IsSuccess)
+            {
+                currentSystemPermission = systemPermissionResult.Result;
+            }
+            // Don't fail if system permission load fails, undo will just be disabled
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load history: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+}

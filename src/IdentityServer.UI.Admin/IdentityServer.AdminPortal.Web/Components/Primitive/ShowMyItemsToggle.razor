@@ -1,0 +1,30 @@
+@if (Visible)
+{
+    if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <div>
+            <span class="text-nowrap">Show only @Label:</span>
+        </div>
+    }
+    <div class="k-toolbar-item">
+        <TelerikSwitch Value="@Value"
+                       ValueChanged="@ValueChanged"
+                       OnLabel="True"
+                       OffLabel="False"
+                       Width="85px" />
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public bool Visible { get; set; }
+
+    [Parameter, EditorRequired]
+    public bool Value { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<bool> ValueChanged { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+}

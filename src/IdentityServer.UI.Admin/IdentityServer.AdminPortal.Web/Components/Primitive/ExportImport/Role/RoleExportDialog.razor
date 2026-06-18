@@ -1,0 +1,145 @@
+@using System.Text.Json
+@using IdentityServer.Abstraction.Entities.Validation
+
+@typeparam TMappingType
+
+@inject IJSRuntime JS
+
+@if (isExportDialogOpen)
+{
+    <TelerikDialog Title="Export Role Mappings" Visible="true" ShowCloseButton="false">
+        <DialogTitle>
+            <h5 class="mb-0">Export Role Mappings</h5>
+        </DialogTitle>
+        <DialogContent>
+            <p>Export selected role mappings as JSON:</p>
+            <TelerikForm Class="m-1" Model="exportModel" OnValidSubmit="ProcessExportAsync" ButtonsLayout="@FormButtonsLayout.Stretch" @ref="exportForm">
+                <FormValidation>
+                    <DataAnnotationsValidator />
+                    <TelerikValidationSummary />
+                </FormValidation>
+                <FormItems>
+                    <FormItem>
+                        <Template>
+                            <div class="row justify-content-between px-2 my-2">
+                                <div class="col-auto my-auto">
+                                    <h6 class="my-0"><strong>Role Mapping Types:</strong><span style="color:red">&nbsp;*</span></h6>
+                                </div>
+                                <div class="col text-end">
+                                    <SelectableOperator Items="exportModel.RoleMapTypeSelection" OnStateChanged="exportForm.Refresh" />
+                                </div>
+                            </div>
+                            <div class="overflow-auto px-3">
+                                @foreach (var selectableRoleMapType in exportModel.RoleMapTypeSelection)
+                                {
+                                    <div @key="selectableRoleMapType.Value">
+                                        <TelerikCheckBox Id="@selectableRoleMapType.DisplayName" @bind-Value="selectableRoleMapType.IsSelected" Title="@selectableRoleMapType.DisplayName" />
+                                        <label for="@selectableRoleMapType.DisplayName">@selectableRoleMapType.DisplayName</label>
+                                    </div>
+                                }
+                            </div>
+                            <TelerikValidationMessage For="@(() => exportModel.RoleMapTypeSelection)" />
+                        </Template>
+                    </FormItem>
+                    <FormItem>
+                        <Template>
+                            <div class="row justify-content-between px-2 my-2">
+                                <div class="col-auto my-auto">
+                                    <h6 class="my-0"><strong>Roles:</strong><span style="color:red">&nbsp;*</span></h6>
+                                </div>
+                                <div class="col text-end">
+                                    <SelectableOperator Items="exportModel.RoleNameSelection" OnStateChanged="exportForm.Refresh" />
+                                </div>
+                            </div>
+                            <div class="overflow-auto px-3">
+                                @foreach (var selectableRole in exportModel.RoleNameSelection)
+                                {
+                                    <div @key="selectableRole.Value">
+                                        <TelerikCheckBox Id="@selectableRole.DisplayName" @bind-Value="selectableRole.IsSelected" Title="@selectableRole.DisplayName" />
+                                        <label for="@selectableRole.DisplayName">@selectableRole.DisplayName</label>
+                                    </div>
+                                }
+                            </div>
+                            <TelerikValidationMessage For="@(() => exportModel.RoleNameSelection)" />
+                        </Template>
+                    </FormItem>
+                </FormItems>
+                <FormButtons>
+                    <TelerikButton ButtonType="ButtonType.Button" ThemeColor="default" OnClick="CloseExportDialog">Cancel</TelerikButton>
+                    <TelerikButton ButtonType="ButtonType.Submit" ThemeColor="primary">Export</TelerikButton>
+                </FormButtons>
+            </TelerikForm>
+        </DialogContent>
+    </TelerikDialog>
+}
+
+@code {
+    [Parameter]
+    public Func<IEnumerable<SelectableValue<TMappingType>>, IEnumerable<SelectableValue<string>>, Task<ExportResult>> PrepareExportResult { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnExportCompleted { get; set; }
+
+    private ExportModel exportModel = new ExportModel();
+
+    private TelerikForm exportForm = default!;
+
+    private bool isExportDialogOpen = false;
+
+    public void OpenExportDialog(ExportModel exportModel)
+    {
+        this.exportModel = exportModel;
+        isExportDialogOpen = true;
+        StateHasChanged();
+    }
+
+    public void CloseExportDialog()
+    {
+        isExportDialogOpen = false;
+        StateHasChanged();
+    }
+
+    public string GenerateExportFileName(string entityType, string sourceIdentifier, DateTime lastModified)
+    {
+        return $"roleMappings_{entityType}_{sourceIdentifier}_{lastModified.ToString("u")}.json";
+    }
+
+    public class ExportModel
+    {
+        [AtLeastOneSelectedValidation(ErrorMessage = "Please select at least one role mapping type to export")]
+        public IEnumerable<SelectableValue<TMappingType>> RoleMapTypeSelection { get; set; } = new List<SelectableValue<TMappingType>>();
+        [AtLeastOneSelectedValidation(ErrorMessage = "Please select at least one role to export")]
+        public IEnumerable<SelectableValue<string>> RoleNameSelection { get; set; } = new List<SelectableValue<string>>();
+    }
+
+    public Task ExportAsync(ExportModel exportModel)
+    {
+        this.exportModel = exportModel;
+        return ExportImplAsync();
+    }
+
+    private async Task ProcessExportAsync()
+    {
+        await ExportImplAsync();
+
+        CloseExportDialog();
+    }
+
+    private async Task ExportImplAsync()
+    {
+        var exportResult = await PrepareExportResult(
+            exportModel.RoleMapTypeSelection.Where(r => r.IsSelected),
+            exportModel.RoleNameSelection.Where(r => r.IsSelected));
+
+        await DownloadFile(exportResult);
+
+        await OnExportCompleted.InvokeAsync();
+    }
+
+    private async Task DownloadFile(ExportResult exportResult)
+    {
+        var json = JsonSerializer.Serialize(exportResult.Result, new JsonSerializerOptions { WriteIndented = true });
+        var fileName = exportResult.FileName;
+        await JS.InvokeVoidAsync("downloadFile", fileName, "application/json", json);
+    }
+}

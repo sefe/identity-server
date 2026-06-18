@@ -1,0 +1,164 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <Name>IdentityServer</Name>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectVersion>4.1</ProjectVersion>
+    <ProjectGuid>{405d3ab6-a5c3-4739-a762-158b8475ea0b}</ProjectGuid>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.Sql160DatabaseSchemaProvider</DSP>
+    <OutputType>Database</OutputType>
+    <RootPath>
+    </RootPath>
+    <RootNamespace>IdentityServer</RootNamespace>
+    <AssemblyName>IdentityServer</AssemblyName>
+    <ModelCollation>1033,CI</ModelCollation>
+    <DefaultFileStructure>BySchemaAndSchemaType</DefaultFileStructure>
+    <DeployToDatabase>True</DeployToDatabase>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <TargetLanguage>CS</TargetLanguage>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <SqlServerVerification>False</SqlServerVerification>
+    <IncludeCompositeObjects>True</IncludeCompositeObjects>
+    <TargetDatabaseSet>True</TargetDatabaseSet>
+    <TargetFrameworkProfile />
+    <VSInstallRoot>$([System.IO.Path]::GetFullPath('$(MSBuildExtensionsPath32)\..'))</VSInstallRoot>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>bin\Debug\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DataRetentionEnabled>False</DataRetentionEnabled>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">11.0</VisualStudioVersion>
+    <!-- Default to the v11.0 targets path if the targets file for the current VS version is not found -->
+    <SSDTExists Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets')">True</SSDTExists>
+    <VisualStudioVersion Condition="'$(SSDTExists)' == ''">11.0</VisualStudioVersion>
+  </PropertyGroup>
+  <Import Condition="'$(SQLDBExtensionsRefPath)' != ''" Project="$(SQLDBExtensionsRefPath)\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+  <Import Condition="'$(SQLDBExtensionsRefPath)' == ''" Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+  <ItemGroup>
+    <Folder Include="Properties" />
+    <Folder Include="dbo\" />
+    <Folder Include="dbo\Tables\" />
+    <Folder Include="Security\" />
+    <Folder Include="dbo\Functions" />
+    <Folder Include="dbo\Stored Procedures" />
+    <Folder Include="dbo\User Defined Types" />
+    <Folder Include="dbo\Views" />
+    <Folder Include="Scripts" />
+    <Folder Include="Scripts\Post" />
+    <Folder Include="Scripts\Pre" />
+    <Folder Include="Scripts\Post\EnvironmentSpecific" />
+    <Folder Include="Scripts\Post\EnvironmentSpecific\Local" />
+    <Folder Include="Scripts\Post\BeforeEnvironmentSpecific" />
+    <Folder Include="Scripts\Post\AfterEnvironmentSpecific" />
+  </ItemGroup>
+  <ItemGroup>
+    <Build Include="dbo\Tables\ApiResourceClaims.sql" />
+    <Build Include="dbo\Tables\ApiResourceProperties.sql" />
+    <Build Include="dbo\Tables\ApiResourceRoles.sql" />
+    <Build Include="dbo\Tables\ApiResources.sql" />
+    <Build Include="dbo\Tables\ApiResourceScopes.sql" />
+    <Build Include="dbo\Tables\ApiResourceSecrets.sql" />
+    <Build Include="dbo\Tables\ApiScopeClaims.sql" />
+    <Build Include="dbo\Tables\ApiScopeProperties.sql" />
+    <Build Include="dbo\Tables\ApiScopes.sql" />
+    <Build Include="dbo\Tables\ClientClaims.sql" />
+    <Build Include="dbo\Tables\ClientCorsOrigins.sql" />
+    <Build Include="dbo\Tables\ClientGrantTypes.sql" />
+    <Build Include="dbo\Tables\ClientEntraApps.sql" />
+    <Build Include="dbo\Tables\ClientIdPRestrictions.sql" />
+    <Build Include="dbo\Tables\ClientPostLogoutRedirectUris.sql" />
+    <Build Include="dbo\Tables\ClientProperties.sql" />
+    <Build Include="dbo\Tables\ClientRedirectUris.sql" />
+    <Build Include="dbo\Tables\Clients.sql" />
+    <Build Include="dbo\Tables\ClientRoles.sql" />
+    <Build Include="dbo\Tables\ClientRoleMappings.sql" />
+    <Build Include="dbo\Tables\ClientScopes.sql" />
+    <Build Include="dbo\Tables\ClientSecrets.sql" />
+    <Build Include="dbo\Tables\DataProtectionKeys.sql" />
+    <Build Include="dbo\Tables\DeviceCodes.sql" />
+    <Build Include="dbo\Tables\IdentityProviders.sql" />
+    <Build Include="dbo\Tables\IdentityResourceClaims.sql" />
+    <Build Include="dbo\Tables\IdentityResourceProperties.sql" />
+    <Build Include="dbo\Tables\IdentityResources.sql" />
+    <Build Include="dbo\Tables\Keys.sql" />
+    <Build Include="dbo\Tables\PersistedGrants.sql" />
+    <Build Include="dbo\Tables\PushedAuthorizationRequests.sql" />
+    <Build Include="dbo\Tables\RoleMappings.sql" />
+    <Build Include="dbo\Tables\RoleMappingTypes.sql" />
+    <Build Include="dbo\Tables\ServerSideSessions.sql" />
+    <Build Include="dbo\Tables\SystemPermissionEnvironments.sql" />
+    <Build Include="dbo\Tables\SystemPermissionRole.sql" />
+    <Build Include="dbo\Tables\SystemPermissions.sql" />
+    <Build Include="Security\RoleMemberships.sql" />
+    <Build Include="Security\Permissions.sql" />
+    <Build Include="dbo\Tables\UpgradeLog.sql" />
+    <Build Include="dbo\User Defined Types\IntIdList.sql" />
+    <None Include="Scripts\Post\EnvironmentSpecific\local\001.Local_InitialSeedData.sql" />
+    <None Include="Scripts\Post\BeforeEnvironmentSpecific\001.InitialSeedData.sql" />
+    <None Include="Scripts\Post\AfterEnvironmentSpecific\001.PBI368383.AddNewScope.sql" />
+    <None Include="Scripts\Post\AfterEnvironmentSpecific\002.PBI363978.AddNewScope.sql" />
+    <None Include="Scripts\Post\AfterEnvironmentSpecific\003.PBI375627.RemoveDpapiDPKeys.sql" />
+    <None Include="Scripts\Post\AfterEnvironmentSpecific\004.PBI375627.AddJwtIoAllowedCors.sql" />
+    <None Include="Scripts\Post\AfterEnvironmentSpecific\005.PBI382451.Drop__EFMigrationsHistoryTable.sql" />
+
+    <Build Include="dbo\Stored Procedures\GetApiResourcesLastModifiedTimestamp.sql" />
+    <Build Include="dbo\Stored Procedures\GetClientsLastModifiedTimestamp.sql" />
+    <Build Include="dbo\Stored Procedures\GetSystemPermissionsLastModifiedTimestamp.sql" />
+    <None Include="Scripts\Pre\001.AddPreviewColumnToHistoryTables.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="IdentityServer.dacpac.json" />
+    <None Include="IdentityServer.restore.json" />
+    <None Include="Scripts\PostDeploymentAggregation.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+    <None Include="readme.md" />
+    <None Include="Scripts\PostDeploymentAggregation.sqlscript">
+      <DependentUpon>Scripts\PostDeploymentAggregation.tt</DependentUpon>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <PostDeploy Include="Scripts\PostDeployment.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Scripts\PostDeploymentAggregation.cs">
+      <DependentUpon>Scripts\PostDeploymentAggregation.tt</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <SqlCmdVariable Include="EnvironmentTier">
+      <DefaultValue>XX</DefaultValue>
+      <Value>$(SqlCmdVar__1)</Value>
+    </SqlCmdVariable>
+  </ItemGroup>
+  <Target Name="TransformAllT4Templates" BeforeTargets="BeforeBuild">
+    <ItemGroup>
+      <T4Templates Include="Scripts\PostDeploymentAggregation.tt" />
+    </ItemGroup>
+    <Exec Command="&quot;$(VSInstallRoot)\Common7\IDE\TextTransform.exe&quot; @(T4Templates -> '%(FullPath)', ' ')" />
+  </Target>
+</Project>

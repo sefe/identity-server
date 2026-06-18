@@ -1,0 +1,16 @@
+﻿@page "/bye"
+@layout LandingLayout
+@attribute [AllowAnonymous]
+
+@inject NavigationManager Navigation
+
+<AuthorizeView>
+    <NotAuthorized>
+        <p role="alert" class="alert-success">You have logged out of Identity Server.</p>
+        <span>Please feel free to close this page.</span>
+        <p><a href="/">Click here</a> to navigate to the main application page.</p>
+    </NotAuthorized>
+    <Authorized>
+        <RedirectTo Target="/home" />
+    </Authorized>
+</AuthorizeView>

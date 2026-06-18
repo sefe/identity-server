@@ -1,0 +1,15 @@
+﻿@typeparam TItem
+
+<TelerikListView Data="@Data" Pageable="PageSize > 0" PageSize="PageSize" Template="ItemTemplate">
+</TelerikListView>
+
+@code {
+    [Parameter, EditorRequired]
+    public IList<TItem> Data { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public RenderFragment<TItem> ItemTemplate { get; set; } = default!;
+
+    [Parameter]
+    public int PageSize { get; set; } = 0;
+}

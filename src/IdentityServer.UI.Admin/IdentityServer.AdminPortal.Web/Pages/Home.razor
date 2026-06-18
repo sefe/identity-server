@@ -1,0 +1,24 @@
+﻿@page "/home"
+@layout MainLayout
+
+<AuthorizeView>
+    <h1>Hello, @context.User.Identity?.Name!</h1>
+    Your application roles are:
+    <ul>
+        @foreach (var identity in context.User.Identities)
+        {
+            if (identity?.IsAuthenticated == true)
+            {
+                foreach (var claim in identity.FindAll(identity.RoleClaimType))
+                {
+                    <li>@claim.Value</li>
+                }
+            }
+        }
+    </ul>
+    The permissions to individual entities may be limited by other means.
+
+    <br />
+    <br />
+    <div>Please refer to the <a href="https://wiki/spaces/gde/pages/582977693/MWPTI+-+IdentityServer+-+User+Guide" target="_blank" class="ms-1">documentation</a> for user guides.</div>
+</AuthorizeView>

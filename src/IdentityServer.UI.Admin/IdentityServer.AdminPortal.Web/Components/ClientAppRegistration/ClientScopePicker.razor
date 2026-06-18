@@ -1,0 +1,293 @@
+﻿@inject IAdminApiService AdminApi
+
+<div class="offcanvas offcanvas-end show @(isExpanded ? "" : "pager-compact-view")"
+     style="visibility: @((isApiPickerOpen || isScopePickerOpen) ? "visible" : "hidden"); width: @(isExpanded ? "70%" : "550px");"
+     id="apiPickerOffcanvas" aria-labelledby="apiPickerTitle" aria-modal="true" role="dialog">
+
+    <div class="offcanvas-header">
+
+        <h5 class="offcanvas-title" id="apiPickerTitle">
+            @if (isApiPickerOpen)
+            {
+                <span>Select API</span>
+            }
+            else
+            {
+                <span>Select Scopes</span>
+            }
+        </h5>
+        <button type="button" class="btn-close" aria-label="Close" @onclick="CloseAll"></button>
+    </div>
+    @if (isScopePickerOpen && !isOpenIdPickerOpen)
+    {
+        <div class="ms-2">
+            <TelerikButton OnClick="@BackToListOfApis" FillMode="link" Size="small"><span class="text-decoration-underline">@("<<") Back to API selection</span></TelerikButton>
+        </div>
+    }
+    <div class="offcanvas-body position-relative">
+        @if (warningMessage != null)
+        {
+            <div class="alert alert-warning">
+                @warningMessage
+            </div>
+        }
+        @if (isApiPickerOpen)
+        {
+            <ApiResourceList OnApiResourceClick="PickApi"
+                             AllowedEnvironments="AllowedEnvironments"
+                             GridStateStorageKey="@GridStateStorageKeys.ApiResourceScopePicker"
+                             ColumnSet="isExpanded ? ApiResourceList.ColumnSetKind.Wide : ApiResourceList.ColumnSetKind.Narrow" />
+        }
+        else if (isScopePickerOpen)
+        {
+            @if (allScopes.Count == 0)
+            {
+                <p class="fw-bold">There are no scopes to select from.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th class="text-center">Selected</th>
+                                <th>Scope</th>
+                                <th>Required</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var scopeObj in allScopes.OrderBy(a => a.Value, ScopeWrapperComparer))
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="d-flex text-center justify-content-center">
+                                            @if (scopeObj.Value.IsAlreadyAdded)
+                                            {
+                                                if (scopeObj.Value.Scope.ApiScope?.Enabled == true)
+                                                {
+                                                    <span>Already added</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>Already added (Disabled)</span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                if (scopeObj.Value.Scope.ApiScope?.Enabled == true)
+                                                {
+                                                    <TelerikCheckBox Id="@($"{scopeObj.Key}Selected")" @bind-Value="scopeObj.Value.IsSelected" AriaLabel="@($"Select {scopeObj.Value.Scope.Scope} scope")" />
+                                                }
+                                                else
+                                                {
+                                                    <span>Disabled</span>
+                                                }
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @if (string.IsNullOrEmpty(scopeObj.Value.Scope.ApiScope?.DisplayName))
+                                        {
+                                            <span>@scopeObj.Value.Scope.Scope</span>
+                                        }
+                                        else
+                                        {
+                                            <span>@scopeObj.Value.Scope.ApiScope?.DisplayName</span>
+                                            <br />
+                                            <small class="text-muted">@scopeObj.Key</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (scopeObj.Value.Scope.ApiScope?.Required == true)
+                                        {
+                                            <b>Yes</b>
+                                        }
+                                        else
+                                        {
+                                            <span>No</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <TelerikButton OnClick="PickScopes" ButtonType="ButtonType.Button" ThemeColor="primary" Size="small"
+                                       AriaLabel="Add Selected Scopes">Add Selected Scopes</TelerikButton>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <TelerikMediaQuery Media="@LargeScreenMediaQuery" OnChange="@((bool matches) => { IsLargeScreen = matches; ResetDrawerWidthOnSmallScreen(); })" />
+    <DrawerExpanderButton IsExpanded="@isExpanded" OnToggleClicked="ToggleApiPickerWidth" IsVisible="IsLargeScreen" />
+</div>
+
+@if (isApiPickerOpen || isScopePickerOpen)
+{
+    <div class="offcanvas-backdrop fade show"></div>
+}
+
+
+@code {
+    [Parameter]
+    public EventCallback<string> OnError { get; set; }
+
+    [Parameter]
+    public EventCallback<IEnumerable<ApiResourcePropertyScopeDtoRead>> OnScopeSelectionConfirmed { get; set; }
+
+    [Parameter]
+    public List<ClientPropertyScopeDtoRead> AlreadyAddedScopes { get; set; } = new();
+
+    [Parameter]
+    public HashSet<int>? AllowedEnvironments { get; set; }
+
+    private bool isApiPickerOpen = false;
+    private bool isScopePickerOpen = false;
+    private bool isOpenIdPickerOpen = false;
+    private bool isExpanded = false;
+
+    private string? warningMessage = null;
+
+    private readonly SortedList<string, ScopeWrapper<ApiResourcePropertyScopeDtoRead>> allScopes = new(StringComparer.Ordinal);
+
+    public void OpenApiPicker()
+    {
+        isApiPickerOpen = true;
+    }
+
+    public async Task OpenScopePicker(int apiId)
+    {
+        var callResult = await AdminApi.GetApiResource(apiId);
+        if (!callResult.IsSuccess)
+        {
+            GracefullyThrow("The specified API Resource failed to load.");
+            return;
+        }
+
+        ReadActiveScopesFromApi(callResult.Result);
+        MarkAlreadyAddedScopes();
+        isScopePickerOpen = true;
+        isOpenIdPickerOpen = false;
+    }
+
+    public void OpenScopePicker(IEnumerable<ApiResourcePropertyScopeDtoRead> scopeList)
+    {
+        allScopes.Clear();
+        foreach (var scope in scopeList)
+        {
+            var wrapper = new ScopeWrapper<ApiResourcePropertyScopeDtoRead>(scope, scope.Scope);
+            allScopes.Add(scope.Scope, wrapper);
+        }
+        MarkAlreadyAddedScopes();
+        isScopePickerOpen = true;
+        isOpenIdPickerOpen = true;
+    }
+
+    private void MarkAlreadyAddedScopes()
+    {
+        foreach (var scope in AlreadyAddedScopes)
+        {
+            if (allScopes.TryGetValue(scope.Scope, out var existingScope))
+            {
+                existingScope.IsAlreadyAdded = true;
+            }
+        }
+    }
+
+    private async Task PickApi(int apiId)
+    {
+        warningMessage = null;
+        await OpenScopePicker(apiId);
+        isApiPickerOpen = false;
+        isOpenIdPickerOpen = false;
+    }
+
+    private void BackToListOfApis()
+    {
+        warningMessage = null;
+        isScopePickerOpen = false;
+        OpenApiPicker();
+    }
+
+    private async Task PickScopes()
+    {
+        var selectedScopes = allScopes.Values.Where(s => s.IsSelected).ToList();
+        if (!selectedScopes.Any())
+        {
+            warningMessage = "Please select at least one scope";
+            return;
+        }
+        CloseAll();
+        await OnScopeSelectionConfirmed.InvokeAsync(selectedScopes.Select(s => s.Scope));
+    }
+
+    private void ToggleApiPickerWidth()
+    {
+        isExpanded = !isExpanded;
+    }
+
+    private bool IsLargeScreen { get; set; }
+    private string LargeScreenMediaQuery { get; set; } = "(min-width: 786px)"; // 70% = 550px
+
+    private void ResetDrawerWidthOnSmallScreen()
+    {
+        if (!IsLargeScreen)
+        {
+            isExpanded = false;
+        }
+    }
+
+    private void CloseAll()
+    {
+        warningMessage = null;
+        isApiPickerOpen = false;
+        isScopePickerOpen = false;
+        isOpenIdPickerOpen = false;
+    }
+
+    private void GracefullyThrow(string error)
+    {
+        CloseAll();
+        OnError.InvokeAsync(error);
+    }
+
+    private void ReadActiveScopesFromApi(ApiResourceDtoRead api)
+    {
+        allScopes.Clear();
+
+        if (api.Scopes == null || api.Scopes.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var apiScope in api.Scopes)
+        {
+            var scopeInfo = new ScopeWrapper<ApiResourcePropertyScopeDtoRead>(apiScope, apiScope.Scope);
+
+            // Manually mark the scope as disabled if the API is disabled, so that the scope cannot be selected
+            if (!api.Enabled && scopeInfo.Scope.ApiScope != null)
+            {
+                scopeInfo.Scope.ApiScope.Enabled = api.Enabled;
+            }
+            allScopes.Add(apiScope.Scope, scopeInfo);
+        }
+    }
+
+    private static readonly IComparer<ScopeWrapper<ApiResourcePropertyScopeDtoRead>> ScopeWrapperComparer =
+        Comparer<ScopeWrapper<ApiResourcePropertyScopeDtoRead>>.Create((x, y) =>
+        {
+            if (x.Scope.ApiScope?.Enabled != y.Scope.ApiScope?.Enabled)
+            {
+                return x.Scope.ApiScope?.Enabled == true ? -1 : 1;
+            }
+            if (x.IsAlreadyAdded != y.IsAlreadyAdded)
+            {
+                return x.IsAlreadyAdded ? 1 : -1;
+            }
+            return string.Compare(x.Scope.Scope, y.Scope.Scope, StringComparison.Ordinal);
+        });
+}

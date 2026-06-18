@@ -1,0 +1,141 @@
+﻿@page "/apiresources/edit/{ApiResourceId:int}"
+
+@inherits UserRoleBasePage
+
+@inject IAdminApiService AdminApi
+@inject NavigationManager NavigationManager
+@inject NotificationService NotificationService
+@inject IConfirmationService ConfirmationService
+
+<div class="container">
+    <ErrorAlert @bind-ErrorMessage="@errorMessage" />
+
+    @if (ApiResource == null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <NavigationHeader Address="@PageRoutes.ApiResources" Title="Back to the list of API Resources" />
+
+        <BannerAboutCache />
+
+        <BannerSecretExpired Secrets="ApiResource.Secrets" />
+
+        <BannerSecretExpiring Secrets="ApiResource.Secrets" />
+
+        <BannerSecretNoExpiration Secrets="ApiResource.Secrets" />
+
+        <div class="d-flex flex-wrap justify-content-between align-items-start mb-3">
+            <h3 class="me-auto text-break">API Resource '@ApiResource.DisplayName'</h3>
+            <div class="d-flex flex-wrap gap-2 ms-auto">
+                <HistoryButton ApiResourceId="ApiResourceId" Size="medium" />
+                <TelerikButton ButtonType="ButtonType.Button" OnClick="Clone" ThemeColor="secondary">Clone</TelerikButton>
+                @if (CanUpdate)
+                {
+                    <TelerikButton ButtonType="ButtonType.Button" OnClick="DeleteSelfAsync" Icon="@SvgIcon.Trash" ThemeColor="error">Delete</TelerikButton>
+                }
+            </div>
+        </div>
+
+        <LastModifiedInfo Created="ApiResource.Created" Updated="ApiResource.Updated" UpdateReason="@ApiResource.UpdateReason" />
+
+        <ApiResourceInfoEdit ApiResource="ApiResource" IsReadonly="!CanUpdate" OnApiResourceUpdate="UpdateApiResource" />
+
+        <ApiResourceScopeList ApiResource="ApiResource" IsReadonly="!CanUpdate" OnApiResourceUpdate="MarkScopesUpdated" />
+
+        <ApiResourceSecretList ApiResource="ApiResource" IsReadonly="!CanUpdate" OnApiResourceUpdate="MarkSecretsUpdated" />
+
+        <hr class="py-3" />
+
+        <ApiResourceRoleMapList ApiResource="ApiResource" IsReadonly="!CanUpdate" OnApiResourceUpdate="@(reason => UpdateApiResourceLastModified(reason))" UserObjectId="@UserObjectId" UserName="@UserName" />
+
+        <NavigationFooter Address="@PageRoutes.ApiResources" Title="Back to the list of API Resources" />
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int ApiResourceId { get; set; }
+
+    private ApiResourceDtoRead ApiResource = default!;
+    private string? errorMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        if (ApiResource != null)
+        {
+            return;
+        }
+
+        if (ApiResourceId == 0)
+        {
+            errorMessage = "The specified entity was not found.";
+            return;
+        }
+
+        var callResult = await AdminApi.GetApiResource(ApiResourceId);
+        if (callResult.IsSuccess)
+        {
+            errorMessage = null;
+            ApiResource = callResult.Result;
+            base.UpdatePageAccessBasedOnRoleReturnedByApi(ApiResource.AccessLevel);
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+    }
+
+    private async Task DeleteSelfAsync()
+    {
+        if (!CanUpdate) return;
+
+        var confirmed = await ConfirmationService.ConfirmAsync("Delete Confirmation",
+            "Are you sure you want to delete this api resource?");
+
+        if (ApiResource == null || !confirmed)
+        {
+            return;
+        }
+
+        var callResult = await AdminApi.DeleteApiResource(ApiResource);
+        if (callResult.IsSuccess)
+        {
+            errorMessage = null;
+            NotificationService.ShowInfo($"Api Resource '{ApiResource.Name}' deleted.");
+            GoBack();
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+    }
+
+    private void Clone()
+    {
+        NavigationManager.NavigateTo(PageRoutes.ApiResourcesClone(ApiResourceId));
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo(PageRoutes.ApiResources);
+    }
+
+    private void UpdateApiResource(ApiResourceDtoRead apiResource)
+    {
+        ApiResource = apiResource;
+    }
+
+    private void MarkSecretsUpdated() => UpdateApiResourceLastModified("Secrets");
+
+    private void MarkScopesUpdated() => UpdateApiResourceLastModified("Scopes");
+
+    private void UpdateApiResourceLastModified(string reason)
+    {
+        ApiResource.Updated = DateTime.UtcNow;
+        ApiResource.UpdateReason = reason;
+    }
+}

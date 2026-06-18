@@ -1,0 +1,30 @@
+﻿@inherits EditableComponentBase
+
+<div class="btn-group btn-group-sm @(string.IsNullOrEmpty(Tooltip) ? string.Empty : "tooltip-target")" role="group" aria-label="@Text" title="@Tooltip">
+    <button type="button" class="btn btn-light border-dark" disabled>@Text</button>
+    @if (!IsReadonly)
+    {
+        @if (IsAdd)
+        {
+            <button type="button" class="btn btn-outline-success border-start-0" @onclick=@OnClick>+</button>
+        }
+        else
+        {
+            <button type="button" class="btn btn-outline-danger border-start-0 px-1 d-flex align-items-center" @onclick=@OnClick><TelerikSvgIcon Icon="@SvgIcon.Trash"></TelerikSvgIcon></button>
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public bool IsAdd { get; set; }
+
+    [Parameter]
+    public string? Text { get; set; }
+
+    [Parameter]
+    public string? Tooltip { get; set; }
+
+    [Parameter]
+    public EventCallback OnClick { get; set; }
+}

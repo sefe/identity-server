@@ -1,0 +1,120 @@
+﻿
+BEGIN TRANSACTION;
+
+print '============= Scripts to run before Environment specific scripts: Start ============='
+print 'Processing script ''Post\BeforeEnvironmentSpecific\001.InitialSeedData.sql''...'
+IF NOT EXISTS (SELECT TOP 1 1 FROM [dbo].[UpgradeLog] WHERE Name = 'BeforeEnvironmentSpecific\InitialSeedData' AND [Type] = 'Post')
+BEGIN
+	:r Post\BeforeEnvironmentSpecific\001.InitialSeedData.sql
+	INSERT INTO [dbo].[UpgradeLog] ([Name], [Type]) VALUES ('BeforeEnvironmentSpecific\InitialSeedData', 'Post')
+	print 'Script has been processed successfully.'
+END
+ELSE
+BEGIN
+	print 'Script has already been processed. Skipping.'
+END
+---
+
+print '============= Scripts to run before Environment specific scripts: End ============='
+
+print 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+
+print '============= Environment specific Scripts: Start ============='
+IF ('$(EnvironmentTier)' = 'Local')
+BEGIN
+	print 'Processing script ''Post\EnvironmentSpecific\Local\001.Local_InitialSeedData.sql''...'
+	IF NOT EXISTS (SELECT TOP 1 1 FROM [dbo].[UpgradeLog] WHERE Name = 'Local\Local_InitialSeedData' AND [Type] = 'Post')
+	BEGIN
+		:r Post\EnvironmentSpecific\Local\001.Local_InitialSeedData.sql
+		INSERT INTO [dbo].[UpgradeLog] ([Name], [Type]) VALUES ('Local\Local_InitialSeedData', 'Post')
+		print 'Script has been processed successfully.'
+	END
+	ELSE
+	BEGIN
+		print 'Script has already been processed. Skipping.'
+	END
+END
+
+print '============= Environment specific Scripts: End ============='
+
+print 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+
+print '============= Scripts to run After Environment specific scripts: Start ============='
+
+	print 'Processing script ''Post\AfterEnvironmentSpecific\001.PBI368383.AddNewScope.sql''...'
+
+IF NOT EXISTS (SELECT TOP 1 1 FROM [dbo].[UpgradeLog] WHERE Name = 'AfterEnvironmentSpecific\PBI368383.AddNewScope' AND [Type] = 'Post')
+BEGIN
+	:r Post\AfterEnvironmentSpecific\001.PBI368383.AddNewScope.sql
+	INSERT INTO [dbo].[UpgradeLog] ([Name], [Type]) VALUES ('AfterEnvironmentSpecific\PBI368383.AddNewScope', 'Post')
+	print 'Script has been processed successfully.'
+END
+ELSE
+BEGIN
+	print 'Script has already been processed. Skipping.'
+END
+---
+
+	print 'Processing script ''Post\AfterEnvironmentSpecific\002.PBI363978.AddNewScope.sql''...'
+
+IF NOT EXISTS (SELECT TOP 1 1 FROM [dbo].[UpgradeLog] WHERE Name = 'AfterEnvironmentSpecific\PBI363978.AddNewScope' AND [Type] = 'Post')
+BEGIN
+	:r Post\AfterEnvironmentSpecific\002.PBI363978.AddNewScope.sql
+	INSERT INTO [dbo].[UpgradeLog] ([Name], [Type]) VALUES ('AfterEnvironmentSpecific\PBI363978.AddNewScope', 'Post')
+	print 'Script has been processed successfully.'
+END
+ELSE
+BEGIN
+	print 'Script has already been processed. Skipping.'
+END
+---
+
+	print 'Processing script ''Post\AfterEnvironmentSpecific\003.PBI375627.RemoveDpapiDPKeys.sql''...'
+
+IF NOT EXISTS (SELECT TOP 1 1 FROM [dbo].[UpgradeLog] WHERE Name = 'AfterEnvironmentSpecific\PBI375627.RemoveDpapiDPKeys' AND [Type] = 'Post')
+BEGIN
+	:r Post\AfterEnvironmentSpecific\003.PBI375627.RemoveDpapiDPKeys.sql
+	INSERT INTO [dbo].[UpgradeLog] ([Name], [Type]) VALUES ('AfterEnvironmentSpecific\PBI375627.RemoveDpapiDPKeys', 'Post')
+	print 'Script has been processed successfully.'
+END
+ELSE
+BEGIN
+	print 'Script has already been processed. Skipping.'
+END
+---
+
+	print 'Processing script ''Post\AfterEnvironmentSpecific\004.PBI375627.AddJwtIoAllowedCors.sql''...'
+
+IF NOT EXISTS (SELECT TOP 1 1 FROM [dbo].[UpgradeLog] WHERE Name = 'AfterEnvironmentSpecific\PBI375627.AddJwtIoAllowedCors' AND [Type] = 'Post')
+BEGIN
+	:r Post\AfterEnvironmentSpecific\004.PBI375627.AddJwtIoAllowedCors.sql
+	INSERT INTO [dbo].[UpgradeLog] ([Name], [Type]) VALUES ('AfterEnvironmentSpecific\PBI375627.AddJwtIoAllowedCors', 'Post')
+	print 'Script has been processed successfully.'
+END
+ELSE
+BEGIN
+	print 'Script has already been processed. Skipping.'
+END
+---
+
+	print 'Processing script ''Post\AfterEnvironmentSpecific\005.PBI382451.Drop__EFMigrationsHistoryTable.sql''...'
+
+IF NOT EXISTS (SELECT TOP 1 1 FROM [dbo].[UpgradeLog] WHERE Name = 'AfterEnvironmentSpecific\PBI382451.Drop__EFMigrationsHistoryTable' AND [Type] = 'Post')
+BEGIN
+	:r Post\AfterEnvironmentSpecific\005.PBI382451.Drop__EFMigrationsHistoryTable.sql
+	INSERT INTO [dbo].[UpgradeLog] ([Name], [Type]) VALUES ('AfterEnvironmentSpecific\PBI382451.Drop__EFMigrationsHistoryTable', 'Post')
+	print 'Script has been processed successfully.'
+END
+ELSE
+BEGIN
+	print 'Script has already been processed. Skipping.'
+END
+---
+
+
+print '============= Scripts to run After Environment specific scripts: End ============='
+
+print 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+
+COMMIT TRANSACTION;
+

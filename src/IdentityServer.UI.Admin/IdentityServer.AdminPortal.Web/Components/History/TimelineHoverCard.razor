@@ -1,0 +1,41 @@
+@using IdentityServer.Abstraction.DTO.History
+
+<div class="timeline-hover-card"
+     @onmouseenter="@OnMouseEnter"
+     @onmouseleave="@OnMouseLeave">
+    <div class="hover-card-header bg-@BadgeColor">
+        <strong>@Entry.EventType</strong>
+    </div>
+    <div class="hover-card-body">
+        <div class="hover-card-row">
+            <span class="hover-card-label">Entity:</span>
+            <span class="hover-card-value">@Entry.EntityTypeDisplayName</span>
+        </div>
+        <div class="hover-card-row">
+            <span class="hover-card-label">ID:</span>
+            <span class="hover-card-value text-break">@Entry.EntityIdentifier</span>
+        </div>
+        <div class="hover-card-row">
+            <span class="hover-card-label">When:</span>
+            <span class="hover-card-value">@Entry.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</span>
+        </div>
+        <div class="hover-card-row">
+            <span class="hover-card-label">By:</span>
+            <span class="hover-card-value">@(Entry.ChangedBy ?? "Unknown")</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public HistoryEntryDto Entry { get; set; } = null!;
+
+    [Parameter]
+    public string BadgeColor { get; set; } = "secondary";
+
+    [Parameter]
+    public EventCallback OnMouseEnter { get; set; }
+
+    [Parameter]
+    public EventCallback OnMouseLeave { get; set; }
+}

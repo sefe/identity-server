@@ -1,0 +1,41 @@
+﻿@typeparam TModel
+
+<TelerikWindow @bind-Visible="@IsDialogVisible"
+               MinWidth="300px"
+               MinHeight="250px"
+               Modal="true">
+    <WindowContent>
+        @if (!string.IsNullOrEmpty(Title)) {
+            <div class="modal-header">
+                <h4>@Title</h4>
+            </div>
+        }
+        <TelerikForm Model="@Model" FormItems="@FormItems" ButtonsLayout="@FormButtonsLayout.Center" ValidationMessageType="FormValidationMessageType.None">
+            <FormButtons>
+                <TelerikButton ButtonType="@ButtonType.Button" OnClick="@CloseDialog" ThemeColor="secondary">Close</TelerikButton>
+            </FormButtons>
+        </TelerikForm>
+    </WindowContent>
+</TelerikWindow>
+
+@code {
+    [Parameter]
+    public RenderFragment FormItems { get; set; } = default!;
+
+    public TModel Model { get; private set; } = default!;
+
+    private string Title { get; set; } = default!;
+    private bool IsDialogVisible { get; set; }
+
+    public void OpenDialog(string title, TModel model)
+    {
+        Title = title;
+        Model = model;
+        IsDialogVisible = true;
+    }
+
+    public void CloseDialog()
+    {
+        IsDialogVisible = false;
+    }
+}

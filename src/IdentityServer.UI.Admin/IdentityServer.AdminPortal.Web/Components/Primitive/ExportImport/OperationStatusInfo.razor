@@ -1,0 +1,43 @@
+@if (Status.Errors.Any())
+{
+    <div class="alert alert-danger">
+        <strong>Errors:</strong>
+        <ul>
+            @foreach (var error in Status.Errors)
+            {
+                <li>@error</li>
+            }
+        </ul>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        No errors.
+    </div>
+}
+
+@if (Status.Warnings.Any())
+{
+    <div class="alert alert-warning">
+        <strong>Warnings:</strong>
+        <ul>
+            @foreach (var warning in Status.Warnings)
+            {
+                <li>@warning</li>
+            }
+        </ul>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        No warnings.
+    </div>
+}
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public OperationStatus Status { get; set; } = default!;
+}

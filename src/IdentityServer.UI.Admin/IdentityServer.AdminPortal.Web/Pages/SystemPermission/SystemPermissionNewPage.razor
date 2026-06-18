@@ -1,0 +1,50 @@
+﻿@page "/systempermissions/new"
+@layout MainLayout
+
+@attribute [Authorize(Roles = $"{Abstraction.Constants.RoleNames.Admin}, {Abstraction.Constants.RoleNames.User}")]
+
+@inject IAdminApiService AdminApi
+@inject IConfirmationService ConfirmationService
+@inject NavigationManager NavigationManager
+@inject NotificationService NotificationService
+
+<div class="container">
+    <div class="row">
+        <h3>Create New System Permission</h3>
+    </div>
+
+    <SystemPermissionCreateForm Permission="systemPermission" OnSystemPermissionCreate="CreateSystemPermission" Cancel="GoBack" />
+</div>
+
+
+@code {
+
+    private readonly SystemPermissionDtoCreate systemPermission = new();
+
+    private async Task<string?> CreateSystemPermission()
+    {
+        var callResult = await AdminApi.CreateSystemPermission(systemPermission);
+        if (callResult.IsSuccess)
+        {
+            var createSystemPermission = callResult.Result;
+            NotificationService.ShowInfo($"New System Permission '{createSystemPermission.Name}' {MutationType.Created.ToString()}.");
+            NavigationManager.NavigateTo(PageRoutes.SystemPermissionsEdit(createSystemPermission.Id));
+        }
+        return callResult.ErrorMessage;
+    }
+
+    private async Task GoBack()
+    {
+        if (!string.IsNullOrEmpty(systemPermission.Name) || !string.IsNullOrEmpty(systemPermission.Description))
+        {
+            var confirmed = await ConfirmationService.ConfirmLeavingDirtyPageAsync();
+
+            if (!confirmed)
+            {
+                return;
+            }
+        }
+
+        NavigationManager.NavigateTo(PageRoutes.SystemPermissions);
+    }
+}

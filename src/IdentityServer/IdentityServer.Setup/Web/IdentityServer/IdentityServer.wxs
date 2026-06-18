@@ -1,0 +1,61 @@
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+	 xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util"
+	 xmlns:Json="http://schemas.hegsie.com/wix/JsonExtension">
+	<Fragment>
+		<Component Id="IdpApiComponent" Guid="{C5A90B7C-7D0D-4BE6-999E-410C1891CAF7}" Directory="IdentityServerFolder">
+
+			<Json:JsonFile Id="AppSettings01" File="[#IdpWebConfigJson]" ElementPath="$.System.EnableLoggingDiagnosticsToConsole" Value="[ENABLELOGGINGDIAGNOSTICSTOCONSOLE]" />
+			<Json:JsonFile Id="AppSettings02" File="[#IdpWebConfigJson]" ElementPath="$.System.EnableLoggingDiagnosticsToFile" Value="[ENABLELOGGINGDIAGNOSTICSTOFILE]" />
+			<Json:JsonFile Id="AppSettings03" File="[#IdpWebConfigJson]" ElementPath="$.System.EnvironmentTier" Value="[ENVIRONMENTTIER]" />
+			<Json:JsonFile Id="AppSettings04" File="[#IdpWebConfigJson]" ElementPath="$.System.Environment" Value="[ENVIRONMENTNAME]" />
+            <Json:JsonFile Id="AppSettings0402" File="[#IdpWebConfigJson]" ElementPath="$.System.LoadBalancer.IpRange" Value="[LB.RANGE]" />
+            <Json:JsonFile Id="AppSettings0403" File="[#IdpWebConfigJson]" ElementPath="$.System.LoadBalancer.Mask" Value="[LB.MASK]" />
+            <Json:JsonFile Id="AppSettings0404" File="[#IdpWebConfigJson]" ElementPath="$.System.SupportEmailAddress" Value="[SUPPORTEMAILADDRESS]" />
+
+<Json:JsonFile Id="AppSettings05" File="[#IdpWebConfigJson]" ElementPath="$.ConnectionStrings.IDPDBConnectionString" Value="Server=[DBSERVER];Database=[DBNAME];Integrated Security=true;TrustServerCertificate=true" />
+
+
+			<Json:JsonFile Id="AppSettings06" File="[#IdpWebConfigJson]" ElementPath="$.Kestrel.Endpoints.IDPHttpsEndpoint.Certificate.Subject" Value="[APICERTSUBJECT]" />
+			<Json:JsonFile Id="AppSettings07" File="[#IdpWebConfigJson]" ElementPath="$.Kestrel.Endpoints.IDPHttpsEndpoint.Certificate.Store" Value="My" />
+			<Json:JsonFile Id="AppSettings08" File="[#IdpWebConfigJson]" ElementPath="$.Kestrel.Endpoints.IDPHttpsEndpoint.Certificate.Location" Value="LocalMachine" />
+			<Json:JsonFile Id="AppSettings09" File="[#IdpWebConfigJson]" ElementPath="$.Kestrel.Endpoints.IDPHttpsEndpoint.Certificate.AllowInvalid" Value="false" />
+
+			<Json:JsonFile Id="AppSettings10" File="[#IdpWebConfigJson]" ElementPath="$.Serilog.WriteTo[\[]0[\]].Args.SinkConfig.requestUri" Value="[ELK.REQUESTURI]" />
+			<Json:JsonFile Id="AppSettings11" File="[#IdpWebConfigJson]" ElementPath="$.Serilog.WriteTo[\[]0[\]].Args.SinkConfig.username" Value="[ELK.USERNAME]" />
+			<Json:JsonFile Id="AppSettings12" File="[#IdpWebConfigJson]" ElementPath="$.Serilog.WriteTo[\[]0[\]].Args.SinkConfig.password" Value="[ELK.PASSWORD]" />
+
+			<Json:JsonFile Id="AppSettings13" File="[#IdpWebConfigJson]" ElementPath="$.MicrosoftEntra.ClientId" Value="[ENTRA.CLIENTID]" />
+			<Json:JsonFile Id="AppSettings14" File="[#IdpWebConfigJson]" ElementPath="$.MicrosoftEntra.TenantId" Value="[ENTRA.TENANTID]" />
+
+			<Json:JsonFile Id="AppSettings16" File="[#IdpWebConfigJson]" ElementPath="$.HttpRetryPolicy.RetryCount" Value="3" />
+			<Json:JsonFile Id="AppSettings17" File="[#IdpWebConfigJson]" ElementPath="$.HttpRetryPolicy.GrowthFactorInSeconds" Value="1.5" />
+
+			<Json:JsonFile Id="AppSettings20" File="[#IdpWebConfigJson]" ElementPath="$.IdentityServerProvider.Authority" Value="[IS.AUTHORITY]" />
+
+			<Json:JsonFile Id="AppSettings21" File="[#IdpWebConfigJson]" ElementPath="$.AzureKeyVaultConnections.DataProtectionEncryptionKeyConfig.KeyVaultUrl" Value="[KEYVAULT.URL]" />
+			<Json:JsonFile Id="AppSettings22" File="[#IdpWebConfigJson]" ElementPath="$.AzureKeyVaultConnections.DataProtectionEncryptionKeyConfig.ObjectName" Value="[KV.DATAPROTECTIONENCRYPTIONKEY.NAME]" />
+			<Json:JsonFile Id="AppSettings23" File="[#IdpWebConfigJson]" ElementPath="$.AzureKeyVaultConnections.IdentityServerLicenseKey.keyVaultUrl" Value="[KEYVAULT.URL]" />
+			<Json:JsonFile Id="AppSettings24" File="[#IdpWebConfigJson]" ElementPath="$.AzureKeyVaultConnections.IdentityServerLicenseKey.ObjectName" Value="[KV.IDENTITYSERVERLICENSEKEY.NAME]" />
+
+			<Json:JsonFile Id="AppSettings25" File="[#IdpWebConfigJson]" ElementPath="$.FeatureFlags.UseCustomRedirectUriValidator" Value="[FEATUREFLAGS.USECUSTOMREDIRECTURIVALIDATOR]" />
+
+			<Json:JsonFile Id="AppSettings26" File="[#IdpWebConfigJson]" ElementPath="$.FeatureFlags.CustomTokenLoggingSettings.EnableCustomTokenLogging" Value="[FEATUREFLAGS.CUSTOMTOKENLOGGING]" />
+			<Json:JsonFile Id="AppSettings27" File="[#IdpWebConfigJson]" ElementPath="$.FeatureFlags.CustomTokenLoggingSettings.ReferenceTokenDefaultVisibleLength" Value="[FEATUREFLAGS.CUSTOMLOGGINGREFTOKENLENGTH]" />
+			<Json:JsonFile Id="AppSettings28" File="[#IdpWebConfigJson]" ElementPath="$.FeatureFlags.CustomTokenLoggingSettings.JwtTokenVisibleParts" Value="[FEATUREFLAGS.CUSTOMLOGGINGJWTTOKENPARTS]" />
+
+			<Json:JsonFile Id="AppSettings29" File="[#IdpWebConfigJson]" ElementPath="$.OnePassword.BaseUrl" Value="[1P_INTERNAL.BASEURL]" />
+			<Json:JsonFile Id="AppSettings30" File="[#IdpWebConfigJson]" ElementPath="$.OnePassword.AccessToken" Value="[1P_INTERNAL.TOKEN]" />
+			<Json:JsonFile Id="AppSettings31" File="[#IdpWebConfigJson]" ElementPath="$.OnePassword.VaultId" Value="[1P_INTERNAL.VAULT]" />
+			<Json:JsonFile Id="AppSettings3201" File="[#IdpWebConfigJson]" ElementPath="$.OnePassword.Secrets.MicrosoftEntra__ClientSecret" Value="[1P_INTERNAL.ENTRASECRETID]" />
+			<Json:JsonFile Id="AppSettings3202" File="[#IdpWebConfigJson]" ElementPath="$.OnePassword.Secrets.IdentityServer__CachingOptions__Provider__Password" Value="[1P_INTERNAL.VALKEYPASSWORD]" />
+
+			<Json:JsonFile Id="AppSettings33" File="[#IdpWebConfigJson]" ElementPath="$.IdentityServer.CachingOptions.Enabled" Value="[IDS.CACHE.ENABLED]" />
+			<Json:JsonFile Id="AppSettings3301" File="[#IdpWebConfigJson]" ElementPath="$.IdentityServer.CachingOptions.Provider.Kind" Value="[IDS.CACHE.PROVIDER.KIND]" />
+			<Json:JsonFile Id="AppSettings3302" File="[#IdpWebConfigJson]" ElementPath="$.IdentityServer.CachingOptions.Provider.ConnectionString" Value="[IDS.CACHE.PROVIDER.CONNECTIONSTRING]" />
+			<Json:JsonFile Id="AppSettings3303" File="[#IdpWebConfigJson]" ElementPath="$.IdentityServer.CachingOptions.Provider.Username" Value="[IDS.CACHE.PROVIDER.USERNAME]" />
+
+			<Json:JsonFile Id="AppSettings34" File="[#IdpWebConfigJson]" ElementPath="$.IdentityServer.AuthenticationOptions.CookieLifetime" Value="[IDS.AUTH.COOKIELIFETIME]" />
+		</Component>
+
+	</Fragment>
+</Wix>

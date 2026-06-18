@@ -1,0 +1,16 @@
+﻿@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@inject NavigationManager NavigationManager
+
+<p role="alert" class="alert-danger">@ErrorMessage</p>
+<p><a href="/">Return to the homepage</a> to continue using the application.</p>
+<p>If you'd like to log out, <span class="btn-link" @onclick="BeginLogOut">click here</span>.</p>
+
+@code {
+    [Parameter]
+    public string? ErrorMessage { get; set; }
+
+    public void BeginLogOut()
+    {
+        NavigationManager.NavigateToLogout("authentication/logout");
+    }
+}

@@ -1,0 +1,9 @@
+{
+  "DatabaseType": [ "IdentityServerDb" ],
+  "Parameters": [
+    {
+      "DacpacParameter": "EnvironmentTier",
+      "DeployProperty": "EnvironmentTier"
+    }
+  ]
+}

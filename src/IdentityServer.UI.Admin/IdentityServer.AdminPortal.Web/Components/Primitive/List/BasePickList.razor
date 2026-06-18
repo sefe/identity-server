@@ -1,0 +1,86 @@
+@using IdentityServer.AdminPortal.Web.Services.Search
+@using System.Linq.Expressions
+
+@typeparam TId
+@typeparam TItem where TItem : IHasId<TId>
+
+<ErrorAlert @bind-ErrorMessage="@errorMessage" />
+
+@if (awaitingResults)
+{
+    <div class="@BodyCssClass">
+        <TelerikLoaderContainer Text="@($"Loading {@GetItemDisplayName()}...")" />
+    </div>
+}
+
+@if (dataLoaded)
+{
+    if (Data.Count > 0)
+    {
+        <div class="@HeaderCssClass border-bottom">
+            <span>Please pick one of the @GetItemDisplayName():</span>
+        </div>
+    }
+    <div class="@BodyCssClass">
+        <ListView TItem="TItem" Data="Data" ItemTemplate="ItemTemplate" />
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public ISearchProvider<TItem> SearchProvider { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public RenderFragment<TItem> ItemTemplate { get; set; } = default!;
+
+    [Parameter]
+    public List<TItem> ExcludeItems { get; set; } = new List<TItem>();
+
+    [Parameter]
+    public IEqualityComparer<TItem> ExcludeItemsComparer { get; set; } = IdEqualityComparer.For<TItem, TId>();
+
+    [Parameter]
+    public string ItemSingularDisplayName { get; set; } = typeof(TItem).Name.ToLower();
+
+    [Parameter]
+    public string HeaderCssClass { get; set; } = "offcanvas-header";
+    [Parameter]
+    public string BodyCssClass { get; set; } = "offcanvas-body";
+
+    protected List<TItem> Data { get; set; } = [];
+
+    protected bool awaitingResults = false;
+    protected bool dataLoaded = false;
+    protected int totalResultsReceived = 0;
+    protected string? skipToken;
+    protected string? errorMessage = null;
+
+    protected async Task GetDataAsync(string searchValue)
+    {
+        awaitingResults = true;
+
+        (var results, skipToken, errorMessage) = await SearchProvider.SearchAsync(searchValue, skipToken);
+        if (string.IsNullOrEmpty(errorMessage) && results != null)
+        {
+            totalResultsReceived += results.Count;
+            Data = new List<TItem>(Data.Concat(results.Except(ExcludeItems, ExcludeItemsComparer)));
+        }
+
+        dataLoaded = true;
+        awaitingResults = false;
+    }
+
+    protected string GetItemDisplayName(int? count = null)
+    {
+        return (count == 1) ? ItemSingularDisplayName : (ItemSingularDisplayName + "s");
+    }
+
+    public virtual Task Clear()
+    {
+        Data.Clear();
+        skipToken = null;
+        dataLoaded = false;
+        totalResultsReceived = 0;
+        return Task.CompletedTask;
+    }
+}

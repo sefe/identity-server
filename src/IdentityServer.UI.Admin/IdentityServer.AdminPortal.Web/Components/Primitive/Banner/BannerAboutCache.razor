@@ -1,0 +1,10 @@
+@using Microsoft.Extensions.Options
+@using IdentityServer.Abstraction.Configs
+
+@inject IOptions<IdentityServerCachingOptions> CachingOptions
+
+@if (CachingOptions.Value.Enabled && CachingOptions.Value.Provider.Kind == CacheProviderKind.InMemory)
+{
+    <BannerWithText Title="Changes may take up to 15 minutes to apply."
+                    Text="Caching is enabled to optimize performance. Any updates or changes on this page may take up to 15 minutes to apply in IdentityServer." />
+}

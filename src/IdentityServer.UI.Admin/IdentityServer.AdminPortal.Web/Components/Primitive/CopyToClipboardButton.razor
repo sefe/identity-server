@@ -1,0 +1,75 @@
+﻿@inject IClipboardService ClipboardService
+@inject ILogger<CopyToClipboardButton> Logger
+@inject NotificationService NotificationService
+
+<div class="@Class">
+    <TelerikButton Class="m-0 p-0 tooltip-target" ButtonType="ButtonType.Button" OnClick="CopyToClipboard" Icon="@CurrentIcon" Title="Copy to clipboard" FillMode="@CurrentFillMode" Size="sm" ThemeColor="@CurrentColor" />
+</div>
+
+@code {
+    [Parameter]
+    public string Class { get; set; } = "me-2";
+
+    [Parameter]
+    [EditorRequired]
+    public string ValueToCopy { get; set; } = string.Empty;
+
+    private bool _isCopying = false;
+
+    private ISvgIcon CurrentIcon = SvgIcon.Copy;
+    private string CurrentFillMode = Telerik.Blazor.ThemeConstants.Button.FillMode.Clear;
+    private string CurrentColor = Telerik.Blazor.ThemeConstants.Button.ThemeColor.Secondary;
+
+    private async Task CopyToClipboard()
+    {
+        if (string.IsNullOrWhiteSpace(ValueToCopy))
+        {
+            return;
+        }
+        if (_isCopying)
+        {
+            return; // Prevent multiple clicks while copying
+        }
+        _isCopying = true;
+        try
+        {
+            await ClipboardService.CopyToClipboard(ValueToCopy);
+            SwitchToSuccessState();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, $"Error copying to clipboard");
+            SwitchToErrorState();
+        }
+        finally
+        {
+            await Task.Delay(2000); // Wait for 2 seconds before resetting the button state
+            SwitchToDefaultState();
+            _isCopying = false;
+        }
+    }
+
+    private void SwitchToSuccessState()
+    {
+        CurrentIcon = SvgIcon.Check;
+        CurrentFillMode = Telerik.Blazor.ThemeConstants.Button.FillMode.Solid;
+        CurrentColor = Telerik.Blazor.ThemeConstants.Button.ThemeColor.Success;
+        StateHasChanged();
+    }
+
+    private void SwitchToErrorState()
+    {
+        CurrentIcon = SvgIcon.XCircle;
+        CurrentFillMode = Telerik.Blazor.ThemeConstants.Button.FillMode.Solid;
+        CurrentColor = Telerik.Blazor.ThemeConstants.Button.ThemeColor.Error;
+        StateHasChanged();
+    }
+
+    private void SwitchToDefaultState()
+    {
+        CurrentIcon = SvgIcon.Copy;
+        CurrentFillMode = Telerik.Blazor.ThemeConstants.Button.FillMode.Clear;
+        CurrentColor = Telerik.Blazor.ThemeConstants.Button.ThemeColor.Secondary;
+        StateHasChanged();
+    }
+}

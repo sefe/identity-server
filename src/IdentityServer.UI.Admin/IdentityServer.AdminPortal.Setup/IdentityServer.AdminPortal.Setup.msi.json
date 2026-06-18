@@ -1,0 +1,136 @@
+{
+    "ProductNames": [
+        "IdentityServer.AdminProtal"
+    ],
+    "ServerType": "IDPWebSrv",
+    "Parameters": [
+        {
+            "MSIParameter": "SERVICEIDENTITY",
+            "DeployProperty": "IDP_API_ServiceAccount"
+        },
+        {
+            "MSIParameter": "SERVICEPASSWORD",
+            "DeployProperty": "IDP_API_ServiceAccountPassword"
+        },
+        {
+            "MSIParameter": "ENVIRONMENTTIER",
+            "DeployProperty": "EnvironmentTier"
+        },
+        {
+            "MSIParameter": "ENVIRONMENTNAME",
+            "DeployProperty": "EnvironmentName"
+        },
+        {
+            "MSIParameter": "ENABLELOGGINGDIAGNOSTICSTOCONSOLE",
+            "DeployProperty": "IDP_Admin_EnableLoggingDiagnosticsToConsole"
+        },
+        {
+            "MSIParameter": "ENABLELOGGINGDIAGNOSTICSTOFILE",
+            "DeployProperty": "IDP_Admin_EnableLoggingDiagnosticsToFile"
+        },
+        {
+            "MSIParameter": "ENABLEREQUESTBODYLOGGING",
+            "DeployProperty": "IDP_Admin_EnableRequestBodyLogging"
+        },
+        {
+            "MSIParameter": "DBSERVER",
+            "DeployProperty": "IDP_DBServer"
+        },
+        {
+            "MSIParameter": "DBNAME",
+            "DeployProperty": "IDP_DBName"
+        },
+        {
+            "MSIParameter": "ISADMURL",
+            "DeployProperty": "IDP_IdentityServer_Admin_Url"
+        },
+        {
+            "MSIParameter": "ADMCERTSUBJECT",
+            "DeployProperty": "IDP_Admin_Certificate_Subject"
+        },
+        {
+            "MSIParameter": "ELK.REQUESTURI",
+            "DeployProperty": "IDP_ELK_RequestUri"
+        },
+        {
+            "MSIParameter": "ELK.USERNAME",
+            "DeployProperty": "IDP_ELK_UserName"
+        },
+        {
+            "MSIParameter": "ELK.PASSWORD",
+            "DeployProperty": "IDP_ELK_Password"
+        },
+        {
+            "MSIParameter": "ENTRA.CLIENTID",
+            "DeployProperty": "IDP_Entra_ClientId"
+        },
+        {
+            "MSIParameter": "ENTRA.TENANTID",
+            "DeployProperty": "IDP_Entra_TenantId"
+        },
+        {
+            "MSIParameter": "IS.AUTHORITY",
+            "DeployProperty": "IDP_IdentityServer_Url"
+        },
+        {
+            "MSIParameter": "AUTH.CONTRIBUTORGROUPID",
+            "DeployProperty": "IDP_Admin_Auth_ContributorGroupId"
+        },
+        {
+            "MSIParameter": "AUTH.READERGROUPID",
+            "DeployProperty": "IDP_Admin_Auth_ReaderGroupId"
+        },
+        {
+            "MSIParameter": "MAXVISIBLERESOURCEWRITERS",
+            "DeployProperty": "IDP_Admin_MaxVisibleResourceWriters"
+        },
+        {
+            "MSIParameter": "THEME.BACKGROUNDCOLOR",
+            "DeployProperty": "IDP_Theme_BackgroundColor"
+        },
+        {
+            "MSIParameter": "1P_INTERNAL.BASEURL",
+            "DeployProperty": "IDP_1P_BASEURL"
+        },
+        {
+            "MSIParameter": "1P_INTERNAL.TOKEN",
+            "DeployProperty": "IDP_1P_TOKEN"
+        },
+        {
+            "MSIParameter": "1P_INTERNAL.VAULT",
+            "DeployProperty": "IDP_1P_VAULT"
+        },
+        {
+            "MSIParameter": "1P_INTERNAL.ENTRASECRETID",
+            "DeployProperty": "IDP_1P_Entra_ClientSecretId"
+        },
+        {
+            "MSIParameter": "1P_INTERNAL.VALKEYPASSWORD",
+            "DeployProperty": "IDP_1P_Valkey_PasswordId"
+        },
+        {
+            "MSIParameter": "IDS.CACHE.ENABLED",
+            "DeployProperty": "IDP_IDS_Cache_Enabled"
+        },
+        {
+            "MSIParameter": "LB.RANGE",
+            "DeployProperty": "IDP_LB_Range"
+        },
+        {
+            "MSIParameter": "LB.MASK",
+            "DeployProperty": "IDP_LB_Mask"
+        },
+        {
+            "MSIParameter": "SUPPORTEMAILADDRESS",
+            "DeployProperty": "IDP_Support_Email_Address"
+        },
+        {
+            "MSIParameter": "IDS.SECRET.MAXVALIDYEARS",
+            "DeployProperty": "IDP_IDS_Secret_MaxValidityYears"
+        },
+        {
+            "MSIParameter": "IDS.SECRET.DAYSBEFOREEXPIRATIONNOTIFICATION",
+            "DeployProperty": "IDP_IDS_Secret_DaysBeforeExpirationNotification"
+        }
+    ]
+}

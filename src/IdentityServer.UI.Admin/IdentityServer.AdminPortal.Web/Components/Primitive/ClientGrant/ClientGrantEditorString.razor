@@ -1,0 +1,63 @@
+@using System.Collections.Generic
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Linq.Expressions
+@using IdentityServer.Abstraction.Extensions
+
+@inherits ClientGrantEditorBase<string, HashSet<string>>
+
+@{
+    // Display the base component markup
+    base.BuildRenderTree(__builder);
+}
+
+@code {
+    protected override IEnumerable<ClientGrantItemListItem> AllowedItems =>
+        Value.Order().Select(grantObj => new ClientGrantItemListItem
+        {
+            Text = GetGrantDisplayText(grantObj),
+            OnClick = EventCallback.Factory.Create(this, () => RemoveValue(grantObj)),
+            IsReadonly = IsReadonly
+        });
+
+    protected override IEnumerable<ClientGrantItemListItem> AvailableItems =>
+        GetAvailableGrants().Select(grant => new ClientGrantItemListItem
+        {
+            Text = grant.Value,
+            OnClick = EventCallback.Factory.Create(this, () => AddValue(grant.Key)),
+            IsReadonly = IsReadonly
+        });
+
+    protected override IEnumerable<ClientGrantItemListItem> IncompatibleItems =>
+        GetIncompatibleGrants().Select(grant => new ClientGrantItemListItem
+        {
+            Text = grant.Value,
+            Tooltip = GetGrantTooltip(grant.Key),
+            IsReadonly = true
+        });
+
+    internal void AddValue(string value)
+    {
+        Value.Add(value);
+        NotifyValueChanged();
+    }
+
+    internal void RemoveValue(string value)
+    {
+        if (Value.Remove(value))
+        {
+            NotifyValueChanged();
+        }
+    }
+
+    private void NotifyValueChanged()
+    {
+        ValueChanged.InvokeAsync(Value);
+        EditContext?.NotifyFieldChanged(FieldIdentifier.Create(ValueExpression));
+    }
+
+    protected internal override bool IsAlreadyAdded(string grant)
+    {
+        return Value.Any(v => v.IsSameLax(grant));
+    }
+}

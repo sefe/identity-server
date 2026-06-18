@@ -1,0 +1,18 @@
+﻿@inject NavigationManager NavigationManager
+
+<div class="mb-3">
+    <TelerikButton OnClick="@GoBack" FillMode="link" Size="small"><span class="text-decoration-underline">@("<<") @Title</span></TelerikButton>
+</div>
+
+@code{
+    [Parameter]
+    public string Address { get; set; } = "/";
+
+    [Parameter]
+    public string Title { get; set; } = "Go Back";
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo(Address);
+    }
+}

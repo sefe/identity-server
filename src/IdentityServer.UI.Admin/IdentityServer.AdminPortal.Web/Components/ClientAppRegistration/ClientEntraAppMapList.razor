@@ -1,0 +1,235 @@
+@inherits EditablePagedComponentBase
+
+@inject IAdminApiService AdminApi
+@inject NotificationService NotificationService
+@inject IConfirmationService ConfirmationService
+
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="ms-2 me-auto my-auto align-middle">
+                <h5 class="my-0">Mapped EntraID Applications</h5>
+            </div>
+            <div class="ms-auto pe-2">
+                <HistoryButton ApplicationId="Application.Id" EntityTypeFilter="@HistoryEntryDtoExtensions.GetDisplayName(HistoryEntryDtoExtensions.KnownEntityTypes.ClientEntraApp)" />
+            </div>
+            @if (!IsReadonly && !showAddControls)
+            {
+                <div>
+                    <TelerikButton OnClick="ShowAddNewItemMenu" ButtonType="ButtonType.Button" ThemeColor="primary" Size="small">Add New</TelerikButton>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Information Section -->
+        <div class="info-box border rounded p-3 d-flex align-items-start mb-3">
+            <div>
+                Only the listed EntraID apps can run Token Exchange flow for this application.
+            </div>
+        </div>
+
+        @if (!IsReadonly && showAddControls)
+        {
+            <TelerikForm Model="@newValue" OnValidSubmit="@AddClientEntraApp" Class="w-100 mt-3">
+                <FormValidation>
+                    <DataAnnotationsValidator />
+                </FormValidation>
+                <FormItems>
+                    <FormItem>
+                        <Template>
+                            <div class="row">
+                                <div class="col">
+                                    <TelerikTextBox Value="@newValue.AppId"
+                                                    ValueExpression="@(() => newValue.AppId)"
+                                                    ValueChanged="@(t => { UpdateAppIdValue(t); })"
+                                                    Placeholder="Enter new Entra App ID GUID here"
+                                                    Class="me-2" Width="100%"
+                                                    Enabled="@(!awaitingResults)">
+                                    </TelerikTextBox>
+                                    <TelerikValidationMessage For="@(() => newValue.AppId)" />
+                                </div>
+                                <div class="col-auto">
+                                    <TelerikButton ButtonType="@ButtonType.Submit" ThemeColor="primary" Enabled="@(!(IsReadonly || awaitingResults))">Add</TelerikButton>
+                                    <TelerikButton ButtonType="@ButtonType.Button" ThemeColor="secondary" OnClick="OnCancel" Enabled="@(!(IsReadonly || awaitingResults))">Cancel</TelerikButton>
+                                </div>
+                            </div>
+                        </Template>
+                    </FormItem>
+                </FormItems>
+                <FormButtons />
+            </TelerikForm>
+        }
+
+        <ErrorAlert @bind-ErrorMessage="@errorMessage" CssClass="mt-2" />
+
+        @if (Application.EntraApps?.Count > 0)
+        {
+            <TelerikGrid Data="Application.EntraApps"
+                         Pageable="true"
+                         PageSize="@PageSize"
+                         PageSizeChanged="@OnPageSizeChanged"
+                         Sortable="true"
+                         Groupable="false"
+                         FilterMode="GridFilterMode.None"
+                         OnDelete="OnGridDelete"
+                         EnableLoaderContainer="false">
+                <GridSettings>
+                    <GridPagerSettings PageSizes="@PageSizes" />
+                </GridSettings>
+                <GridToolBar>
+                    <GridToolBarSearchBoxTool />
+                </GridToolBar>
+                <GridColumns>
+                    <GridColumn Field="@(nameof(ClientPropertyEntraAppDtoRead.AppId))" Title="Entra App ID" />
+                    <GridColumn Field="@(nameof(ClientPropertyEntraAppDtoRead.AppName))" Title="App Display Name" />
+                    <GridCommandColumn Width="50px">
+                        <GridCommandButton Command="Delete" Icon="@SvgIcon.Trash" ThemeColor="error" FillMode="outline" Enabled="@(!(IsReadonly || awaitingResults))" />
+                    </GridCommandColumn>
+                </GridColumns>
+            </TelerikGrid>
+        }
+        else
+        {
+            <span class="form-text">None</span>
+        }
+
+        @if (awaitingResults)
+        {
+            <div>
+                <TelerikLoaderContainer />
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public ClientDtoRead Application { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnApplicationUpdate { get; set; }
+
+    private string? errorMessage;
+    private bool awaitingResults = false;
+    private bool showAddControls;
+    private ClientPropertyEntraAppDtoCreateWrapper newValue = default!;
+
+    protected override string? PageSizeStorageKey => "idp.admin.client.entraapp.pagesize.gs";
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        if (Application != null)
+        {
+            ResetFormModel();
+        }
+    }
+
+    private void ResetFormModel()
+    {
+        newValue = new ClientPropertyEntraAppDtoCreateWrapper
+        {
+            ClientId = Application.Id,
+            AppId = string.Empty,
+            AlreadyExistingUniquePropertyValues = Application.EntraApps.Select(e => e.AppId).ToHashSet(StringComparer.OrdinalIgnoreCase),
+        };
+    }
+
+    private void ShowAddNewItemMenu()
+    {
+        showAddControls = true;
+    }
+
+    private void HideAddNewItemMenu()
+    {
+        showAddControls = false;
+    }
+
+    private async Task AddClientEntraApp()
+    {
+        if (IsReadonly || awaitingResults) return;
+
+        awaitingResults = true;
+        try
+        {
+            newValue.ClientId = Application.Id;
+            var callResult = await AdminApi.AddClientEntraApp(newValue);
+            if (callResult.IsSuccess)
+            {
+                errorMessage = null;
+                ResetFormModel();
+                Application.EntraApps.Add(callResult.Result);
+                var updatedApps = new List<ClientPropertyEntraAppDtoRead>(Application.EntraApps);
+                Application.EntraApps = updatedApps;
+                NotificationService.ShowInfo("Related EntraID App added.");
+                HideAddNewItemMenu();
+                await OnApplicationUpdate.InvokeAsync();
+            }
+            else
+            {
+                errorMessage = callResult.ErrorMessage;
+            }
+        }
+        finally
+        {
+            awaitingResults = false;
+        }
+    }
+
+    private void OnCancel()
+    {
+        errorMessage = null;
+        ResetFormModel();
+        HideAddNewItemMenu();
+        StateHasChanged();
+    }
+
+    private async Task OnGridDelete(GridCommandEventArgs args)
+    {
+        if (args.Item is ClientPropertyEntraAppDtoRead entraApp)
+        {
+            await DeleteClientEntraApp(entraApp);
+        }
+    }
+
+    private async Task DeleteClientEntraApp(ClientPropertyEntraAppDtoRead value)
+    {
+        if (IsReadonly || awaitingResults) return;
+
+        var confirmed = await ConfirmationService.ConfirmAsync("Delete Confirmation",
+            $"Are you sure you want to delete the relationship with EntraID App '{value.AppName}'?");
+
+        if (!confirmed) return;
+
+
+        awaitingResults = true;
+        try
+        {
+            var callResult = await AdminApi.DeleteClientEntraApp(value);
+            if (callResult.IsSuccess)
+            {
+                errorMessage = null;
+                Application.EntraApps.Remove(value);
+                var updatedApps = new List<ClientPropertyEntraAppDtoRead>(Application.EntraApps);
+                Application.EntraApps = updatedApps;
+                NotificationService.ShowInfo("Related EntraID App removed.");
+                await OnApplicationUpdate.InvokeAsync();
+            }
+            else
+            {
+                errorMessage = callResult.ErrorMessage;
+            }
+        }
+        finally
+        {
+            awaitingResults = false;
+        }
+    }
+
+    private void UpdateAppIdValue(string text)
+    {
+        newValue.AppId = text;
+    }
+}

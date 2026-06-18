@@ -1,0 +1,28 @@
+﻿<TelerikButton ButtonType="ButtonType.Button" FillMode="clear" OnClick="SelectAll" Icon="SvgIcon.CheckboxChecked" Size="small">Select all</TelerikButton>
+<TelerikButton ButtonType="ButtonType.Button" FillMode="clear" OnClick="SelectNone" Icon="SvgIcon.CheckboxNull" Size="small">Select none</TelerikButton>
+
+@code {
+    [Parameter]
+    public IEnumerable<Selectable> Items { get; set; } = Enumerable.Empty<Selectable>();
+
+    [Parameter]
+    public EventCallback OnStateChanged { get; set; }
+
+    private async Task SelectAll()
+    {
+        foreach (var item in Items)
+        {
+            item.IsSelected = true;
+        }
+        await OnStateChanged.InvokeAsync();
+    }
+
+    private async Task SelectNone()
+    {
+        foreach (var item in Items)
+        {
+            item.IsSelected = false;
+        }
+        await OnStateChanged.InvokeAsync();
+    }
+}

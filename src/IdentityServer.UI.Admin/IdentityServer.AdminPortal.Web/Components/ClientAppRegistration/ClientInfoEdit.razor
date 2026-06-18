@@ -1,0 +1,228 @@
+﻿@inherits EditableComponentBase
+
+@inject IAdminApiService AdminApi
+@inject IConfirmationService ConfirmationService
+@inject NotificationService NotificationService
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row mx-auto gy-2">
+            <div class="col-12 col-lg-3">
+                <RequiredFieldLabel ForTarget="clientId" LabelText="Identifier" />
+                <div class="row mx-auto align-items-center">
+                    <div class="col-auto m-0 p-0">
+                        <CopyToClipboardButton ValueToCopy="@Application.ClientId" />
+                    </div>
+                    <div class="col m-0 p-0">
+                        <p id="clientId" class="m-0 form-control-plaintext text-break">@Application.ClientId</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-4">
+                <RequiredFieldLabel ForTarget="clientDisplayName" LabelText="Display Name" />
+
+                @if (!IsReadonly)
+                {
+                    <EditableFieldModal TModel="ClientDtoUpdate" Model="@clientDtoUpdate" OnSave="@(() => UpdateClientAsync(clientDtoUpdate, "Display Name"))" Title="Edit Application Display Name"
+                                        OnOpen="@(model => model.ClientName = Application.ClientName)" OnCancel="ResetUpdateModel">
+                        <FormItems>
+                            <FormItem>
+                                <Template>
+                                    <RequiredFieldLabel ForTarget="clientDisplayNameEdit" LabelText="Display Name" />
+                                    <TelerikTextBox id="clientDisplayNameEdit" class="form-control" @bind-Value="@clientDtoUpdate.ClientName" AriaDescribedBy="clientDisplayNameHelpBlock" />
+                                    <div id="clientDisplayNameHelpBlock" class="form-text">Human-readable name. Keep it short and clear.</div>
+                                    <TelerikValidationMessage For="@(() => clientDtoUpdate.ClientName)" />
+                                </Template>
+                            </FormItem>
+                        </FormItems>
+                    </EditableFieldModal>
+                }
+                <p id="clientDisplayName" class="m-0 form-control-plaintext text-break">@Application.ClientName</p>
+            </div>
+
+            <div class="col-12 col-lg-3">
+                <RequiredFieldLabel ForTarget="clientSystemPermission" LabelText="System Permission" />
+                <p id="clientSystemPermission" class="m-0 form-control-plaintext text-break">
+                    <a class="btn btn-link text-start text-break text-decoration-underline p-0" href="@PageRoutes.SystemPermissionsEdit(@Application.SystemPermissionId)">@Application.SystemPermissionName</a>
+                </p>
+            </div>
+
+            <div class="col-12 col-lg-2">
+                <RequiredFieldLabel ForTarget="clientSystemPermissionEnvironment" LabelText="Environment" />
+                <SystemPermissionEnvironmentContactsButton Entity="Application" Id="clientSystemPermissionEnvironment" />
+            </div>
+
+            <div class="col-12">
+                <label for="clientDescription" class="k-label k-form-label">Description</label>
+
+                @if (!IsReadonly)
+                {
+                    <EditableFieldModal TModel="ClientDtoUpdate" Model="@clientDtoUpdate" OnSave="@(() => UpdateClientAsync(clientDtoUpdate, "Description"))" Title="Edit Application Description"
+                                        OnOpen="@(model => model.Description = Application.Description)" OnCancel="ResetUpdateModel">
+                        <FormItems>
+                            <FormItem>
+                                <Template>
+                                    <label for="clientDescription" class="k-label k-form-label">Description</label>
+                                    <TelerikTextArea id="clientDescription" class="form-control" @bind-Value="@clientDtoUpdate.Description" rows="10" placeholder="Optional information about the application." AriaDescribedBy="clientDescriptionHelpBlock" />
+                                    <div id="clientDescriptionHelpBlock" class="form-text">Provide a meaningful description in @Constants.Limits.Client.Description.MaxLength characters or less</div>
+                                    <TelerikValidationMessage For="@(() => clientDtoUpdate.Description)" />
+                                </Template>
+                            </FormItem>
+                        </FormItems>
+                    </EditableFieldModal>
+                }
+                <p id="clientDescription" class="m-0 form-control-plaintext text-break">@Application.Description</p>
+            </div>
+
+            <div class="col-12 col-lg-6">
+                <div class="row">
+                    <div class="col my-auto">
+                        <label for="clientEnabled" class="k-label k-form-label">Is Enabled</label>
+                    </div>
+                    <div class="col my-auto">
+                        <TelerikSwitch Value="@Application.Enabled" AriaDescribedBy="clientEnabledHelpBlock" Id="clientEnabled" OnLabel="True" OffLabel="False" Width="85px" ValueChanged="@((bool val) => ToggleIsEnabled(val))" Enabled="!IsReadonly" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div id="clientEnabledHelpBlock" class="col k-form-hint">The application cannot be used until enabled.</div>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-6">
+                <div class="row">
+                    <div class="col my-auto">
+                        <label for="clientReqSecret" class="k-label k-form-label">Require Client Secret</label>
+                    </div>
+                    <div class="col my-auto">
+                        <TelerikSwitch Value="@Application.RequireClientSecret" AriaDescribedBy="clientReqSecretHelpBlock" Id="clientReqSecret" OnLabel="True" OffLabel="False" Width="85px" ValueChanged="@((bool val) => ToggleRequireClientSecret(val))" Enabled="!IsReadonly" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div id="clientReqSecretHelpBlock" class="col k-form-hint">Client secret is mandatory for confidential applications.</div>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-6">
+                <div class="row">
+                    <div class="col my-auto">
+                        <label for="clientReqPkce" class="k-label k-form-label">Require PKCE</label>
+                    </div>
+                    <div class="col my-auto">
+                        <TelerikSwitch Value="@Application.RequirePkce" AriaDescribedBy="clientReqPkceHelpBlock" Id="clientReqPkce" OnLabel="True" OffLabel="False" Width="85px" ValueChanged="@((bool val) => ToggleRequirePkce(val))" Enabled="!IsReadonly" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div id="clientReqPkceHelpBlock" class="col k-form-hint">Demand Proof Key for Code Exchange (PKCE) for authorization code flow.</div>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-6">
+                <div class="row">
+                    <div class="col my-auto">
+                        <label class="k-label k-form-label">Access Token Type</label>
+                    </div>
+                    <div class="col my-auto">
+                        <TelerikButtonGroup>
+                            <ButtonGroupToggleButton ThemeColor="success" FillMode="outline" Selected="@IsTokenRef()" OnClick="() => ToggleAccessTokenType(ClientAccessTokenType.Reference)" Size="small">
+                                @(IsTokenRef() ? "☑" : "☐") Reference
+                            </ButtonGroupToggleButton>
+                            <ButtonGroupToggleButton ThemeColor="error" FillMode="outline" Selected="@IsTokenJwt()" OnClick="() => ToggleAccessTokenType(ClientAccessTokenType.Jwt)" Size="small">
+                                @(IsTokenJwt() ? "☑" : "☐") JWT
+                            </ButtonGroupToggleButton>
+                        </TelerikButtonGroup>
+                    </div>
+                </div>
+                <div class="row">
+                    <div id="clientTokenTypeHelpBlock" class="col k-form-hint">Reference tokens are opaque, JSON Web Tokens are self-contained.</div>
+                </div>
+            </div>
+
+            <ErrorAlert @bind-ErrorMessage="@errorMessage" CssClass="mt-2" />
+
+            @if (awaitingResults)
+            {
+                <div>
+                    <TelerikLoaderContainer />
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public ClientDtoRead Application { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<ClientDtoRead> OnApplicationUpdate { get; set; }
+
+    [Parameter]
+    public EventCallback Cancel { get; set; }
+
+    private ClientDtoUpdate clientDtoUpdate = new ClientDtoUpdate();
+    private string? errorMessage;
+    private bool awaitingResults = false;
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        ResetUpdateModel();
+    }
+
+    private async Task UpdateClientAsync(ClientDtoUpdate dto, string fieldName)
+    {
+        if (IsReadonly) return;
+
+        awaitingResults = true;
+        dto.Id = Application.Id;
+        var callResult = await AdminApi.UpdateClient(dto);
+        if (callResult.IsSuccess)
+        {
+            errorMessage = null;
+            Application = callResult.Result;
+            ResetUpdateModel();
+            NotificationService.ShowInfo($"{fieldName} updated.");
+            await OnApplicationUpdate.InvokeAsync(Application);
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+        awaitingResults = false;
+    }
+
+    private Task ToggleIsEnabled(bool newValue)
+    {
+        return UpdateClientAsync(new ClientDtoUpdate { Enabled = newValue }, "'Is Enabled' setting");
+    }
+
+    private Task ToggleRequireClientSecret(bool newValue)
+    {
+        return UpdateClientAsync(new ClientDtoUpdate { RequireClientSecret = newValue }, "'Require Secret' setting");
+    }
+
+    private Task ToggleRequirePkce(bool newValue)
+    {
+        return UpdateClientAsync(new ClientDtoUpdate { RequirePkce = newValue }, "'PKCE' setting");
+    }
+
+    private Task ToggleAccessTokenType(ClientAccessTokenType tokenType)
+    {
+        if (Application.AccessTokenType == tokenType)
+        {
+            return Task.CompletedTask;
+        }
+        return UpdateClientAsync(new ClientDtoUpdate { AccessTokenType = tokenType }, "'Access Token Type' setting");
+    }
+
+    private bool IsTokenJwt() => Application.AccessTokenType == ClientAccessTokenType.Jwt;
+    private bool IsTokenRef() => Application.AccessTokenType == ClientAccessTokenType.Reference;
+
+    private void ResetUpdateModel()
+    {
+        clientDtoUpdate = new ClientDtoUpdate { Id = Application.Id };
+    }
+}

@@ -1,0 +1,101 @@
+@using IdentityServer.Abstraction.Configs
+
+@inject ISystemConfig SystemOptions
+
+<TelerikButton Class="@Class" Size="small" OnClick="InitExport"
+               ButtonType="ButtonType.Button" FillMode="link" Icon="@SvgIcon.Download">Export</TelerikButton>
+
+<RoleExportDialog TMappingType="RoleMapType" @ref="_roleExportDialog" PrepareExportResult="PrepareRoleMappingsExport" OnExportCompleted="@OnExportCompleted" />
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public ApiResourceDtoRead ApiResource { get; set; } = default!;
+    [Parameter]
+    public string UserObjectId { get; set; } = string.Empty;
+    [Parameter]
+    public string UserName { get; set; } = string.Empty;
+    [Parameter]
+    public string Class { get; set; } = string.Empty;
+    [Parameter]
+    public EventCallback OnExportCompleted { get; set; }
+    [Parameter]
+    public bool SilentlyExportAllRoles { get; set; } = false;
+
+    private RoleExportDialog<RoleMapType> _roleExportDialog = default!;
+
+    private async Task InitExport()
+    {
+        var exportModel = new RoleExportDialog<RoleMapType>.ExportModel
+        {
+            RoleMapTypeSelection = new List<SelectableValue<RoleMapType>>
+            {
+                new SelectableValue<RoleMapType> { Value = RoleMapType.SecurityGroup, DisplayName = "Security Group", IsSelected = true },
+                new SelectableValue<RoleMapType> { Value = RoleMapType.ClientId, DisplayName = "Client Id", IsSelected = true },
+                new SelectableValue<RoleMapType> { Value = RoleMapType.UserObjectId, DisplayName = "User Object Id", IsSelected = true }
+            },
+            RoleNameSelection = ApiResource.Roles
+                .Select(r => r.RoleName)
+                .Distinct()
+                .Select(name => new SelectableValue<string> { Value = name, DisplayName = name, IsSelected = true })
+                .ToList()
+        };
+
+        if (SilentlyExportAllRoles)
+        {
+            await _roleExportDialog.ExportAsync(exportModel);
+        }
+        else
+        {
+            _roleExportDialog.OpenExportDialog(exportModel);
+        }
+    }
+
+    private Task<ExportResult> PrepareRoleMappingsExport(IEnumerable<SelectableValue<RoleMapType>> selectedTypes, IEnumerable<SelectableValue<string>> selectedRoleNames)
+    {
+        var exportObject = new RoleExportDto<ApiResourceRoleMappingValueObject>
+        {
+            Metadata = new DtoMetadata
+            {
+                Created = new CreatedDtoMetadata
+                {
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedById = UserObjectId,
+                    CreatedByName = UserName,
+                },
+                Entity = new EntityDtoMetadata
+                {
+                    Type = nameof(ApiResource),
+                    Id = ApiResource.Id,
+                    Name = ApiResource.Name,
+                    DisplayName = ApiResource.DisplayName,
+                    SystemPermissionName = ApiResource.SystemPermissionName,
+                    SystemPermissionEnvironmentName = ApiResource.SystemPermissionEnvironmentName,
+                    LastModified = ApiResource.Updated,
+                },
+                Environment = new EnvironmentDtoMetadata
+                {
+                    Name = SystemOptions.Environment,
+                }
+            }
+        };
+
+        foreach (var role in ApiResource.Roles.Where(r => selectedRoleNames.Any(srn => srn.Value.Equals(r.RoleName, StringComparison.OrdinalIgnoreCase))))
+        {
+            exportObject.Roles.Add(new RoleValueObject<ApiResourceRoleMappingValueObject>
+            {
+                RoleName = role.RoleName,
+                Mappings = role.Mappings.Where(m => selectedTypes.Any(st => st.Value == m.MappingType))
+                                        .Select(m => new ApiResourceRoleMappingValueObject
+                                        {
+                                            Description = m.Description,
+                                            MappingType = m.MappingType.ToString(),
+                                            Value = m.Value,
+                                        })
+                                        .ToList()
+            });
+        }
+
+        return Task.FromResult(new ExportResult { FileName = _roleExportDialog.GenerateExportFileName(nameof(ApiResource), ApiResource.Name, ApiResource.Updated ?? ApiResource.Created), Result = exportObject });
+    }
+}

@@ -1,0 +1,5 @@
+{
+    "DatabaseType": "IdentityServerDb", 
+     "SourceEnvStaging": "Unused", 
+     "SourceEnvProd": "IDP PR 01"
+}

@@ -1,0 +1,26 @@
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+
+@inject NavigationManager Navigation
+
+<TelerikButton ThemeColor="@ThemeConstants.Button.ThemeColor.Primary"
+               FillMode="@ThemeConstants.Button.FillMode.Flat"
+               OnClick="BeginLogOut"
+               Icon="SvgIcon.Logout"
+               ButtonType="ButtonType.Button"
+               Class="text-decoration-underline text-nowrap">
+    @if (!isSmallScreen)
+    {
+        <text>Log out</text>
+    }
+</TelerikButton>
+
+<TelerikMediaQuery Media="(max-width: 865px)" OnChange="@((changed) => isSmallScreen = changed)"></TelerikMediaQuery>
+
+@code {
+    private bool isSmallScreen;
+
+    private void BeginLogOut()
+    {
+        Navigation.NavigateToLogout("authentication/logout");
+    }
+}

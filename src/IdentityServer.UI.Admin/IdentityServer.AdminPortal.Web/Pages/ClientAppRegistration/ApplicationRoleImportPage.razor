@@ -1,0 +1,164 @@
+﻿@page "/applications/edit/{ApplicationId:int}/import/roles"
+
+@inherits UserRoleBasePage
+
+@inject IAdminApiService AdminApi
+@inject NavigationManager NavigationManager
+@inject NotificationService NotificationService
+
+<div class="container">
+    <ErrorAlert @bind-ErrorMessage="@errorMessage" />
+
+    @if (Application == null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <NavigationHeader Address="@PageRoutes.ApplicationsEdit(ApplicationId)" Title="Back to the Application" />
+
+        <div class="mb-3">
+            <h3 class="me-auto text-break">Import Role Mappings for Application '@Application.ClientName'</h3>
+        </div>
+
+        @if (ShouldShowExportHint())
+        {
+            <div class="row justify-content-between my-3 alert alert-info">
+                <div class="col-auto my-auto">
+                    <strong>Pro tip!</strong> Export existing role mappings as a backup
+                </div>
+                <div class="col text-end">
+                    <ClientRoleExport Client="@Application" Class="me-2"
+                                           UserObjectId="@UserObjectId"
+                                           UserName="@UserName"
+                                           OnExportCompleted="CloseExportHint"
+                                           SilentlyExportAllRoles="true" />
+                    <TelerikButton Size="small" OnClick="CloseExportHint" ButtonType="ButtonType.Button" FillMode="link" Icon="@SvgIcon.X" />
+                </div>
+            </div>
+        }
+
+        <RoleImportWizard @ref="_importWizard"
+                          TRoleMapping="ClientRoleMappingValueObject"
+                          TDtoImport="ClientRoleImportDto"
+                          TImportModel="ClientRoleImportModel"
+                          ClientSideDataValidator="RoleImportDtoValidationService<ClientRoleMappingValueObject>.IsValid"
+                          ServerSideDataValidator="@ValidateImportClientRoles"
+                          OnImportCompleted="@ReturnToClientEditPage"
+                          PerformImportFunc="@ImportClientRoles"
+                          RoleImportComparer="@_clientRoleComparer" />
+
+        <NavigationFooter Address="@PageRoutes.ApplicationsEdit(ApplicationId)" Title="Back to the Application" />
+    }
+
+</div>
+
+@code {
+    [Parameter]
+    public int ApplicationId { get; set; }
+
+    private ClientDtoRead Application = default!;
+    private string? errorMessage;
+
+    private RoleImportWizard<ClientRoleMappingValueObject, ClientRoleImportDto, ClientRoleImportModel> _importWizard { get; set; } = default!;
+    private RoleImportComparer<ClientRoleMappingValueObject> _clientRoleComparer = default!;
+
+    private bool _showExportHint = true;
+
+    private async Task<OperationStatus> ImportClientRoles(ClientRoleImportDto importDto)
+    {
+        var callResult = await AdminApi.ImportClientRoles(Application, importDto);
+
+        if (callResult.IsSuccess)
+        {
+            return callResult.Result;
+        }
+        else
+        {
+            return new OperationStatus { Errors = { callResult.ErrorMessage ?? "Unknown error" } };
+        }
+    }
+
+    private void ReturnToClientEditPage()
+    {
+        NavigationManager.NavigateTo(PageRoutes.ApplicationsEdit(ApplicationId));
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        if (Application != null)
+        {
+            return;
+        }
+
+        if (ApplicationId == 0)
+        {
+            errorMessage = "The specified entity was not found.";
+            return;
+        }
+
+        var callResult = await AdminApi.GetClient(ApplicationId);
+        if (callResult.IsSuccess)
+        {
+            errorMessage = null;
+            Application = callResult.Result;
+            base.UpdatePageAccessBasedOnRoleReturnedByApi(Application.AccessLevel);
+            _clientRoleComparer = new RoleImportComparer<ClientRoleMappingValueObject>(
+                Application.Roles,
+                rm => new ClientRoleMappingValueObject { MappingType = rm.MappingType.ToString(), Value = rm.Value, Description = rm.Description }
+            );
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+    }
+
+    internal async Task ValidateImportClientRoles(ClientRoleImportModel importModel)
+    {
+        var callResult = await AdminApi.ValidateImportClientRoles(Application, importModel.FileParsingStatus.Result);
+
+        if (callResult.IsSuccess)
+        {
+            importModel.FileDataValidationStatus = callResult.Result;
+        }
+        else
+        {
+            importModel.FileDataValidationStatus.Errors.Add(callResult.ErrorMessage ?? "Unknown error");
+            var errors = GetFlatErrors(callResult);
+            if (errors?.Count > 0)
+            {
+                importModel.FileDataValidationStatus.Errors.AddRange(errors);
+            }
+        }
+    }
+
+    private static List<string>? GetFlatErrors<T>(ApiCallResult<T> callResult)
+    {
+        if (callResult.Details == null)
+        {
+            return null;
+        }
+
+        var flatErrors = callResult.GetFlatErrors();
+        if (flatErrors?.Count > 0)
+        {
+            return flatErrors;
+        }
+        
+        // Fallback: serialize the dictionary as-is
+        return callResult.Details.Select(kvp => $"{kvp.Key}: {kvp.Value}").ToList();
+    }
+
+    private bool ShouldShowExportHint()
+    {
+        return _showExportHint && _importWizard?.IsCompleted() == false;
+    }
+
+    private void CloseExportHint()
+    {
+        _showExportHint = false;
+    }
+}

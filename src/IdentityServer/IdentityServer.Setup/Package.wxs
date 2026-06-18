@@ -1,0 +1,69 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+	<?include Dependencies.wxi?>
+	
+	<Package Name="IdentityServer" Version="$(var.ProductVersion)"
+	         Manufacturer="Identity Server"
+	         ProductCode="C58E4A19-09AF-439B-8704-996908B63B9A"
+	         UpgradeCode="1CAB4CDB-D102-460F-9DB1-B5F42EAA1105"
+	         InstallerVersion="500"
+	         Compressed="yes"
+	         Scope="perMachine">
+			 >
+
+		<MajorUpgrade
+			AllowDowngrades="yes"
+			Schedule="afterInstallValidate" />
+		
+		<Media Id="1" Cabinet="media1.cab" EmbedCab="yes" />
+		
+		<Feature Id="IdentityServer" Title="IdentityServer" Level="1">
+			<Feature Id="Web.Components" Title="Web Components">
+				<ComponentRef Id="ServiceComponent"/>
+				<ComponentGroupRef Id="IdpApiComGroup" />
+				<ComponentRef Id="IdpApiComponent" />
+			</Feature>
+		</Feature>
+
+			 <StandardDirectory Id="ProgramFiles64Folder">
+				<Directory Id="IdentityServerFolder" Name="IdentityServer" />
+			 </StandardDirectory>
+	</Package>
+	<Fragment>
+		<ComponentGroup Id="ServiceComponentGroup" Directory="IdentityServerFolder">
+
+			<Component Id="ServiceComponent" Guid="CCA9D555-9354-478B-8EB0-06002F32E4C9" Bitness="always64">
+
+				<util:User Id="ServiceUser" Name="[SERVICEIDENTITY]" Password="[SERVICEPASSWORD]" CreateUser="no" UpdateIfExists="no" FailIfExists="no" RemoveOnUninstall="no" LogonAsService="yes" />
+
+				<File Id="IdentityServerExe" Source="$(var.IdentityServer.TargetDir)\IdentityServer.exe" KeyPath="yes" />
+
+				<ServiceInstall Id="IdentityServerInstall"
+								  Type="ownProcess"
+								  Vital="yes"
+								  Name="IdentityServer.Api"
+								  DisplayName="IdentityServer.Api"
+								  Description="Api for Identity Server"
+								  Start="auto"
+								  Account="[SERVICEIDENTITY]"
+								  Password="[SERVICEPASSWORD]"
+								  ErrorControl="normal"
+								  Arguments="env=[ENVIRONMENTTIER]"
+								  Interactive="no">
+					<util:ServiceConfig FirstFailureActionType="restart"
+										SecondFailureActionType="restart"
+										ThirdFailureActionType="restart"
+										ResetPeriodInDays="1"
+										RestartServiceDelayInSeconds="60" />
+				</ServiceInstall>
+
+				<ServiceControl Id="IdentityServerControl"
+								Name="IdentityServer.Api"
+								Remove="uninstall"
+								Stop="both"
+								Wait="yes"/>
+
+			</Component>
+		</ComponentGroup>
+
+	</Fragment>
+</Wix>

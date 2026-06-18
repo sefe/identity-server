@@ -1,0 +1,12 @@
+.theme-toggle-menu {
+    display: inline-block;
+}
+
+.theme-menu-selected {
+    font-weight: bold;
+}
+
+.theme-menu-selected::before {
+    content: "? ";
+    margin-right: 0.25rem;
+}

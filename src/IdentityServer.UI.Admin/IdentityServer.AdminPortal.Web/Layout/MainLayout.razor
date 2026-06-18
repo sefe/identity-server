@@ -1,0 +1,94 @@
+@using IdentityServer.Abstraction.Configs
+
+@inherits LayoutComponentBase
+@inject NotificationService NotificationService
+@inject ISystemConfig SystemConfig
+@inject IConfiguration Configuration
+@inject IThemeService ThemeService
+@implements IDisposable
+
+<TelerikRootComponent>
+    <div class="page" style="--sidebar-background-color: @Configuration["Theme:BackgroundColor"];">
+        <div class="sidebar">
+            <NavMenu />
+        </div>
+
+        <main>
+            <div class="top-row px-4">
+                @if (!SystemConfig.IsProd)
+                {
+                    <div class="env">
+                        <span>@SystemConfig.Environment</span>
+                    </div>
+                }
+                <div class="auth">
+                    <LoginDisplay />
+                </div>
+            </div>
+
+            <ConfirmationDialog />
+
+            <ErrorBoundary>
+                <ErrorContent Context="err">
+                    @if (err is Microsoft.AspNetCore.Components.WebAssembly.Authentication.AccessTokenNotAvailableException)
+                    {
+                        // clear the page to prevent the page components from retrying calls and re-triggering exception boundary
+                        <LoginAgainDialog />
+                    }
+                    else
+                    {
+                        // let the content deal with other exceptions
+                        <article class="content px-4">
+                            @Body
+                        </article>
+                    }
+                </ErrorContent>
+                <ChildContent>
+                    <article class="content px-4">
+                        @Body
+                    </article>
+                </ChildContent>
+            </ErrorBoundary>
+        </main>
+
+        <TelerikNotification @ref="@notificationRef" Class="idp-admin-notification" VerticalPosition="@NotificationVerticalPosition.Top" HorizontalPosition="@NotificationHorizontalPosition.Right">
+            <Template>
+                <div class="notification-info">
+                    <p class="fw-bold fs-6 text-break">@context.Text</p>
+                </div>
+            </Template>
+        </TelerikNotification>
+
+    </div>
+
+    <TelerikTooltip TargetSelector=".tooltip-target" />
+
+</TelerikRootComponent>
+
+@code {
+    private TelerikNotification notificationRef = default!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (firstRender)
+        {
+            NotificationService.Init(notificationRef);
+
+            // Initialize theme service
+            await ThemeService.InitializeAsync();
+            ThemeService.OnThemeChanged += OnThemeChanged;
+        }
+    }
+
+    private void OnThemeChanged(object? sender, ThemeMode mode)
+    {
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= OnThemeChanged;
+    }
+}

@@ -1,0 +1,235 @@
+@inherits EditableComponentBase
+
+@inject IAdminApiService AdminApi
+@inject IConfirmationService ConfirmationService
+
+@using System.Linq.Expressions;
+@using IdentityServer.AdminPortal.Web.Components.Primitive;
+
+<div class="card mb-3">
+    <div class="card-body">
+        <TelerikForm Model="@Application" OnValidSubmit="@HandleValidSubmit" ButtonsLayout="FormButtonsLayout.Center">
+            <FormValidation>
+                <DataAnnotationsValidator />
+            </FormValidation>
+            <FormItems>
+                <FormGroup Columns="@FormGroupColumns" ColumnSpacing="@FormGroupColumnSpacing">
+                    <FormItem>
+                        <Template>
+                            <RequiredFieldLabel ForTarget="clientId" LabelText="Identifier" />
+                            <TelerikTextBox id="clientId" ariadescribedby="clientIdHelpBlock" @bind-Value="Application.ClientId" />
+                            <div id="clientIdHelpBlock" class="k-form-hint">@Constants.Limits.Client.Name.PatternInfo</div>
+                            <TelerikValidationMessage For="@(() => Application.ClientId)" />
+                            <NameHint />
+                        </Template>
+                    </FormItem>
+                    <FormItem>
+                        <Template>
+                            <RequiredFieldLabel ForTarget="clientDisplayName" LabelText="Display Name" />
+                            <TelerikTextBox id="clientDisplayName" ariadescribedby="clientDisplayNameHelpBlock" @bind-Value="Application.ClientName" />
+                            <div id="clientDisplayNameHelpBlock" class="k-form-hint">Human-readable name. Keep it short and clear.</div>
+                            <TelerikValidationMessage For="@(() => Application.ClientName)" />
+                        </Template>
+                    </FormItem>
+                    <FormItem>
+                        <Template>
+                            <RequiredFieldLabel ForTarget="SystemPermissionEnvironmentId" LabelText="System Permission" />
+                            <div class="k-form-field-wrap">
+                                <SystemPermissionEnvironmentPicker Id="SystemPermissionEnvironmentId"
+                                                                   @bind-Value="Application.SystemPermissionEnvironmentId"
+                                                                   OnError="@(msg => errorMessage = msg)" />
+                                <TelerikValidationMessage For="@(() => Application.SystemPermissionEnvironmentId)" />
+                            </div>
+                        </Template>
+                    </FormItem>
+                </FormGroup>
+                <FormItem>
+                    <Template>
+                        <label for="clientDescription" class="k-label k-form-label">Description</label>
+                        <TelerikTextArea id="clientDescription" @bind-Value="Application.Description" placeholder="Optional information about the application." />
+                        <TelerikValidationMessage For="@(() => Application.Description)" />
+                    </Template>
+                </FormItem>
+                <FormGroup Columns="@FormGroupSwitchColumns" ColumnSpacing="@FormGroupColumnSpacing">
+                    <FormItem>
+                        <Template>
+                            <div class="row">
+                                <div class="col my-auto">
+                                    <label for="clientEnabled" class="k-label k-form-label">Is Enabled</label>
+                                </div>
+                                <div class="col my-auto">
+                                    <TelerikSwitch @bind-Value="@Application.Enabled" AriaDescribedBy="clientEnabledHelpBlock" Id="clientEnabled" OnLabel="True" OffLabel="False" Width="85px" />
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div id="clientEnabledHelpBlock" class="col k-form-hint">The application cannot be used until enabled.</div>
+                            </div>
+                        </Template>
+                    </FormItem>
+                    <FormItem>
+                        <Template>
+                            <div class="row">
+                                <div class="col my-auto">
+                                    <label for="clientReqSecret" class="k-label k-form-label">Require Client Secret</label>
+                                </div>
+                                <div class="col my-auto">
+                                    <TelerikSwitch @bind-Value="@Application.RequireClientSecret" AriaDescribedBy="clientReqSecretHelpBlock" Id="clientReqSecret" OnLabel="True" OffLabel="False" Width="85px" />
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div id="clientReqSecretHelpBlock" class="col k-form-hint">Client secret is mandatory for confidential applications.</div>
+                            </div>
+                        </Template>
+                    </FormItem>
+                    <FormItem>
+                        <Template>
+                            <div class="row">
+                                <div class="col my-auto">
+                                    <label for="clientReqPkce" class="k-label k-form-label">Require PKCE</label>
+                                </div>
+                                <div class="col my-auto">
+                                    <TelerikSwitch @bind-Value="@Application.RequirePkce" AriaDescribedBy="clientReqPkceHelpBlock" Id="clientReqPkce" OnLabel="True" OffLabel="False" Width="85px" />
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div id="clientReqPkceHelpBlock" class="col k-form-hint">Demand Proof Key for Code Exchange (PKCE) for authorization code flow.</div>
+                            </div>
+                        </Template>
+                    </FormItem>
+                    <FormItem>
+                        <Template>
+                            <div class="row">
+                                <div class="col my-auto">
+                                    <label for="clientTokenType" class="k-label k-form-label">Access Token Type</label>
+                                </div>
+                                <div class="col my-auto">
+                                    <TelerikButtonGroup>
+                                        <ButtonGroupToggleButton ThemeColor="success" FillMode="outline" Selected="@IsTokenRef()" OnClick="() => SetAccessTokenType(ClientAccessTokenType.Reference)" Size="small">
+                                            @(IsTokenRef() ? "☑" : "☐") Reference
+                                        </ButtonGroupToggleButton>
+                                        <ButtonGroupToggleButton ThemeColor="error" FillMode="outline" Selected="@IsTokenJwt()" OnClick="() => SetAccessTokenType(ClientAccessTokenType.Jwt)" Size="small">
+                                            @(IsTokenJwt() ? "☑" : "☐") JWT
+                                        </ButtonGroupToggleButton>
+                                    </TelerikButtonGroup>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div id="clientTokenTypeHelpBlock" class="col k-form-hint">Reference tokens are opaque, JSON Web Tokens are self-contained.</div>
+                            </div>
+                        </Template>
+                    </FormItem>
+                </FormGroup>
+                <FormGroup Columns="@FormGroupGrantsColumns" ColumnSpacing="@FormGroupColumnSpacing">
+                    <FormItem Field="@nameof(Application.AllowedGrantTypes)">
+                        <Template>
+                            <RequiredFieldLabel ForTarget="AllowedGrantTypes" LabelText="Grant Types" />
+                            <div class="k-form-field-wrap">
+                                <ClientGrantEditorString @bind-Value="Application.AllowedGrantTypes" />
+                                <TelerikValidationMessage For="@(() => Application.AllowedGrantTypes)" />
+                            </div>
+                        </Template>
+                    </FormItem>
+                </FormGroup>
+            </FormItems>
+            <FormButtons>
+                <TelerikButton ButtonType="ButtonType.Button" ThemeColor="secondary" OnClick="CheckDirtyAndCancel">Cancel</TelerikButton>
+                <TelerikButton ButtonType="ButtonType.Submit" ThemeColor="primary">Create</TelerikButton>
+            </FormButtons>
+        </TelerikForm>
+
+        <TelerikMediaQuery Media="@LargeScreenMediaQuery" OnChange="@((bool matches) => { IsLargeScreen = matches; ConfigureFormLayout(); })" />
+
+        <ErrorAlert @bind-ErrorMessage="@errorMessage" CssClass="mt-2" />
+
+        @if (awaitingResults)
+        {
+            <div>
+                <TelerikLoaderContainer />
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback<ClientDtoRead> OnSave { get; set; }
+
+    private readonly ClientDtoCreate Application = new()
+    {
+        ClientId = string.Empty,
+        ClientName = string.Empty
+    };
+
+    private string? errorMessage;
+    private bool awaitingResults = false;
+
+    private async Task HandleValidSubmit()
+    {
+        if (IsReadonly)
+        {
+            return;
+        }
+
+        errorMessage = null;
+        awaitingResults = true;
+        (var createdDto, errorMessage) = await AdminApi.CreateClient(Application);
+        if (string.IsNullOrEmpty(errorMessage))
+        {
+            await OnSave.InvokeAsync(createdDto);
+        }
+        awaitingResults = false;
+    }
+
+    private async Task CheckDirtyAndCancel()
+    {
+        if (!IsReadonly && (!string.IsNullOrEmpty(Application.ClientId) || !string.IsNullOrEmpty(Application.ClientName) || !string.IsNullOrEmpty(Application.Description)))
+        {
+            var confirmed = await ConfirmationService.ConfirmLeavingDirtyPageAsync();
+            if (!confirmed)
+            {
+                return;
+            }
+        }
+        await OnCancel.InvokeAsync();
+    }
+
+    private void SetAccessTokenType(ClientAccessTokenType tokenType)
+    {
+        if (IsReadonly)
+        {
+            return;
+        }
+
+        Application.AccessTokenType = tokenType;
+    }
+
+    private bool IsTokenJwt() => Application.AccessTokenType == ClientAccessTokenType.Jwt;
+    private bool IsTokenRef() => Application.AccessTokenType == ClientAccessTokenType.Reference;
+
+    private int FormGroupColumns { get; set; } = 1;
+    private int FormGroupSwitchColumns { get; set; } = 1;
+    private int FormGroupGrantsColumns { get; set; } = 1;
+    private string FormGroupColumnSpacing { get; set; } = string.Empty;
+    private string LargeScreenMediaQuery { get; set; } = "(min-width: 992px)"; // matches Bootstrap lg qualifier
+    private bool IsLargeScreen { get; set; }
+
+    private void ConfigureFormLayout()
+    {
+        if (IsLargeScreen)
+        {
+            FormGroupColumns = 3;
+            FormGroupSwitchColumns = 2;
+            FormGroupColumnSpacing = "2em";
+        }
+        else
+        {
+            FormGroupColumns = 1;
+            FormGroupSwitchColumns = 1;
+            FormGroupColumnSpacing = string.Empty;
+        }
+    }
+}

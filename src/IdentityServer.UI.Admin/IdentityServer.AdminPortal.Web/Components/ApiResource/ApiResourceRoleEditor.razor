@@ -1,0 +1,56 @@
+﻿@inherits EditableComponentBase
+
+@if (isOpen)
+{
+    <div class="offcanvas offcanvas-end show" style="visibility: visible; width: 550px;" id="roleEditorOffcanvas" aria-labelledby="roleEditorTitle" aria-modal="true" role="dialog">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="roleEditorTitle">
+                New API Role
+            </h5>
+        </div>
+        <div class="offcanvas-body">
+            <ApiResourceRoleInfoNew ApiResource="ApiResource" OnSave="@OnSave" OnCancel="@Cancel" />
+        </div>
+    </div>
+    <div class="offcanvas-backdrop fade show"></div>
+}
+
+@code {
+    [Parameter]
+    public ApiResourceDtoRead ApiResource { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnApiResourceUpdate { get; set; }
+
+    private bool isOpen = false;
+
+    public void OpenDrawerForNewRole()
+    {
+        OpenDrawer();
+    }
+
+    private void OpenDrawer()
+    {
+        isOpen = true;
+    }
+
+    public void CloseEditorDrawer()
+    {
+        isOpen = false;
+    }
+
+    private async Task OnSave()
+    {
+        if (IsReadonly)
+        {
+            return;
+        }
+        await OnApiResourceUpdate.InvokeAsync();
+        CloseEditorDrawer();
+    }
+
+    private void Cancel()
+    {
+        CloseEditorDrawer();
+    }
+}

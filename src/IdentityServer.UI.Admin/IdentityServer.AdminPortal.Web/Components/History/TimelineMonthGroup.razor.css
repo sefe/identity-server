@@ -1,0 +1,104 @@
+.timeline-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    padding: 0 12px;
+}
+
+    .timeline-group:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        height: 60%;
+        width: 2px;
+        background: linear-gradient(to bottom, transparent, var(--bs-gray-300,#dee2e6) 20%, var(--bs-gray-300,#dee2e6) 80%, transparent);
+        z-index: 0;
+    }
+
+    .timeline-group:first-child {
+        padding-left: 0;
+    }
+
+    .timeline-group:last-child {
+        padding-right: 0;
+    }
+
+.timeline-month-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    padding: 2px 8px;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    z-index: 2;
+}
+
+.timeline-dots {
+    position: relative;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    min-height: 40px;
+}
+
+.timeline-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    z-index: 1;
+}
+
+    .timeline-dot.bg-success {
+        background-color: #28a745 !important;
+    }
+
+    .timeline-dot.bg-primary {
+        background-color: #007bff !important;
+    }
+
+    .timeline-dot.bg-danger {
+        background-color: #dc3545 !important;
+    }
+
+    .timeline-dot.bg-secondary {
+        background-color: #6c757d !important;
+    }
+
+.timeline-continuation-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 4px;
+    z-index: 1;
+}
+
+.continuation-arrow {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #6c757d;
+    animation: pulse-arrow 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-arrow {
+    0%, 100% {
+        opacity: 0.6;
+        transform: translateX(0);
+    }
+    50% {
+        opacity: 1;
+        transform: translateX(3px);
+    }
+}
+
+.timeline-dot-wrapper {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+}

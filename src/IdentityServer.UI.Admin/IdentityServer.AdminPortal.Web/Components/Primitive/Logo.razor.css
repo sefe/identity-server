@@ -1,0 +1,12 @@
+﻿.cls-1 {
+    fill: #fff;
+    opacity: .5;
+}
+
+.cls-2 {
+    fill: url(#linear-gradient);
+}
+
+.cls-3 {
+    fill: currentColor;
+}

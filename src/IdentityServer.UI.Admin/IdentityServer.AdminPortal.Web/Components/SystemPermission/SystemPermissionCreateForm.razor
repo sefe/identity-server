@@ -1,0 +1,59 @@
+﻿@inherits EditableComponentBase
+
+<div class="card mb-3">
+    <div class="card-body">
+        <TelerikForm Model="@Permission" OnValidSubmit="@HandleValidSubmit" ButtonsLayout="FormButtonsLayout.Stretch">
+            <FormValidation>
+                <DataAnnotationsValidator />
+            </FormValidation>
+            <FormItems>
+                <FormItem>
+                    <Template>
+                        <RequiredFieldLabel ForTarget="spName" LabelText="System Name" />
+                        <div class="k-form-field-wrap">
+                            <TelerikTextBox id="spName" class="form-control" AriaDescribedBy="spNameHelpBlock" @bind-Value="Permission.Name" />
+                            <div id="spNameHelpBlock" class="form-text">@Constants.Limits.SystemPermission.Name.PatternInfo</div>
+                            <TelerikValidationMessage For="@(() => Permission.Name)" />
+                            <NameHint />
+                        </div>
+                    </Template>
+                </FormItem>
+                <FormItem>
+                    <Template>
+                        <RequiredFieldLabel ForTarget="spDescription" LabelText="Description" />
+                        <div class="k-form-field-wrap">
+                            <TelerikTextArea id="spDescription" class="form-control" @bind-Value="@Permission.Description" placeholder="Information about the System." />
+                            <TelerikValidationMessage For="@(() => Permission.Description)" />
+                        </div>
+                    </Template>
+                </FormItem>
+            </FormItems>
+            <FormButtons>
+                <TelerikButton ButtonType="@ButtonType.Button" OnClick="@Cancel" ThemeColor="secondary">Cancel</TelerikButton>
+                <TelerikButton ButtonType="@ButtonType.Submit" ThemeColor="primary">Create</TelerikButton>
+            </FormButtons>
+        </TelerikForm>
+
+        <ErrorAlert @bind-ErrorMessage="@errorMessage" CssClass="mt-2" />
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public SystemPermissionDtoCreate Permission { get; set; } = default!;
+
+    [Parameter]
+    public Func<Task<string?>> OnSystemPermissionCreate { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback Cancel { get; set; }
+
+    private string? errorMessage;
+
+    private async Task HandleValidSubmit()
+    {
+        if (IsReadonly) return;
+
+        errorMessage = await OnSystemPermissionCreate();
+    }
+}

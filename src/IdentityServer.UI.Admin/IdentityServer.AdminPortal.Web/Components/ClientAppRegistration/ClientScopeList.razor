@@ -1,0 +1,368 @@
+@page "/client-scope-list"
+@using IdentityServer.Abstraction.DTO.History
+@using IdentityServer.Abstraction.Enums
+@inherits EditableComponentBase
+
+@inject IAdminApiService AdminApi
+@inject IConfirmationService ConfirmationService
+@inject NotificationService NotificationService
+
+<div class="card mb-3">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="ms-2 me-auto my-auto align-middle">
+                <span class="fs-5">Scopes</span>
+            </div>
+            <div class="ms-auto pe-2">
+                <HistoryButton ApplicationId="Application.Id" EntityTypeFilter="@HistoryEntryDtoExtensions.GetDisplayName(HistoryEntryDtoExtensions.KnownEntityTypes.ClientScope)" />
+            </div>
+            @if (!IsReadonly)
+            {
+                <div class="pe-2">
+                    <TelerikButton OnClick="ShowStandardScopePicker" ButtonType="ButtonType.Button" ThemeColor="secondary" Size="small">Add OpenID</TelerikButton>
+                </div>
+                <div>
+                    <TelerikButton OnClick="ShowApiScopePicker" ButtonType="ButtonType.Button" ThemeColor="primary" Size="small">Add API</TelerikButton>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="card-body">
+        <ErrorAlert @bind-ErrorMessage="@errorMessage" />
+
+        @if (Application != null)
+        {
+            @if (Application.AllowedScopes == null || Application.AllowedScopes.Count == 0)
+            {
+                <span class="form-text">None. Add the OpenID Connect 'openid' scope for user login.</span>
+            }
+            else
+            {
+                SortedList<string, ScopeWrapper<ClientPropertyScopeDtoRead>> grantedStandardScopes = new(StringComparer.Ordinal);
+
+                SortedDictionary<string, SortedList<string, ScopeWrapper<ClientPropertyScopeDtoRead>>> clientScopesGrouping = new();
+
+                foreach (var scope in Application.AllowedScopes)
+                {
+                    var scopeInfo = new ScopeWrapper<ClientPropertyScopeDtoRead>(scope, scope.Scope);
+
+                    if (OidcScopeNames.OidcStandardScopeIds.Contains(scope.Scope))
+                    {
+                        grantedStandardScopes.Add(scopeInfo.NameOfScope, scopeInfo);
+                        continue;
+                    }
+
+                    if (clientScopesGrouping.TryGetValue(scopeInfo.NameOfApi, out var group))
+                    {
+                        group.Add(scopeInfo.NameOfScope, scopeInfo);
+                    }
+                    else
+                    {
+                        clientScopesGrouping[scopeInfo.NameOfApi] = new SortedList<string, ScopeWrapper<ClientPropertyScopeDtoRead>>(StringComparer.Ordinal) { { scopeInfo.NameOfScope, scopeInfo } };
+                    }
+                }
+
+                @if (grantedStandardScopes.Count > 0)
+                {
+                    <div class="mb-1">
+                        <div class="row">
+                            <div class="ms-1 col-auto align-self-center">
+                                <span class="fw-bold">OIDC scopes:</span>
+                            </div>
+                            @foreach (var scopeObj in grantedStandardScopes)
+                            {
+                                <div class="col-auto">
+                                    <PillButton IsAdd="false" IsReadonly=IsReadonly OnClick=@(async () => await RemoveScope(scopeObj.Value.Scope)) Text="@scopeObj.Key" />
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="row mb-3 ms-3">
+                        <div>
+                            @if (Application.AllowedGrantTypes?.Any(cg => string.Equals(cg.GrantType, ClientGrantTypeNames.Grant_Implicit, StringComparison.OrdinalIgnoreCase)) == true)
+                            {
+                                Application.AllowOfflineAccess = false;
+                                <span class="alert-info">Cannot enable Refresh Token (the 'offline_access' scope) since 'Implicit' grant type is enabled.</span>
+                            }
+                            else if (grantedStandardScopes.ContainsKey(OidcScopeNames.OpenIdScope))
+                            {
+                                <div class="row">
+                                    <div class="col my-auto">
+                                        <label for="clientOfflineAccess" class="k-label k-form-label">Allow Refresh Token</label>
+                                    </div>
+                                    <div class="col my-auto">
+                                        <TelerikSwitch Value="@Application.AllowOfflineAccess" AriaDescribedBy="clientOfflineAccessHelpBlock" Id="clientOfflineAccess" OnLabel="True" OffLabel="False" Width="85px" ValueChanged="@((bool val) => ToggleRefreshToken(val))" Enabled="!IsReadonly" />
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div id="clientOfflineAccessHelpBlock" class="col k-form-hint">Specifies whether this client can request refresh tokens (the 'offline_access' scope).</div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (clientScopesGrouping.Count > 0)
+                {
+                    <div class="table-responsive ms-1">
+                        <table class="table table-sm table-hover table-borderless align-middle">
+                            <thead>
+                                <tr>
+                                    <th>API Scope</th>
+                                    <th>Required</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var scopeGroup in clientScopesGrouping)
+                                {
+                                    <tr class="table-secondary">
+                                        <td colspan="4">
+                                            <div class="ms-2">
+                                                <span class="fw-bold">API @scopeGroup.Key.TrimStart()</span>
+                                                <small class="px-2">(@scopeGroup.Value.Count scope@(@scopeGroup.Value.Count == 1 ? string.Empty : "s") total)</small>
+                                                @if (scopeGroup.Value.All(sgv => !sgv.Value.Scope.ApiResourceEnabled))
+                                                {
+                                                    <span class="ms-3 badge text-bg-warning tooltip-target" title="This API Resource is disabled along with all its scopes">DISABLED</span>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @foreach (var scope in scopeGroup.Value.Select(scopeObj => scopeObj.Value.Scope))
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="ps-3 ms-3">
+                                                    @if (!string.IsNullOrEmpty(scope.ApiScope?.DisplayName))
+                                                    {
+                                                        <div class="row">
+                                                            <div class="col p-0">
+                                                                <span>@scope.ApiScope.DisplayName</span>
+                                                                @if (scope.ApiScope?.Enabled != true)
+                                                                {
+                                                                    <span class="ms-3 badge text-bg-warning tooltip-target" title="This scope is disabled at API Resource level">DISABLED</span>
+                                                                }
+                                                                else if (!scope.ApiResourceEnabled)
+                                                                {
+                                                                    <span class="ms-3 badge text-bg-warning tooltip-target" title="The whole API Resource is disabled">DISABLED</span>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                    <div class="row align-items-center">
+                                                        <div class="col-auto p-0">
+                                                            <CopyToClipboardButton ValueToCopy="@scope.Scope" />
+                                                        </div>
+                                                        <div class="col ps-0">
+                                                            <small class="text-muted text-break">@scope.Scope</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                @if (scope.ApiScope?.Required == true)
+                                                {
+                                                    <b>Yes</b>
+                                                }
+                                                else
+                                                {
+                                                    <span>No</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (!IsReadonly)
+                                                {
+                                                    <div class="d-flex">
+                                                        <TelerikButton ButtonType="ButtonType.Button" OnClick="() => RemoveScope(scope)" Icon="@SvgIcon.Trash" ThemeColor="error" FillMode="outline" Class="ms-auto" />
+                                                    </div>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            }
+        }
+
+        @if (awaitingResults)
+        {
+            <div>
+                <TelerikLoaderContainer />
+            </div>
+        }
+    </div>
+</div>
+
+<ClientScopePicker @ref="clientScopePicker" OnScopeSelectionConfirmed="AddNewScopes" AlreadyAddedScopes="Application?.AllowedScopes" OnError="ShowError" AllowedEnvironments="allowedEnvironments" />
+
+@code {
+    [Parameter]
+    public ClientDtoRead Application { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnApplicationUpdate { get; set; }
+
+    [Parameter]
+    public EventCallback<ClientDtoRead> OnApplicationDtoUpdate { get; set; }
+
+    [Parameter]
+    public bool LimitEnvironments { get; set; } = true;
+
+    private HashSet<int> allowedEnvironments = [];
+
+    private ClientScopePicker clientScopePicker = default!;
+
+    private string? errorMessage;
+    private bool awaitingResults;
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        // limit visible apis/scopes to the current env
+        if (LimitEnvironments)
+        {
+            allowedEnvironments = [Application!.SystemPermissionEnvironmentId];
+        }
+    }
+
+    private void ShowStandardScopePicker()
+    {
+        if (IsReadonly)
+        {
+            return;
+        }
+
+        if (Application == null || Application.AllowedScopes == null)
+        {
+            return;
+        }
+
+        clientScopePicker.OpenScopePicker(
+            OidcScopeNames.OidcStandardScopes.Select(oidc =>
+                new ApiResourcePropertyScopeDtoRead { Scope = oidc.Name, ApiScope = new() { Enabled = true, Name = oidc.Name, DisplayName = oidc.DisplayName, Required = oidc.Required } }));
+    }
+
+    private void ShowApiScopePicker()
+    {
+        if (IsReadonly)
+        {
+            return;
+        }
+
+        clientScopePicker.OpenApiPicker();
+    }
+
+    private async Task RemoveScope(ClientPropertyScopeDtoRead scopeObj)
+    {
+        if (IsReadonly)
+        {
+            return;
+        }
+
+        var confirmed = await ConfirmationService.ConfirmAsync("Delete Confirmation",
+            $"Are you sure you want to remove scope '{scopeObj.Scope}' from this application?");
+
+        if (!confirmed)
+        {
+            return;
+        }
+
+        awaitingResults = true;
+        var callResult = await AdminApi.DeleteClientScope(scopeObj);
+        if (callResult.IsSuccess)
+        {
+            errorMessage = null;
+            Application.AllowedScopes?.Remove(scopeObj);
+            NotificationService.ShowInfo($"Scope '{scopeObj.Scope}' was removed from this application.");
+
+            // If openid scope is removed, explicitly set AllowOfflineAccess to false for UI update; backend will handle persisted entity update automatically
+            if (string.Equals(scopeObj.Scope, OidcScopeNames.OpenIdScope, StringComparison.OrdinalIgnoreCase))
+            {
+                Application.AllowOfflineAccess = false;
+                Application.Updated = DateTime.UtcNow;
+                var newApp = Application.ShallowCopy();
+                newApp.UpdateReason = "Scopes";
+                await OnApplicationDtoUpdate.InvokeAsync(newApp);
+
+            }
+            else
+            {
+                await OnApplicationUpdate.InvokeAsync();
+            }
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+        awaitingResults = false;
+    }
+
+    private async Task AddNewScopes(IEnumerable<ApiResourcePropertyScopeDtoRead> newScopes)
+    {
+        if (IsReadonly || newScopes == null)
+        {
+            return;
+        }
+
+        awaitingResults = true;
+        foreach (var scopeDto in newScopes.Select(scopeToAdd => new ClientPropertyScopeDtoCreate
+        {
+            ClientId = Application.Id,
+            Scope = scopeToAdd.Scope,
+        }))
+        {
+            var callResult = await AdminApi.AddClientScope(scopeDto);
+            if (!callResult.IsSuccess)
+            {
+                errorMessage = callResult.ErrorMessage;
+                break;
+            }
+            else
+            {
+                errorMessage = null;
+                Application.AllowedScopes?.Add(callResult.Result);
+                NotificationService.ShowInfo($"Scope '{callResult.Result.Scope}' added.");
+                await OnApplicationUpdate.InvokeAsync();
+            }
+        }
+        awaitingResults = false;
+    }
+
+    private async Task ToggleRefreshToken(bool newValue)
+    {
+        if (Application == null || IsReadonly) return;
+
+        if (newValue && Application.AllowedGrantTypes?.Any(cg => ClientGrantTypeNames.Grant_Implicit == cg.GrantType) == true)
+        {
+            errorMessage = "Refresh Token is not permitted for a client with allowed Implicit grant for security reasons.";
+            return;
+        }
+
+        awaitingResults = true;
+        var callResult = await AdminApi.UpdateClient(new ClientDtoUpdate { Id = Application.Id, AllowOfflineAccess = newValue });
+        if (callResult.IsSuccess)
+        {
+            errorMessage = null;
+            Application = callResult.Result;
+            NotificationService.ShowInfo($"Refresh Token is now {(newValue ? "enabled" : "disabled")}.");
+
+            await OnApplicationDtoUpdate.InvokeAsync(callResult.Result);
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+        awaitingResults = false;
+    }
+
+    private void ShowError(string error)
+    {
+        errorMessage = error;
+        StateHasChanged();
+    }
+}

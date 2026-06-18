@@ -1,0 +1,173 @@
+@using Telerik.Blazor.Components
+@using Telerik.DataSource
+@using IdentityServer.AdminPortal.Web.Pages.Grid
+
+@inject IAdminApiService AdminApi
+
+@inherits GridListBasePage<ApiResourceShortDtoRead>
+
+<ErrorAlert @bind-ErrorMessage="@ErrorMessage" />
+
+<div style="position:relative">
+    @*
+            This LoaderContainer is used only during initial data load.
+            The position:relative style on the parent DIV makes the LoaderContainer cover only the Grid.
+            The LoaderContainer configuration and Template matches the built-in Grid loading animation.
+        *@
+    <TelerikLoaderContainer OverlayThemeColor="@ThemeConstants.Loader.ThemeColor.Light"
+                            Visible="@IsFirstLoad">
+        <Template>
+            <TelerikLoader Type="@LoaderType.InfiniteSpinner"
+                           Size="@ThemeConstants.Loader.Size.Large" />
+        </Template>
+    </TelerikLoaderContainer>
+
+    <TelerikGrid TItem="ApiResourceShortDtoRead"
+                 Pageable="true"
+                 Sortable="true"
+                 FilterMode="ColumnSet == ColumnSetKind.Wide ? GridFilterMode.FilterRow : GridFilterMode.None"
+                 PageSize="@PageSize"
+                 PageSizeChanged="@OnPageSizeChanged"
+                 OnRead="@ReadItems"
+                 ShowColumnMenu="true"
+                 @ref="GridRef"
+                 OnStateInit="@((GridStateEventArgs<ApiResourceShortDtoRead> args) => OnStateInitHandler(args))"
+                 OnStateChanged="@((GridStateEventArgs<ApiResourceShortDtoRead> args) => OnStateChangedHandler(args))">
+        <GridSettings>
+            <GridColumnMenuSettings FilterMode="@ColumnMenuFilterMode.None"
+                                    Groupable="false"
+                                    Lockable="false"
+                                    Reorderable="false"
+                                    Sortable="false"
+                                    ShowColumnChooser="true">
+            </GridColumnMenuSettings>
+            <GridPagerSettings InputType="ColumnSet == ColumnSetKind.Wide ? PagerInputType.Buttons : PagerInputType.Input"
+                               PageSizes="@PageSizes">
+            </GridPagerSettings>
+        </GridSettings>
+        <GridToolBar>
+            <GridToolBarSearchBoxTool Fields="@SearchAllFieldsList" Placeholder="Search by Identifier, Display Name, System Permission, or Environment" Width="100%" />
+            <GridToolBarCustomTool>
+                <ShowMyItemsToggle Visible="@ShowMyItemsToggleVisible"
+                                   Value="@ShowOnlyMyItems"
+                                   ValueChanged="@((bool v) => OnShowMyItemsChanged(v))"
+                                   Label="My Resources" />
+                <TelerikButton ButtonType="ButtonType.Button" OnClick="@ResetFilters" Icon="SvgIcon.FilterClear" ThemeColor="secondary" FillMode="outline" Size="sm">Reset all filters</TelerikButton>
+                <TelerikButton ButtonType="ButtonType.Button" OnClick="@ResetState" Icon="SvgIcon.XCircle" ThemeColor="secondary" FillMode="outline" Size="sm">Reset grid</TelerikButton>
+            </GridToolBarCustomTool>
+        </GridToolBar>
+        <GridColumns>
+            <GridColumn Field="@(nameof(ApiResourceShortDtoRead.Name))" Title="Identifier" VisibleInColumnChooser="false">
+                <Template>
+                    @{
+                        if (context is ApiResourceShortDtoRead api)
+                        {
+                            <AccessLevelEntityLink AccessLevel="@api.AccessLevel" Text="@api.Name"
+                                                   OnLinkClick="@(() => OnApiResourceClick.InvokeAsync(api.Id))"
+                                                   SystemPermissionEnvironmentId="@api.SystemPermissionEnvironmentId" />
+                        }
+                    }
+                </Template>
+            </GridColumn>
+            <GridColumn Field="@(nameof(ApiResourceShortDtoRead.DisplayName))" Title="Display Name" Visible="@(ColumnSet == ColumnSetKind.Wide)" />
+            <GridColumn Field="@(nameof(ApiResourceShortDtoRead.SystemPermissionName))" Title="System Permission" Visible="false">
+                <Template>
+                    @{
+                        @if (context is ApiResourceShortDtoRead api)
+                        {
+                            <AccessLevelLink AccessLevel="@api.AccessLevel" Text="@api.SystemPermissionName" Href="@PageRoutes.SystemPermissionsEdit(@api.SystemPermissionId)" />
+                        }
+                    }
+                </Template>
+            </GridColumn>
+            <GridColumn Field="@(nameof(ApiResourceShortDtoRead.SystemPermissionEnvironmentName))" Title="Environment">
+                <Template>
+                    @if (context is ApiResourceShortDtoRead api)
+                    {
+                        <SystemPermissionEnvironmentContactsButton Entity="api" />
+                    }
+                </Template>
+            </GridColumn>
+            <GridColumn Field="@(nameof(ApiResourceShortDtoRead.SystemPermissionEnvironmentOwners))" Title="Owners" Visible="@(ColumnSet == ColumnSetKind.Wide)"
+                        Sortable="false"
+                        DefaultFilterOperator="FilterOperator.Contains"
+                        FilterOperators="@ContainsOrNotLimitedFilterOperators" />
+            <GridColumn Field="@(nameof(ApiResourceShortDtoRead.Created))" Title="Created At" Visible="false" DefaultFilterOperator="FilterOperator.IsEqualTo" />
+            <GridColumn Field="@(nameof(ApiResourceShortDtoRead.Updated))" Title="Updated At" Visible="false" Filterable="false" />
+        </GridColumns>
+        <NoDataTemplate>
+            <div class="col-auto">
+                <span class="form-control-plaintext text-muted">None</span>
+            </div>
+        </NoDataTemplate>
+    </TelerikGrid>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public EventCallback<int> OnApiResourceClick { get; set; }
+
+    [Parameter]
+    public HashSet<int>? AllowedEnvironments { get; set; }
+
+    [Parameter, EditorRequired]
+    public string GridStateStorageKey { get; set; }
+
+    [Parameter]
+    public ColumnSetKind ColumnSet { get; set; } = ApiResourceList.ColumnSetKind.Wide;
+
+    private readonly List<string> SearchAllFieldsList = new()
+    {
+        nameof(ApiResourceShortDtoRead.Name),
+        nameof(ApiResourceShortDtoRead.DisplayName),
+        nameof(ApiResourceShortDtoRead.SystemPermissionName),
+        nameof(ApiResourceShortDtoRead.SystemPermissionEnvironmentName),
+    };
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        // The offcanvas provides enough place only for few items. Long grid pushes control buttons outside the visible area.
+        if (ColumnSet == ColumnSetKind.Narrow)
+        {
+            PageSizes = new List<int?> { };
+            PageSize = 10;
+        }
+    }
+
+    public enum ColumnSetKind
+    {
+        Wide,
+        Narrow
+    }
+
+    protected override Task<ApiCallResult<DataEnvelope<ApiResourceShortDtoRead>>> GetData(DataSourceRequest request)
+    {
+        if (AllowedEnvironments != null && AllowedEnvironments.Any())
+        {
+            var compositeFilter = new CompositeFilterDescriptor
+            {
+                LogicalOperator = FilterCompositionLogicalOperator.Or,
+                FilterDescriptors = new FilterDescriptorCollection()
+            };
+
+            foreach (var envId in AllowedEnvironments)
+            {
+                compositeFilter.FilterDescriptors.Add(
+                    new FilterDescriptor
+                    {
+                        Member = nameof(ApiResourceShortDtoRead.SystemPermissionEnvironmentId),
+                        Operator = FilterOperator.IsEqualTo,
+                        Value = envId
+                    });
+            }
+
+            request.Filters.Add(compositeFilter);
+        }
+
+        return AdminApi.GetApiResourcesPaged(request);
+    }
+
+    protected override string GridUniqueStorageKey => GridStateStorageKey;
+}

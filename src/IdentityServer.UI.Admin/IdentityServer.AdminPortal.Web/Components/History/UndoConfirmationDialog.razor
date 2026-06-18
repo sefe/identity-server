@@ -1,0 +1,137 @@
+@using IdentityServer.Abstraction.DTO.History
+@using IdentityServer.Abstraction.Enums
+@using IdentityServer.AdminPortal.Web.Services.History
+@using Telerik.Blazor.Components
+
+<TelerikDialog Visible="@IsVisible" Width="550px" ShowCloseButton="false">
+    <DialogTitle>
+        <span class="d-flex align-items-center">
+            <TelerikSvgIcon Icon="@SvgIcon.Undo" Class="me-2" />
+            Undo this change?
+        </span>
+    </DialogTitle>
+    <DialogContent>
+        @if (UndoPreview != null)
+        {
+            <div class="mb-3">
+                <p>The following change will be applied:</p>
+            </div>
+
+            @if (UndoPreview.ChangesToReverse.Any())
+            {
+                <div class="border rounded p-3 mb-3">
+                    @foreach (var change in UndoPreview.ChangesToReverse)
+                    {
+                        <div class="mb-2">
+                            <strong class="me-2">@change.FieldName:</strong>
+                            @if (!string.IsNullOrEmpty(change.OldValue))
+                            {
+                                <span class="text-decoration-line-through text-danger me-1">@change.OldValue</span>
+                                <span class="mx-1">→</span>
+                            }
+                            @if (!string.IsNullOrEmpty(change.NewValue))
+                            {
+                                <span class="fw-bold text-success">@change.NewValue</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted fst-italic">(empty)</span>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (Entry?.EventType == HistoryEventType.Deleted)
+            {
+                <div class="alert alert-info">
+                    <TelerikSvgIcon Icon="@SvgIcon.InfoCircle" Class="me-1" />
+                    This will recreate the deleted <strong>@Entry.EntityTypeDisplayName</strong>.
+                </div>
+            }
+        }
+
+        @if (IsLoading)
+        {
+            <div class="d-flex justify-content-center my-3">
+                <TelerikLoader Size="@Telerik.Blazor.ThemeConstants.Loader.Size.Large" />
+            </div>
+        }
+    </DialogContent>
+    <DialogButtons>
+        <TelerikButton ThemeColor="secondary" 
+                       OnClick="Cancel" 
+                       ButtonType="ButtonType.Button" 
+                       Enabled="@(!IsLoading)">
+            Cancel
+        </TelerikButton>
+        <TelerikButton ThemeColor="primary" 
+                       OnClick="Confirm" 
+                       ButtonType="ButtonType.Button"
+                       Enabled="@(!IsLoading && UndoPreview?.ChangesToReverse.Any() == true)">
+            @if (IsLoading)
+            {
+                <span>Undoing...</span>
+            }
+            else
+            {
+                <span>Confirm Undo</span>
+            }
+        </TelerikButton>
+    </DialogButtons>
+</TelerikDialog>
+
+@code {
+    /// <summary>
+    /// Gets or sets whether the dialog is visible.
+    /// </summary>
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    /// <summary>
+    /// Event callback when the dialog visibility changes.
+    /// </summary>
+    [Parameter]
+    public EventCallback<bool> IsVisibleChanged { get; set; }
+
+    /// <summary>
+    /// Gets or sets the history entry being undone.
+    /// </summary>
+    [Parameter]
+    public HistoryEntryDto? Entry { get; set; }
+
+    /// <summary>
+    /// Gets or sets the undo preview showing changes that will be reversed.
+    /// </summary>
+    [Parameter]
+    public UndoPreview? UndoPreview { get; set; }
+
+    /// <summary>
+    /// Event callback when the user confirms the undo operation.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnConfirm { get; set; }
+
+    /// <summary>
+    /// Event callback when the user cancels the undo operation.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether an undo operation is in progress.
+    /// </summary>
+    [Parameter]
+    public bool IsLoading { get; set; }
+
+    private async Task Confirm()
+    {
+        await OnConfirm.InvokeAsync();
+    }
+
+    private async Task Cancel()
+    {
+        await IsVisibleChanged.InvokeAsync(false);
+        await OnCancel.InvokeAsync();
+    }
+}

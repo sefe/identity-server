@@ -1,0 +1,183 @@
+@using IdentityServer.Abstraction.DTO.History
+@using IdentityServer.Abstraction.Enums
+@using Telerik.Blazor
+@using Telerik.Blazor.Components
+
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Overview</h5>
+        <TimelineLegend />
+    </div>
+
+    <TelerikMediaQuery Media="(min-width: 1400px)" OnChange="@((bool matches) => screenSize = matches ? ScreenSize.ExtraLarge : screenSize)"></TelerikMediaQuery>
+    <TelerikMediaQuery Media="(min-width: 1200px) and (max-width: 1399px)" OnChange="@((bool matches) => { if (matches) screenSize = ScreenSize.Large; })"></TelerikMediaQuery>
+    <TelerikMediaQuery Media="(min-width: 992px) and (max-width: 1199px)" OnChange="@((bool matches) => { if (matches) screenSize = ScreenSize.Medium; })"></TelerikMediaQuery>
+    <TelerikMediaQuery Media="(min-width: 768px) and (max-width: 991px)" OnChange="@((bool matches) => { if (matches) screenSize = ScreenSize.Small; })"></TelerikMediaQuery>
+    <TelerikMediaQuery Media="(max-width: 767px)" OnChange="@((bool matches) => { if (matches) screenSize = ScreenSize.ExtraSmall; })"></TelerikMediaQuery>
+
+    <div class="timeline-container">
+        @{
+            var groupedByMonth = HistoryEntries
+            .OrderBy(h => h.Timestamp)
+            .GroupBy(h => new { h.Timestamp.Year, h.Timestamp.Month })
+            .OrderBy(g => g.Key.Year)
+            .ThenBy(g => g.Key.Month)
+            .ToList();
+
+            var maxDotsPerRow = GetMaxDotsPerRow();
+            var allEntries = groupedByMonth.SelectMany(g => g.Select(entry => new { MonthGroup = g, Entry = entry })).ToList();
+            var rows = ChunkIntoRows(allEntries, maxDotsPerRow);
+        }
+
+        @if (rows.Count == 0)
+        {
+            <div class="timeline-row">
+                <div class="timeline-line"></div>
+                <div class="timeline-groups">
+                    <TimelineMonthGroup MonthLabel="None" />
+                </div>
+            </div>
+        }
+        else
+        {
+            @for (int rowIndex = 0; rowIndex < rows.Count; rowIndex++)
+            {
+                var row = rows[rowIndex];
+                var isLastRow = rowIndex == rows.Count - 1;
+                var previousRowLastMonth = (Year: 0, Month: 0);
+
+                @if (rowIndex > 0)
+                {
+                    var previousRow = rows[rowIndex - 1];
+                    var lastItemInPreviousRow = previousRow.LastOrDefault();
+                    if (lastItemInPreviousRow != null)
+                    {
+                        previousRowLastMonth = (lastItemInPreviousRow.MonthGroup.Key.Year, lastItemInPreviousRow.MonthGroup.Key.Month);
+                    }
+                }
+
+                <div class="timeline-row">
+                    <div class="timeline-line"></div>
+                    <div class="timeline-groups">
+                        @{
+                            var currentMonth = (Year: 0, Month: 0);
+                            var currentMonthEntries = new List<HistoryEntryDto>();
+                            var lastMonthInRow = (Year: 0, Month: 0);
+                            var hasMoreInNextRow = false;
+                            var isFirstMonthInRow = true;
+                        }
+                        @foreach (var item in row)
+                        {
+                            var monthKey = (item.MonthGroup.Key.Year, item.MonthGroup.Key.Month);
+                            if (currentMonth != monthKey)
+                            {
+                                @if (currentMonthEntries.Any())
+                                {
+                                    var monthLabel = new DateTime(currentMonth.Year, currentMonth.Month, 1, 0, 0, 0, DateTimeKind.Local).ToString("MMM yyyy");
+                                    var isContinuedFromPreviousRow = isFirstMonthInRow && previousRowLastMonth == currentMonth;
+                                    var monthEntriesToRender = new List<HistoryEntryDto>(currentMonthEntries);
+                                    <TimelineMonthGroup MonthLabel="@monthLabel"
+                                                        Entries="@monthEntriesToRender"
+                                                        ShowContinuationLeft="@isContinuedFromPreviousRow"
+                                                        ShowContinuationRight="false"
+                                                        HoveredEntry="@hoveredEntry"
+                                                        ShowHoverCard="@showCard"
+                                                        OnDotHover="@ShowCard"
+                                                        OnDotLeave="@HideCard"
+                                                        OnCardHover="@(() => showCard = true)"
+                                                        OnCardLeave="@HideCard" />
+                                    currentMonthEntries.Clear();
+                                    isFirstMonthInRow = false;
+                                }
+                                currentMonth = monthKey;
+                            }
+                            currentMonthEntries.Add(item.Entry);
+                            lastMonthInRow = monthKey;
+                        }
+                        @if (currentMonthEntries.Any())
+                        {
+                            var monthLabel = new DateTime(currentMonth.Year, currentMonth.Month, 1, 0, 0, 0, DateTimeKind.Local).ToString("MMM yyyy");
+                            var isContinuedFromPreviousRow = isFirstMonthInRow && previousRowLastMonth == currentMonth;
+
+                            @if (!isLastRow)
+                            {
+                                var nextRow = rows[rowIndex + 1];
+                                var firstItemInNextRow = nextRow.FirstOrDefault();
+                                if (firstItemInNextRow != null)
+                                {
+                                    var nextRowMonthKey = (firstItemInNextRow.MonthGroup.Key.Year, firstItemInNextRow.MonthGroup.Key.Month);
+                                    hasMoreInNextRow = nextRowMonthKey == lastMonthInRow;
+                                }
+                            }
+
+                            var monthEntriesToRender = new List<HistoryEntryDto>(currentMonthEntries);
+                            <TimelineMonthGroup MonthLabel="@monthLabel"
+                                                Entries="@monthEntriesToRender"
+                                                ShowContinuationLeft="@isContinuedFromPreviousRow"
+                                                ShowContinuationRight="@hasMoreInNextRow"
+                                                HoveredEntry="@hoveredEntry"
+                                                ShowHoverCard="@showCard"
+                                                OnDotHover="@ShowCard"
+                                                OnDotLeave="@HideCard"
+                                                OnCardHover="@(() => showCard = true)"
+                                                OnCardLeave="@HideCard" />
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public IEnumerable<HistoryEntryDto> HistoryEntries { get; set; } = new List<HistoryEntryDto>();
+
+    private enum ScreenSize
+    {
+        ExtraSmall,
+        Small,
+        Medium,
+        Large,
+        ExtraLarge
+    }
+
+    private HistoryEntryDto? hoveredEntry;
+    private bool showCard = false;
+    private ScreenSize screenSize = ScreenSize.ExtraLarge;
+
+    private void ShowCard(HistoryEntryDto entry)
+    {
+        hoveredEntry = entry;
+        showCard = true;
+    }
+
+    private void HideCard()
+    {
+        showCard = false;
+        hoveredEntry = null;
+    }
+
+    private int GetMaxDotsPerRow()
+    {
+        return screenSize switch
+        {
+            ScreenSize.ExtraSmall => 12,
+            ScreenSize.Small => 16,
+            ScreenSize.Medium => 20,
+            ScreenSize.Large => 35,
+            ScreenSize.ExtraLarge => 50,
+            _ => 50
+        };
+    }
+
+    private static List<List<T>> ChunkIntoRows<T>(List<T> items, int maxPerRow)
+    {
+        var result = new List<List<T>>();
+        for (int i = 0; i < items.Count; i += maxPerRow)
+        {
+            result.Add(items.Skip(i).Take(maxPerRow).ToList());
+        }
+        return result;
+    }
+}

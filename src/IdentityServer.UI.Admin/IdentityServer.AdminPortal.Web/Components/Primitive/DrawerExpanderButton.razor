@@ -1,0 +1,28 @@
+﻿@if (IsVisible)
+{
+    <button type="button"
+            class="btn btn-primary rounded-circle position-absolute d-flex align-items-center justify-content-center"
+            style="width: 40px; height: 40px; top: 50%; left: -20px; transform: translateY(-50%); z-index: 1051; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.2);"
+            onclick="@OnToggleClicked"
+            aria-label="@(IsExpanded ? "Collapse" : "Expand") panel">
+        @if (IsExpanded)
+        {
+            <TelerikSvgIcon Icon="SvgIcon.ChevronRight" />
+        }
+        else
+        {
+            <TelerikSvgIcon Icon="SvgIcon.ChevronLeft" />
+        }
+    </button>
+}
+
+@code {
+    [Parameter]
+    public bool IsExpanded { get; set; } = false;
+
+    [Parameter]
+    public EventCallback OnToggleClicked { get; set; }
+
+    [Parameter]
+    public bool IsVisible { get; set; }
+}

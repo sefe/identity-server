@@ -1,0 +1,12 @@
+﻿
+<footer class="my-4">
+    <NavigationHeader Address="@Address" Title="@Title" />
+</footer>
+
+@code{
+    [Parameter]
+    public string Address { get; set; } = "/";
+
+    [Parameter]
+    public string Title { get; set; } = "Go Back";
+}

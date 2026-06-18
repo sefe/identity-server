@@ -1,0 +1,28 @@
+﻿@page "/"
+@layout LandingLayout
+@attribute [AllowAnonymous]
+
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+
+@inject NavigationManager NavigationManager
+
+<AuthorizeView>
+    <NotAuthorized>
+        <TelerikButton ThemeColor="@ThemeConstants.Button.ThemeColor.Primary" OnClick="BeginLogIn" Size="@ThemeConstants.Button.Size.Large" ButtonType="ButtonType.Button">Log in</TelerikButton>
+
+        <AdvancedLoginOptions @ref=LoginOptions />
+    </NotAuthorized>
+    <Authorized>
+        <RedirectTo Target="/home" RestoreCurrentUrl="true" />
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    private AdvancedLoginOptions LoginOptions = default!;
+
+    public async Task BeginLogIn()
+    {
+        await LoginOptions.SaveOptions();
+        NavigationManager.NavigateToLogin("authentication/login");
+    }
+}

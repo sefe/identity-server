@@ -1,0 +1,100 @@
+@using IdentityServer.Abstraction.Configs
+
+@inject ISystemConfig SystemOptions
+
+<TelerikButton Class="@Class" Size="small" OnClick="InitExport"
+               ButtonType="ButtonType.Button" FillMode="link" Icon="@SvgIcon.Download">Export</TelerikButton>
+
+<RoleExportDialog TMappingType="ClientRoleMapType" @ref="_roleExportDialog" PrepareExportResult="PrepareRoleMappingsExport" OnExportCompleted="@OnExportCompleted" />
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public ClientDtoRead Client { get; set; } = default!;
+    [Parameter]
+    public string UserObjectId { get; set; } = string.Empty;
+    [Parameter]
+    public string UserName { get; set; } = string.Empty;
+    [Parameter]
+    public string Class { get; set; } = string.Empty;
+    [Parameter]
+    public EventCallback OnExportCompleted { get; set; }
+    [Parameter]
+    public bool SilentlyExportAllRoles { get; set; } = false;
+
+    private RoleExportDialog<ClientRoleMapType> _roleExportDialog = default!;
+
+    private async Task InitExport()
+    {
+        var exportModel = new RoleExportDialog<ClientRoleMapType>.ExportModel
+        {
+            RoleMapTypeSelection = new List<SelectableValue<ClientRoleMapType>>
+            {
+                new SelectableValue<ClientRoleMapType> { Value = ClientRoleMapType.SecurityGroup, DisplayName = "Security Group", IsSelected = true },
+                new SelectableValue<ClientRoleMapType> { Value = ClientRoleMapType.UserObjectId, DisplayName = "User Object Id", IsSelected = true }
+            },
+            RoleNameSelection = Client.Roles
+                .Select(r => r.RoleName)
+                .Distinct()
+                .Select(name => new SelectableValue<string> { Value = name, DisplayName = name, IsSelected = true })
+                .ToList()
+        };
+
+        if (SilentlyExportAllRoles)
+        {
+            await _roleExportDialog.ExportAsync(exportModel);
+        }
+        else
+        {
+            _roleExportDialog.OpenExportDialog(exportModel);
+        }
+    }
+
+    private Task<ExportResult> PrepareRoleMappingsExport(IEnumerable<SelectableValue<ClientRoleMapType>> selectedTypes, IEnumerable<SelectableValue<string>> selectedRoleNames)
+    {
+        var exportObject = new RoleExportDto<ClientRoleMappingValueObject>
+        {
+            Metadata = new DtoMetadata
+            {
+                Created = new CreatedDtoMetadata
+                {
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedById = UserObjectId,
+                    CreatedByName = UserName,
+                },
+                Entity = new EntityDtoMetadata
+                {
+                    Type = nameof(Client),
+                    Id = Client.Id,
+                    Name = Client.ClientId,
+                    DisplayName = Client.ClientName,
+                    SystemPermissionName = Client.SystemPermissionName,
+                    SystemPermissionEnvironmentName = Client.SystemPermissionEnvironmentName,
+                    LastModified = Client.Updated,
+                },
+                Environment = new EnvironmentDtoMetadata
+                {
+                    Name = SystemOptions.Environment,
+                }
+            }
+        };
+
+        foreach (var role in Client.Roles.Where(r => selectedRoleNames.Any(srn => srn.Value.Equals(r.RoleName, StringComparison.OrdinalIgnoreCase))))
+        {
+            exportObject.Roles.Add(new RoleValueObject<ClientRoleMappingValueObject>
+            {
+                RoleName = role.RoleName,
+                Mappings = role.Mappings.Where(m => selectedTypes.Any(st => st.Value == m.MappingType))
+                                        .Select(m => new ClientRoleMappingValueObject
+                                        {
+                                            Description = m.Description,
+                                            MappingType = m.MappingType.ToString(),
+                                            Value = m.Value,
+                                        })
+                                        .ToList()
+            });
+        }
+
+        return Task.FromResult(new ExportResult { FileName = _roleExportDialog.GenerateExportFileName(nameof(Client), Client.ClientId, Client.Updated ?? Client.Created), Result = exportObject });
+    }
+}

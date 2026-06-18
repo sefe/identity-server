@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <UserSecretsId>21d226c8-3619-413e-b6b0-8ad9bee714f5</UserSecretsId>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Azure.Extensions.AspNetCore.DataProtection.Keys" />
+        <PackageReference Include="Azure.Security.KeyVault.Secrets" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" />
+        <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+        <PackageReference Include="StackExchange.Redis" />
+        <PackageReference Include="Swashbuckle.AspNetCore" />
+        <PackageReference Include="Duende.IdentityServer" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />
+        <PackageReference Include="System.Linq.Async" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\IdentityServer.Common\IdentityServer.Core\IdentityServer.Core.csproj" />
+        <ProjectReference Include="..\..\IdentityServer.Common\IdentityServer.Core.Serilog\IdentityServer.Core.Serilog.csproj" />
+        <ProjectReference Include="..\..\IdentityServer.Common\IdentityServer.Data\IdentityServer.Data.csproj" />
+        <ProjectReference Include="..\..\IdentityServer.Common\IdentityServer.MicrosoftGraph\IdentityServer.MicrosoftGraph.csproj" />
+        <ProjectReference Include="..\..\IdentityServer.Common\IdentityServer.OnePassword\IdentityServer.OnePassword.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Update="appsettings.local.json" CopyToOutputDirectory="PreserveNewest" Publish="false" />
+    </ItemGroup>
+
+</Project>

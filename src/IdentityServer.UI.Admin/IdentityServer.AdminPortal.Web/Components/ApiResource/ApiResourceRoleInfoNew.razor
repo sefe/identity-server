@@ -1,0 +1,109 @@
+﻿@inherits EditableComponentBase
+
+@inject IAdminApiService AdminApi
+@inject IConfirmationService ConfirmationService
+@inject NotificationService NotificationService
+
+@if (Role != null)
+{
+    <TelerikForm Model="@Role" OnValidSubmit="@HandleValidSubmit" ButtonsLayout="FormButtonsLayout.Stretch">
+        <FormValidation>
+            <DataAnnotationsValidator />
+        </FormValidation>
+        <FormItems>
+            <FormItem Field="@nameof(Role.RoleName)" Enabled="!IsReadonly">
+                <Template>
+                    <RequiredFieldLabel ForTarget="roleName" LabelText="Role Name" />
+                    <TelerikTextBox Id="roleName"
+                                    Value="@Role.RoleName"
+                                    ValueExpression="@(() => Role.RoleName)"
+                                    ValueChanged="@(t => { UpdateRoleNameValue(t); })">
+                    </TelerikTextBox>
+                    <div id="roleNameHelpBlock" class="form-text">@Constants.Limits.Role.Name.PatternInfo</div>
+                    <TelerikValidationMessage For="@(() => Role.RoleName)" />
+                </Template>
+            </FormItem>
+        </FormItems>
+        <FormButtons>
+            <TelerikButton ButtonType="ButtonType.Button" ThemeColor="secondary" OnClick="CheckDirtyAndCancel">Cancel</TelerikButton>
+            <TelerikButton ButtonType="ButtonType.Submit" ThemeColor="primary" Enabled="!IsReadonly">Create</TelerikButton>
+        </FormButtons>
+    </TelerikForm>
+
+    <ErrorAlert @bind-ErrorMessage="@errorMessage" CssClass="mt-2" />
+
+    @if (awaitingResults)
+    {
+        <div>
+            <TelerikLoaderContainer />
+        </div>
+    }
+}
+
+@code {
+    [Parameter]
+    public ApiResourceDtoRead ApiResource { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback OnSave { get; set; }
+
+    private ApiResourcePropertyRoleDtoCreateWrapper Role { get; set; } = default!;
+    private string? errorMessage;
+    private bool awaitingResults = false;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        Role = new ApiResourcePropertyRoleDtoCreateWrapper
+        {
+            ApiResourceId = ApiResource.Id,
+            AlreadyExistingUniquePropertyValues = ApiResource.Roles.Select(r => r.RoleName).ToHashSet(StringComparer.OrdinalIgnoreCase)
+        };
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        // If we get here, the form is valid
+        errorMessage = null;
+        awaitingResults = true;
+        var callResult = await AdminApi.AddApiResourceRole(Role);
+        if (callResult.IsSuccess)
+        {
+            if (ApiResource.Roles == null)
+            {
+                ApiResource.Roles = new List<ApiResourcePropertyRoleDtoRead>();
+            }
+            ApiResource.Roles.Add(callResult.Result);
+            await OnSave.InvokeAsync();
+            NotificationService.ShowInfo($"Role '{callResult.Result.RoleName}' created.");
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+        awaitingResults = false;
+    }
+
+    private async Task CheckDirtyAndCancel()
+    {
+        if (!IsReadonly && !string.IsNullOrEmpty(Role.RoleName))
+        {
+            var confirmed = await ConfirmationService.ConfirmLeavingDirtyPageAsync();
+            if (!confirmed)
+            {
+                return;
+            }
+        }
+        await OnCancel.InvokeAsync();
+    }
+
+    private void UpdateRoleNameValue(string text)
+    {
+        errorMessage = null;
+        Role.RoleName = text;
+    }
+}

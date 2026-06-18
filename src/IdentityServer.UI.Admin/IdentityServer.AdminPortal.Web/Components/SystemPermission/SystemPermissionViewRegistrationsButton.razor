@@ -1,0 +1,19 @@
+﻿<TelerikButton ButtonType="ButtonType.Button"
+               OnClick="@OnClick"
+               Icon="@SvgIcon.Eye"
+               ThemeColor="@ThemeConstants.Button.ThemeColor.Base"
+               FillMode="@ThemeConstants.Button.FillMode.Outline"
+               Size="@Size">
+    @Title
+</TelerikButton>
+
+@code{
+    [Parameter]
+    public EventCallback OnClick { get; set; }
+
+    [Parameter]
+    public string Title { get; set; } = "View Registrations";
+
+    [Parameter]
+    public string Size { get; set; } = "small";
+}

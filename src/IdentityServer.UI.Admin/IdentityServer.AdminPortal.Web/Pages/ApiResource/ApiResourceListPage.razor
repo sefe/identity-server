@@ -1,0 +1,27 @@
+﻿@page "/apiresources"
+@inherits UserRoleBasePage
+
+@inject NavigationManager NavigationManager
+
+<div class="container-fluid">
+    <div class="row justify-content-between mb-3">
+        <div class="col-auto">
+            <h3>API Resources</h3>
+        </div>
+        @if (CanUpdate)
+        {
+            <div class="col-auto">
+                <a href="@PageRoutes.ApiResourcesNew" class="btn btn-primary">Create New API Resource</a>
+            </div>
+        }
+    </div>
+
+    <ApiResourceList OnApiResourceClick="GoToApiResourceEditPage" GridStateStorageKey="@GridStateStorageKeys.ApiResourceListPage" />
+</div>
+
+@code {
+    private void GoToApiResourceEditPage(int apiId)
+    {
+        NavigationManager.NavigateTo(PageRoutes.ApiResourcesEdit(apiId));
+    }
+}

@@ -1,0 +1,126 @@
+﻿@inherits EditableComponentBase
+
+@inject IAdminApiService AdminApi
+@inject IConfirmationService ConfirmationService
+@inject NotificationService NotificationService
+
+<div class="card mb-3">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="ms-2 me-auto my-auto align-middle">
+                <h5 class="my-0">Roles</h5>
+            </div>
+            <div class="ms-auto pe-2">
+                <HistoryButton ApplicationId="Client.Id" EntityTypeFilter="@HistoryEntryDtoExtensions.GetDisplayName(HistoryEntryDtoExtensions.KnownEntityTypes.ClientRole)" ButtonText="Roles History" />
+            </div>
+            <div class="pe-2">
+                <HistoryButton ApplicationId="Client.Id" EntityTypeFilter="@HistoryEntryDtoExtensions.GetDisplayName(HistoryEntryDtoExtensions.KnownEntityTypes.ClientRoleMapping)" ButtonText="Mappings History" />
+            </div>
+            @if (!IsReadonly)
+            {
+                <div>
+                    <TelerikButton Size="small" OnClick="ShowNewRoleDetails"
+                                   ButtonType="ButtonType.Button" ThemeColor="primary">Create New Role</TelerikButton>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="card-body">
+        <ErrorAlert @bind-ErrorMessage="@errorMessage" />
+
+        @if (Client.Roles == null || Client.Roles.Count == 0)
+        {
+            <span class="form-text">None</span>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Role Name</th>
+                            <th>Group Mappings</th>
+                            <th>User Mappings</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var role in Client.Roles)
+                        {
+                            <tr>
+                                <td class="w-25">
+                                    @role.RoleName
+                                </td>
+                                <td class="">
+                                    @(role.Mappings?.Count(m => m.MappingType == ClientRoleMapType.SecurityGroup) ?? 0)
+                                </td>
+                                <td class="">
+                                    @(role.Mappings?.Count(m => m.MappingType == ClientRoleMapType.UserObjectId) ?? 0)
+                                </td>
+                                <td>
+                                    @if (!IsReadonly)
+                                    {
+                                        <div class="d-flex">
+                                            <TelerikButton ButtonType="ButtonType.Button" OnClick="() => DeleteRole(role)" Icon="@SvgIcon.Trash"
+                                            ThemeColor="error" FillMode="outline" Class="ms-auto" />
+                                        </div>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<ClientRoleEditor @ref="roleEditor" Client="Client" IsReadonly="IsReadonly" OnClientUpdate="OnClientUpdate" />
+
+@code {
+    [Parameter]
+    public ClientDtoRead Client { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnClientUpdate { get; set; }
+
+    private ClientRoleEditor roleEditor = default!;
+    private string? errorMessage;
+
+    private void ShowNewRoleDetails()
+    {
+        if (IsReadonly) return;
+
+        roleEditor.OpenDrawerForNewRole();
+    }
+
+    private async Task DeleteRole(ClientPropertyRoleDtoRead role)
+    {
+        if (IsReadonly) return;
+
+        if (Client!.Roles == null || role.Id == 0)
+        {
+            return;
+        }
+
+        var confirmed = await ConfirmationService.ConfirmAsync("Delete Confirmation",
+            $"Are you sure you want to delete role '{role.RoleName}'?");
+
+        if (!confirmed)
+        {
+            return;
+        }
+
+        var callResult = await AdminApi.DeleteClientRole(role);
+        if (callResult.IsSuccess)
+        {
+            Client.Roles.Remove(role);
+            await OnClientUpdate.InvokeAsync();
+            NotificationService.ShowInfo($"Role '{role.RoleName}' deleted.");
+        }
+        else
+        {
+            errorMessage = callResult.ErrorMessage;
+        }
+    }
+}

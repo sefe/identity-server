@@ -1,0 +1,45 @@
+@if (Metadata != null)
+{
+    <tr>
+        <th scope="row">Source Entity Environment</th>
+        <td>@(Metadata.Environment.Name ?? "N/A")</td>
+    </tr>
+    <tr>
+        <th scope="row">Source Entity Type</th>
+        <td>@(Metadata.Entity?.Type ?? "N/A")</td>
+    </tr>
+    <tr>
+        <th scope="row">Source Entity ID</th>
+        <td>@(Metadata.Entity?.Id.ToString() ?? "N/A")</td>
+    </tr>
+    <tr>
+        <th scope="row">Source Entity Name</th>
+        <td>@(Metadata.Entity?.Name ?? "N/A")</td>
+    </tr>
+    <tr>
+        <th scope="row">Source Entity Display Name</th>
+        <td>@(Metadata.Entity?.DisplayName ?? "N/A")</td>
+    </tr>
+    <tr>
+        <th scope="row">Source Entity Last Modified At</th>
+        <td>@(Metadata.Entity?.LastModified.FormatForUi())</td>
+    </tr>
+    <tr>
+        <th scope="row">Export Created By User Name</th>
+        <td>@(Metadata.Created?.CreatedByName ?? "N/A")</td>
+    </tr>
+    <tr>
+        <th scope="row">Export Created By User ID</th>
+        <td>@(Metadata.Created?.CreatedById ?? "N/A")</td>
+    </tr>
+    <tr>
+        <th scope="row">Export Created At</th>
+        <td>@(Metadata.Created?.CreatedAt.FormatForUi())</td>
+    </tr>
+}
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public DtoMetadata Metadata { get; set; } = new DtoMetadata();
+}

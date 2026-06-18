@@ -1,0 +1,154 @@
+@inherits EditableComponentBase
+
+@inject IAdminApiService AdminApi
+@inject IConfirmationService ConfirmationService
+@inject NotificationService NotificationService
+
+<div class="card mb-3">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="ms-2 me-auto my-auto align-middle">
+                <h5 class="my-0">Client Grants</h5>
+            </div>
+            <div class="ms-auto">
+                <HistoryButton ApplicationId="Application.Id" EntityTypeFilter="@HistoryEntryDtoExtensions.GetDisplayName(HistoryEntryDtoExtensions.KnownEntityTypes.ClientGrantType)" />
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <ErrorAlert @bind-ErrorMessage="@errorMessage" CssClass="mt-2" />
+
+        @if (awaitingResults)
+        {
+            <div>
+                <TelerikLoaderContainer />
+            </div>
+        }
+
+        <ClientGrantEditorDto @bind-Value="Application.AllowedGrantTypes"
+                              ClientAllowsOfflineAccess="Application.AllowOfflineAccess"
+                              IsReadonly="IsReadonly"
+                              OnAfterUpdate="NotifyGrantsUpdated"
+                              OnBeforeAdd="AddGrant"
+                              OnBeforeRemove="RemoveGrant"
+                              Class="mb-3" />
+
+        @if (Application.AllowedGrantTypes.Any(cgt => cgt.GrantType.Equals(ClientGrantTypeNames.Grant_TokenExchange, StringComparison.OrdinalIgnoreCase)))
+        {
+            <ClientEntraAppMapList Application="Application" IsReadonly="IsReadonly" OnApplicationUpdate="NotifyEntraAppsUpdated" />
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public ClientDtoRead Application { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<string> OnApplicationUpdate { get; set; }
+
+    private string? errorMessage;
+    private bool awaitingResults = false;
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        if (Application == null)
+        {
+            errorMessage = "There's a problem loading the application. Please reload the page.";
+        }
+    }
+
+    private async Task<(ClientPropertyGrantDtoRead?, bool)> AddGrant(string grantKey)
+    {
+        if (IsReadonly)
+        {
+            return (null, false);
+        }
+
+        (var result, errorMessage) = await AddClientGrantAsync(grantKey);
+        if (string.IsNullOrEmpty(errorMessage))
+        {
+            NotificationService.ShowInfo($"Grant '{ClientGrantTypeNames.AllGrantTypes[grantKey]}' added.");
+            await NotifyGrantsUpdated();
+            return (result, true);
+        }
+        return (null, false);
+    }
+
+    private async Task<bool> RemoveGrant(ClientPropertyGrantDtoRead grantObj)
+    {
+        if (IsReadonly)
+        {
+            return false;
+        }
+
+        if (grantObj == null || grantObj.GrantType == null)
+        {
+            return false;
+        }
+
+        if (Application.AllowedGrantTypes.Count == 1)
+        {
+            await ConfirmationService.ConfirmAsync("Warning!",
+            $"Last Grant Type cannot be removed as it will render the application unusable. Consider adding another required grant first.", false);
+            return false;
+        }
+
+        var grantName = ClientGrantTypeNames.AllGrantTypes[grantObj.GrantType];
+        var confirmed = await ConfirmationService.ConfirmAsync("Delete Confirmation",
+            $"Are you sure you want to delete grant '{grantName}' from this application?");
+
+        if (!confirmed)
+        {
+            return false;
+        }
+
+        errorMessage = await DeleteClientGrantAsync(grantObj);
+        if (string.IsNullOrEmpty(errorMessage))
+        {
+            NotificationService.ShowInfo($"Grant '{grantName}' removed.");
+            await NotifyGrantsUpdated();
+            return true;
+        }
+        return false;
+    }
+
+    private async Task<ApiCallResult<ClientPropertyGrantDtoRead>> AddClientGrantAsync(string grant)
+    {
+        var grantDto = new ClientPropertyGrantDtoCreate
+        {
+            GrantType = grant,
+            ClientId = Application.Id
+        };
+        try
+        {
+            awaitingResults = true;
+            var callResult = await AdminApi.AddClientGrant(grantDto);
+            return callResult;
+        }
+        finally
+        {
+            awaitingResults = false;
+        }
+    }
+
+    private async Task<string?> DeleteClientGrantAsync(ClientPropertyGrantDtoRead grantObj)
+    {
+        try
+        {
+            awaitingResults = true;
+            var callResult = await AdminApi.DeleteClientGrant(grantObj);
+            return callResult.ErrorMessage;
+        }
+        finally
+        {
+            awaitingResults = false;
+        }
+    }
+
+    private Task NotifyGrantsUpdated() => OnApplicationUpdate.InvokeAsync("Grants");
+
+    private Task NotifyEntraAppsUpdated() => OnApplicationUpdate.InvokeAsync("Entra Apps");
+}

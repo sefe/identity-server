@@ -1,0 +1,437 @@
+@using IdentityServer.Abstraction
+@using IdentityServer.Abstraction.DTO.ApiResources
+@using IdentityServer.Abstraction.DTO.Clients
+@using IdentityServer.Abstraction.DTO.History
+@using IdentityServer.Abstraction.DTO.SystemPermissions
+@using IdentityServer.Abstraction.Enums
+@using IdentityServer.AdminPortal.Web.Services
+@using IdentityServer.AdminPortal.Web.Services.History
+@using Telerik.Blazor
+@using Telerik.Blazor.Components
+@using Telerik.DataSource
+@using Telerik.DataSource.Extensions
+@using System.ComponentModel
+
+@inject IHistoryUndoService HistoryUndoService
+@inject NotificationService NotificationService
+
+@if (HistoryEntries == null || !HistoryEntries.Any())
+{
+    <div class="alert alert-info">
+        No history entries to display.
+    </div>
+}
+else
+{
+    <HistoryTimelineVisualization HistoryEntries="@(IsFiltering() ? currentPageItems : HistoryEntries)" />
+
+    <TelerikGrid TItem="HistoryEntryDto"
+                 OnRead="@OnReadHandler"
+                 @ref="_gridRef"
+                 Pageable="true"
+                 PageSize="25"
+                 Sortable="true"
+                 FilterMode="Telerik.Blazor.GridFilterMode.FilterMenu"
+                 Width="100%"
+                 Resizable="true"
+                 OnStateInit="@((GridStateEventArgs<HistoryEntryDto> args) => OnStateInitHandler(args))">
+        <GridToolBar>
+            <GridToolBarCustomTool>
+                <TelerikTextBox Value="@searchText"
+                                ValueChanged="@OnSearchChanged"
+                                Placeholder="Search all fields..."
+                                Width="300px"
+                                DebounceDelay="300"
+                                ShowClearButton="true"
+                                ShowPrefixSeparator="false">
+                    <TextBoxPrefixTemplate>
+                        <TelerikSvgIcon Icon="SvgIcon.Search" />
+                    </TextBoxPrefixTemplate>
+                </TelerikTextBox>
+                <TelerikButton ButtonType="ButtonType.Button" OnClick="@ResetFilters" Icon="SvgIcon.FilterClear" ThemeColor="secondary" FillMode="outline" Size="sm">Reset all filters</TelerikButton>
+                <TelerikButton ButtonType="ButtonType.Button" OnClick="@ResetState" Icon="SvgIcon.XCircle" ThemeColor="secondary" FillMode="outline" Size="sm">Reset grid</TelerikButton>
+            </GridToolBarCustomTool>
+        </GridToolBar>
+        <GridColumns>
+            <GridColumn Field="@nameof(HistoryEntryDto.Timestamp)"
+                        Title="Date/Time"
+                        Width="130px"
+                        DisplayFormat="{0:yyyy-MM-dd HH:mm:ss}" />
+            <GridColumn Field="@nameof(HistoryEntryDto.EventType)" Title="Event" Width="100px" FilterMenuType="FilterMenuType.CheckBoxList">
+                <FilterMenuTemplate Context="context">
+                    <TelerikCheckBoxListFilter Data="HistoryEntries"
+                                               Field="@nameof(HistoryEntryDto.EventType)"
+                                               @bind-FilterDescriptor="@context.FilterDescriptor">
+                    </TelerikCheckBoxListFilter>
+                </FilterMenuTemplate>
+                <Template>
+                    @{
+                        var entry = context as HistoryEntryDto;
+                        var badgeColor = entry?.EventType.GetBadgeColor();
+                        <span class="badge bg-@badgeColor">@entry?.EventType</span>
+                    }
+                </Template>
+            </GridColumn>
+            <GridColumn Field="@nameof(HistoryEntryDto.EntityTypeDisplayName)" Title="Entity" Width="140px" FilterMenuType="FilterMenuType.CheckBoxList">
+                <FilterMenuTemplate Context="context">
+                    <TelerikCheckBoxListFilter Data="HistoryEntries"
+                                               Field="@nameof(HistoryEntryDto.EntityTypeDisplayName)"
+                                               @bind-FilterDescriptor="@context.FilterDescriptor">
+                    </TelerikCheckBoxListFilter>
+                </FilterMenuTemplate>
+            </GridColumn>
+            <GridColumn Field="@nameof(HistoryEntryDto.EntityIdentifier)" Title="Entity ID" Width="180px" FilterMenuType="FilterMenuType.Menu">
+                <Template>
+                    @{
+                        var entry = context as HistoryEntryDto;
+                        <span class="text-break">@entry?.EntityIdentifier</span>
+                    }
+                </Template>
+            </GridColumn>
+            <GridColumn Field="@nameof(HistoryEntryDto.ChangedBy)" Title="Changed By" Width="180px" FilterMenuType="FilterMenuType.CheckBoxList">
+                <FilterMenuTemplate Context="context">
+                    <TelerikCheckBoxListFilter Data="HistoryEntries"
+                                               Field="@nameof(HistoryEntryDto.ChangedBy)"
+                                               @bind-FilterDescriptor="@context.FilterDescriptor">
+                    </TelerikCheckBoxListFilter>
+                </FilterMenuTemplate>
+            </GridColumn>
+            <GridColumn Title="Changes" Width="400px">
+                <Template>
+                    @{
+                        var entry = context as HistoryEntryDto;
+                        <HistoryChangesDisplay Changes="@entry?.Changes" EventType="@entry?.EventType" />
+                    }
+                </Template>
+            </GridColumn>
+            <GridColumn Width="30px" Filterable="false" Sortable="false">
+                <Template>
+                    @{
+                        var entry = context as HistoryEntryDto;
+                        if (entry != null)
+                        {
+                            var eligibility = GetUndoEligibility(entry);
+                            @if (eligibility.CanUndo)
+                            {
+                                <div>
+                                    <TelerikButton Icon="@SvgIcon.Undo"
+                                                   ThemeColor="@Telerik.Blazor.ThemeConstants.Button.ThemeColor.Secondary"
+                                                   FillMode="@Telerik.Blazor.ThemeConstants.Button.FillMode.Flat"
+                                                   Size="@Telerik.Blazor.ThemeConstants.Button.Size.Small"
+                                                   OnClick="@(() => ShowUndoDialog(entry))"
+                                                   Title="Undo this change">
+                                    </TelerikButton>
+                                </div>
+                            }
+                        }
+                    }
+                </Template>
+            </GridColumn>
+        </GridColumns>
+        <NoDataTemplate>
+            <div class="alert alert-info m-2">
+                No history entries match the current filters.
+            </div>
+        </NoDataTemplate>
+    </TelerikGrid>
+
+    <UndoConfirmationDialog IsVisible="@isUndoDialogVisible"
+                            IsVisibleChanged="@((value) => isUndoDialogVisible = value)"
+                            Entry="@selectedEntryForUndo"
+                            UndoPreview="@currentUndoPreview"
+                            IsLoading="@isUndoInProgress"
+                            OnConfirm="@ExecuteUndo"
+                            OnCancel="@CloseUndoDialog" />
+}
+
+@code {
+    [Parameter]
+    public List<HistoryEntryDto> HistoryEntries { get; set; } = new();
+
+    [Parameter]
+    public string? InitialEntityTypeFilter { get; set; }
+
+    [Parameter]
+    public string? InitialEntityIdFilter { get; set; }
+
+    /// <summary>
+    /// The parent entity ID for API calls during undo operations.
+    /// </summary>
+    [Parameter]
+    public int ParentEntityId { get; set; }
+
+    /// <summary>
+    /// The current client entity for conflict detection. Set when viewing client history.
+    /// </summary>
+    [Parameter]
+    public ClientDtoRead? CurrentClient { get; set; }
+
+    /// <summary>
+    /// The current API resource entity for conflict detection. Set when viewing API resource history.
+    /// </summary>
+    [Parameter]
+    public ApiResourceDtoRead? CurrentApiResource { get; set; }
+
+    /// <summary>
+    /// The current system permission entity for conflict detection. Set when viewing system permission history.
+    /// </summary>
+    [Parameter]
+    public SystemPermissionDtoRead? CurrentSystemPermission { get; set; }
+
+    /// <summary>
+    /// Event callback when the parent entity needs to be refreshed after an undo operation.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnRefreshRequired { get; set; }
+
+    private string searchText = string.Empty;
+    private List<HistoryEntryDto> filteredHistory = new();
+    private List<HistoryEntryDto> currentPageItems = new();
+    private TelerikGrid<HistoryEntryDto> _gridRef = default!;
+
+    // Undo dialog state
+    private bool isUndoDialogVisible;
+    private HistoryEntryDto? selectedEntryForUndo;
+    private UndoPreview? currentUndoPreview;
+    private bool isUndoInProgress;
+
+    private void OnStateInitHandler(GridStateEventArgs<HistoryEntryDto> args)
+    {
+        if (!string.IsNullOrEmpty(InitialEntityTypeFilter))
+        {
+            var filter = new CompositeFilterDescriptor
+            {
+                FilterDescriptors = new FilterDescriptorCollection
+                {
+                    new FilterDescriptor
+                    {
+                        Member = nameof(HistoryEntryDto.EntityTypeDisplayName),
+                        Operator = FilterOperator.IsEqualTo,
+                        Value = InitialEntityTypeFilter
+                    }
+                },
+                LogicalOperator = FilterCompositionLogicalOperator.Or
+            };
+            args.GridState.FilterDescriptors.Add(filter);
+        }
+
+        if (!string.IsNullOrEmpty(InitialEntityIdFilter))
+        {
+            var filter = new CompositeFilterDescriptor
+            {
+                FilterDescriptors = new FilterDescriptorCollection
+                {
+                    new FilterDescriptor
+                    {
+                        Member = nameof(HistoryEntryDto.EntityIdentifier),
+                        Operator = FilterOperator.Contains,
+                        Value = InitialEntityIdFilter
+                    }
+                },
+                LogicalOperator = FilterCompositionLogicalOperator.Or
+            };
+            args.GridState.FilterDescriptors.Add(filter);
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        ApplyFilter();
+    }
+
+    private void OnSearchChanged(string value)
+    {
+        searchText = value?.Trim() ?? string.Empty;
+        ApplyFilter();
+        _gridRef.CurrentPage = 1; // reset to first page
+        _gridRef.Rebind();
+    }
+
+    private void ApplyFilter()
+    {
+        if (HistoryEntries == null)
+        {
+            filteredHistory = new List<HistoryEntryDto>();
+            currentPageItems = new List<HistoryEntryDto>();
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            filteredHistory = HistoryEntries.OrderByDescending(h => h.Timestamp).ToList();
+        }
+        else
+        {
+            filteredHistory = HistoryEntries
+                .Where(h => MatchesSearch(h, searchText))
+                .OrderByDescending(h => h.Timestamp)
+                .ToList();
+        }
+    }
+
+    private async Task OnReadHandler(GridReadEventArgs args)
+    {
+        var query = filteredHistory.AsQueryable();
+
+        var result = await query.ToDataSourceResultAsync(args.Request);
+
+        args.Data = result.Data;
+        args.Total = result.Total;
+
+        currentPageItems = result.Data.Cast<HistoryEntryDto>().ToList();
+    }
+
+    private bool IsFiltering()
+    {
+        return !string.IsNullOrWhiteSpace(searchText) ||
+               (_gridRef?.GetState().FilterDescriptors.Any() == true);
+    }
+
+    private static bool MatchesSearch(HistoryEntryDto entry, string searchText)
+    {
+        return entry.EventType.ToString().Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+               entry.EntityType.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+               entry.EntityTypeDisplayName.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+               (entry.EntityIdentifier?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+               (entry.ChangedBy?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+               (entry.Changes?.Any(c =>
+                   c.FieldName.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                   (c.OldValue?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                   (c.NewValue?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false)) ?? false);
+    }
+
+    private async Task ResetFilters()
+    {
+        OnSearchChanged(string.Empty);
+
+        var state = _gridRef.GetState();
+
+        state.FilterDescriptors.Clear();
+        state.SearchFilter = null;
+        state.Page = 1;
+
+        await _gridRef.SetStateAsync(state);
+
+    }
+
+    protected async Task ResetState()
+    {
+        OnSearchChanged(string.Empty);
+        await _gridRef.SetStateAsync(null); // pass null to reset the state
+    }
+
+    private UndoEligibility GetUndoEligibility(HistoryEntryDto entry)
+    {
+        if (CurrentClient != null)
+        {
+            return HistoryUndoService.CanUndo(entry, CurrentClient);
+        }
+        if (CurrentApiResource != null)
+        {
+            return HistoryUndoService.CanUndo(entry, CurrentApiResource);
+        }
+        if (CurrentSystemPermission != null)
+        {
+            return HistoryUndoService.CanUndo(entry, CurrentSystemPermission);
+        }
+
+        // If no parent entity is provided, check basic eligibility only
+        return UndoEligibility.Ineligible("Parent entity not available for undo.");
+    }
+
+    private void ShowUndoDialog(HistoryEntryDto entry)
+    {
+        selectedEntryForUndo = entry;
+        currentUndoPreview = HistoryUndoService.GetUndoPreview(entry);
+        isUndoDialogVisible = true;
+    }
+
+    private void CloseUndoDialog()
+    {
+        isUndoDialogVisible = false;
+        selectedEntryForUndo = null;
+        currentUndoPreview = null;
+    }
+
+    private async Task ExecuteUndo()
+    {
+        if (selectedEntryForUndo == null)
+        {
+            return;
+        }
+
+        isUndoInProgress = true;
+        StateHasChanged();
+
+        try
+        {
+            var errorMessage = await ExecuteUndoImplAsync(selectedEntryForUndo);
+
+            if (errorMessage == null)
+            {
+                NotificationService.ShowInfo("Change undone successfully.");
+                CloseUndoDialog();
+                await OnRefreshRequired.InvokeAsync();
+            }
+            else
+            {
+                NotificationService.ShowInfo($"Failed to undo: {errorMessage}");
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.ShowInfo($"Error during undo: {ex.Message}");
+        }
+        finally
+        {
+            isUndoInProgress = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<string?> ExecuteUndoImplAsync(HistoryEntryDto entry)
+    {
+        if (CurrentClient != null)
+        {
+            var clientResult = await HistoryUndoService.ExecuteUndoAsync(entry, CurrentClient);
+            if (clientResult.IsSuccess)
+            {
+                CurrentClient = clientResult.Result;
+            }
+            else
+            {
+                return clientResult.ErrorMessage;
+            }
+        }
+        else if (CurrentApiResource != null)
+        {
+            var apiResult = await HistoryUndoService.ExecuteUndoAsync(entry, CurrentApiResource);
+            if (apiResult.IsSuccess)
+            {
+                CurrentApiResource = apiResult.Result;
+            }
+            else
+            {
+                return apiResult.ErrorMessage;
+            }
+        }
+        else if (CurrentSystemPermission != null)
+        {
+            var sysPermResult = await HistoryUndoService.ExecuteUndoAsync(entry, CurrentSystemPermission);
+            if (sysPermResult.IsSuccess)
+            {
+                CurrentSystemPermission = sysPermResult.Result;
+            }
+            else
+            {
+                return sysPermResult.ErrorMessage;
+            }
+        }
+        else
+        {
+            return "No parent entity available for undo.";
+        }
+
+        return null;
+    }
+}

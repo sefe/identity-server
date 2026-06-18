@@ -1,0 +1,123 @@
+@page "/applications/{ApplicationId:int}/history"
+@inherits UserRoleBasePage
+@using IdentityServer.Abstraction.DTO.Clients
+@using IdentityServer.Abstraction.DTO.History
+
+@inject IAdminApiService AdminApi
+@inject NavigationManager NavigationManager
+
+<PageTitle>Application History</PageTitle>
+
+<div class="container-fluid">
+
+    <ErrorAlert @bind-ErrorMessage="@errorMessage" />
+
+    @if (isLoading)
+    {
+        <p><em>Loading history...</em></p>
+    }
+    else if (historyData != null)
+    {
+        <NavigationHeader Address="@PageRoutes.ApplicationsEdit(ApplicationId)" Title="Back to Application" />
+
+        <div class="d-flex flex-wrap justify-content-between align-items-start mb-3">
+            <h3 class="me-auto text-break">History for '@historyData.EntityName'</h3>
+        </div>
+
+        <div class="alert alert-info mb-3">
+            <strong>Note:</strong> This page shows all historical changes to the application and its nested entities (roles, secrets, scopes, redirect URIs, etc.).
+        </div>
+
+        @if (historyData.History == null || !historyData.History.Any())
+        {
+            <div class="alert alert-warning">
+                No history records found for this application.
+            </div>
+        }
+        else
+        {
+            <HistoryTimeline HistoryEntries="@historyData.History" 
+                             InitialEntityTypeFilter="@EntityType" 
+                             ParentEntityId="@ApplicationId"
+                             CurrentClient="@currentClient"
+                             OnRefreshRequired="@LoadData" />
+        }
+
+        <NavigationFooter Address="@PageRoutes.ApplicationsEdit(ApplicationId)" Title="Back to Application" />
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int ApplicationId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? EntityType { get; set; }
+
+    private HistoryResponseDto? historyData;
+    private ClientDtoRead? currentClient;
+    private string? errorMessage;
+    private bool isLoading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        if (!isLoading)
+        {
+            return;
+        }
+
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        if (ApplicationId == 0)
+        {
+            errorMessage = "Invalid client ID.";
+            isLoading = false;
+            return;
+        }
+
+        try
+        {
+            // Load history and current client data in parallel
+            var historyTask = AdminApi.GetClientHistory(ApplicationId);
+            var clientTask = AdminApi.GetClient(ApplicationId);
+
+            await Task.WhenAll(historyTask, clientTask);
+
+            var historyResult = await historyTask;
+            var clientResult = await clientTask;
+
+            if (historyResult.IsSuccess)
+            {
+                historyData = historyResult.Result;
+            }
+            else
+            {
+                errorMessage = historyResult.ErrorMessage;
+            }
+
+            if (clientResult.IsSuccess)
+            {
+                currentClient = clientResult.Result;
+            }
+            // Don't fail if client load fails, undo will just be disabled
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load history: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+}

@@ -1,0 +1,148 @@
+{
+    "ProductNames": [
+        "IdentityServer"
+    ],
+    "ServerType": "IDPWebSrv",
+    "Parameters": [
+        {
+            "MSIParameter": "SERVICEIDENTITY",
+            "DeployProperty": "IDP_API_ServiceAccount"
+        },
+        {
+            "MSIParameter": "SERVICEPASSWORD",
+            "DeployProperty": "IDP_API_ServiceAccountPassword"
+        },
+        {
+            "MSIParameter": "ENVIRONMENTTIER",
+            "DeployProperty": "EnvironmentTier"
+        },
+        {
+            "MSIParameter": "ENVIRONMENTNAME",
+            "DeployProperty": "EnvironmentName"
+        },
+        {
+            "MSIParameter": "ENABLELOGGINGDIAGNOSTICSTOCONSOLE",
+            "DeployProperty": "IDP_EnableLoggingDiagnosticsToConsole"
+        },
+        {
+            "MSIParameter": "ENABLELOGGINGDIAGNOSTICSTOFILE",
+            "DeployProperty": "IDP_EnableLoggingDiagnosticsToFile"
+        },
+        {
+            "MSIParameter": "DBSERVER",
+            "DeployProperty": "IDP_DBServer"
+        },
+        {
+            "MSIParameter": "DBNAME",
+            "DeployProperty": "IDP_DBName"
+        },
+        {
+            "MSIParameter": "APICERTSUBJECT",
+            "DeployProperty": "IDP_Api_Certificate_Subject"
+        },
+        {
+            "MSIParameter": "ELK.REQUESTURI",
+            "DeployProperty": "IDP_ELK_RequestUri"
+        },
+        {
+            "MSIParameter": "ELK.USERNAME",
+            "DeployProperty": "IDP_ELK_UserName"
+        },
+        {
+            "MSIParameter": "ELK.PASSWORD",
+            "DeployProperty": "IDP_ELK_Password"
+        },
+        {
+            "MSIParameter": "ENTRA.CLIENTID",
+            "DeployProperty": "IDP_Entra_ClientId"
+        },
+        {
+            "MSIParameter": "ENTRA.TENANTID",
+            "DeployProperty": "IDP_Entra_TenantId"
+        },
+        {
+            "MSIParameter": "IS.AUTHORITY",
+            "DeployProperty": "IDP_IdentityServer_Url"
+        },
+        {
+            "MSIParameter": "KEYVAULT.URL",
+            "DeployProperty": "IDP_KeyVault_Url"
+        },
+        {
+            "MSIParameter": "KV.DATAPROTECTIONENCRYPTIONKEY.NAME",
+            "DeployProperty": "IDP_KV_DataProtectionEncryptionKey_Name"
+        },
+        {
+            "MSIParameter": "KV.IDENTITYSERVERLICENSEKEY.NAME",
+            "DeployProperty": "IDP_KV_IdentityServerLicenseKey_Name"
+        },
+        {
+            "MSIParameter": "FEATUREFLAGS.USECUSTOMREDIRECTURIVALIDATOR",
+            "DeployProperty": "IDP_FeatureFlags_UseCustomRedirectUriValidator"
+        },
+        {
+            "MSIParameter": "FEATUREFLAGS.CUSTOMTOKENLOGGING",
+            "DeployProperty": "IDP_API_Feature_EnableCustomLogging"
+        },
+        {
+            "MSIParameter": "FEATUREFLAGS.CUSTOMLOGGINGREFTOKENLENGTH",
+            "DeployProperty": "IDP_API_Feature_CustomLoggingRefTokenLength"
+        },
+        {
+            "MSIParameter": "FEATUREFLAGS.CUSTOMLOGGINGJWTTOKENPARTS",
+            "DeployProperty": "IDP_API_Feature_CustomLoggingJwtTokenParts"
+        },
+        {
+            "MSIParameter": "1P_INTERNAL.BASEURL",
+            "DeployProperty": "IDP_1P_BASEURL"
+        },
+        {
+            "MSIParameter": "1P_INTERNAL.TOKEN",
+            "DeployProperty": "IDP_1P_TOKEN"
+        },
+        {
+            "MSIParameter": "1P_INTERNAL.VAULT",
+            "DeployProperty": "IDP_1P_VAULT"
+        },
+        {
+            "MSIParameter": "1P_INTERNAL.ENTRASECRETID",
+            "DeployProperty": "IDP_1P_Entra_ClientSecretId"
+        },
+        {
+            "MSIParameter": "IDS.CACHE.ENABLED",
+            "DeployProperty": "IDP_IDS_Cache_Enabled"
+        },
+        {
+            "MSIParameter": "IDS.CACHE.PROVIDER.KIND",
+            "DeployProperty": "IDP_IDS_Cache_Provider_Kind"
+        },
+        {
+            "MSIParameter": "IDS.CACHE.PROVIDER.CONNECTIONSTRING",
+            "DeployProperty": "IDP_IDS_Cache_Provider_ConnectionString"
+        },
+        {
+            "MSIParameter": "IDS.CACHE.PROVIDER.USERNAME",
+            "DeployProperty": "IDP_IDS_Cache_Provider_Username"
+        },
+        {
+            "MSIParameter": "1P_INTERNAL.VALKEYPASSWORD",
+            "DeployProperty": "IDP_1P_Valkey_PasswordId"
+        },
+        {
+            "MSIParameter": "IDS.AUTH.COOKIELIFETIME",
+            "DeployProperty": "IDP_IDS_Auth_Cookie_Lifetime"
+        },
+        {
+            "MSIParameter": "LB.RANGE",
+            "DeployProperty": "IDP_LB_Range"
+        },
+        {
+            "MSIParameter": "LB.MASK",
+            "DeployProperty": "IDP_LB_Mask"
+        },
+        {
+            "MSIParameter": "SUPPORTEMAILADDRESS",
+            "DeployProperty": "IDP_Support_Email_Address"
+        }
+    ]
+}
