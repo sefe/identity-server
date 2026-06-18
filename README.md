@@ -148,6 +148,16 @@ Minimum required settings:
   "ConnectionStrings": {
     "IDPDBConnectionString": "Server=localhost;Database=IdentityServer;Trusted_Connection=True;"
   },
+```
+
+> **SQL Authentication:** If Windows Authentication is not available (e.g. in containers or cross-platform environments), use SQL credentials instead:
+> ```
+> Server=localhost;Database=IdentityServer;User Id=<user>;******;
+> ```
+> Store credentials in [.NET User Secrets](https://learn.microsoft.com/en-us/aspnet/core/security/app-secrets) or environment variables — never commit them to `appsettings.json`.
+
+```json
+{
   "MicrosoftEntra": {
     "ClientId": "<your-entra-app-client-id>",
     "TenantId": "<your-entra-tenant-id>",
