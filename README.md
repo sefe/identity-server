@@ -202,7 +202,7 @@ Swagger UI is available at `https://localhost:5200/swagger` in non-production en
 
 ## Testing
 
-The solution contains 12 test projects using **NUnit**, **NSubstitute**, and **AutoFixture**.
+The solution contains 8 test projects (plus a shared `IdentityServer.Tests.Common` helper library) using **NUnit**, **NSubstitute**, and **AutoFixture**.
 
 ```bash
 # Run all Identity Server tests
@@ -250,12 +250,12 @@ Post-deployment scripts run in the following order:
 ```
 identity-server/
 ├── src/
-│   ├── IdentityServer/                    # OAuth 2.0 / OIDC server solution
+│   ├── IdentityServer/                    # OAuth 2.0 / OIDC server solution (IdentityServer.sln)
 │   │   ├── IdentityServer/                # Main API – token generation & validation
 │   │   ├── IdentityServer.Setup/          # WiX installer project
 │   │   └── IdentityServer.Test/           # Integration & unit tests
 │   │
-│   ├── IdentityServer.Common/             # Shared libraries solution
+│   ├── IdentityServer.Common/             # Shared libraries (projects referenced by the solutions above)
 │   │   ├── IdentityServer.Abstraction/    # Interfaces, contracts, constants, enums
 │   │   ├── IdentityServer.Core/           # Caching, config, DI, HTTP resilience
 │   │   ├── IdentityServer.Core.Serilog/   # Serilog configuration & custom sinks
@@ -269,7 +269,7 @@ identity-server/
 │   │   ├── Security/                      # Roles and permissions
 │   │   └── Post/                          # Post-deployment scripts
 │   │
-│   └── IdentityServer.UI.Admin/           # Admin portal solution
+│   └── IdentityServer.UI.Admin/           # Admin portal solution (IdentityServer.AdminPortal.sln)
 │       ├── IdentityServer.AdminPortal.Server/  # ASP.NET Core backend API
 │       ├── IdentityServer.AdminPortal.Web/     # Blazor WASM frontend
 │       ├── IdentityServer.AdminPortal.Setup/   # WiX installer project
