@@ -28,39 +28,37 @@ Identity Server provides a secure token service for applications across the orga
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                          Clients / APIs                             │
-└───────────────────────────┬─────────────────────────────────────────┘
-                            │ OAuth 2.0 / OIDC
-        ┌───────────────────▼──────────────────┐
-        │         IdentityServer (Port 5200)    │
-        │  • Authorization Code + PKCE          │
-        │  • Client Credentials                 │
-        │  • Token Exchange                     │
-        │  • JWT & Reference Tokens             │
-        └───────┬───────────────────┬───────────┘
-                │                   │
-   ┌────────────▼───┐     ┌─────────▼──────────────────┐
-   │  SQL Server    │     │  Microsoft Entra ID         │
-   │  (Duende EF   │     │  (OpenID Connect / Graph)   │
-   │   Stores)     │     └─────────────────────────────┘
-   └────────────────┘
-                │
-   ┌────────────▼──────────────────────────────────────┐
-   │       Admin Portal (Port 5300)                    │
-   │  ┌───────────────────┐  ┌────────────────────┐   │
-   │  │  AdminPortal.     │  │  AdminPortal.Web   │   │
-   │  │  Server (API)     │◄─│  (Blazor WASM UI)  │   │
-   │  └───────────────────┘  └────────────────────┘   │
-   └───────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    Clients["Clients / APIs"]
 
-   Shared Infrastructure
-   ┌──────────────┐  ┌───────────────────┐  ┌──────────────────┐
-   │ Core / Data  │  │  MicrosoftGraph   │  │  OnePassword     │
-   │ (EF, Cache,  │  │  (User/Group      │  │  (Secrets Vault) │
-   │  Serilog)    │  │   Lookups)        │  │                  │
-   └──────────────┘  └───────────────────┘  └──────────────────┘
+    Clients -->|OAuth 2.0 / OIDC| IDS
+
+    subgraph IDP["IdentityServer (Port 5200)"]
+        IDS["Token Service<br/>• Authorization Code + PKCE<br/>• Client Credentials<br/>• Token Exchange<br/>• JWT &amp; Reference Tokens"]
+    end
+
+    subgraph Admin["Admin Portal (Port 5300)"]
+        Web["AdminPortal.Web<br/>(Blazor WASM UI)"] --> Server["AdminPortal.Server<br/>(ASP.NET Core API)"]
+    end
+
+    subgraph Infra["Shared Infrastructure"]
+        Core["Core / Data<br/>(EF, Cache, Serilog)"]
+        Graph["MicrosoftGraph<br/>(User / Group Lookups)"]
+        OnePassword["OnePassword<br/>(Secrets Vault)"]
+    end
+
+    SQL[("SQL Server<br/>Duende EF Stores")]
+    Entra["Microsoft Entra ID<br/>(OpenID Connect / Graph)"]
+
+    IDS --> SQL
+    IDS --> Entra
+    Server --> SQL
+    Server --> Entra
+    Graph --> Entra
+
+    IDP -.uses.- Infra
+    Admin -.uses.- Infra
 ```
 
 ---
