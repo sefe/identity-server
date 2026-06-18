@@ -11,10 +11,13 @@ A centralized, enterprise-grade **Identity and Access Management (IAM)** solutio
 - [Getting Started](#getting-started)
 - [Building the Solution](#building-the-solution)
 - [Running the Applications](#running-the-applications)
+- [Key Endpoints](#key-endpoints)
 - [Testing](#testing)
 - [Database Setup](#database-setup)
 - [Project Structure](#project-structure)
 - [Configuration Reference](#configuration-reference)
+- [Logging](#logging)
+- [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -71,6 +74,8 @@ flowchart TD
 - Token Exchange (custom grant)
 - JWT and reference token support
 - Token introspection endpoint
+
+> **Token Exchange (custom grant).** In addition to the standard flows, the server implements a custom token-exchange grant (`urn:ietf:params:oauth:grant-type:token-exchange`) so that one valid token can be exchanged for another. It is wired up through `CustomTokenExchangeGrantValidator` (validates the incoming token and resolves the subject), `CustomProfileService` (populates claims for the issued token), and `CustomTokenResponseGenerator` (shapes the token response). A client must have the token-exchange grant type enabled in its configuration to use it.
 
 ### Authentication
 - Microsoft Entra ID (OpenID Connect, v1.0 & v2.0)
@@ -200,6 +205,32 @@ Swagger UI is available at `https://localhost:5200/swagger` in non-production en
 
 ---
 
+## Key Endpoints
+
+With the applications running locally on their default ports:
+
+### IdentityServer (`https://localhost:5200`)
+
+| Endpoint | Purpose |
+|---|---|
+| `/.well-known/openid-configuration` | OpenID Connect discovery document |
+| `/connect/authorize` | Authorization endpoint (Authorization Code + PKCE) |
+| `/connect/token` | Token endpoint (all grant types, including token exchange) |
+| `/connect/introspect` | Token introspection |
+| `/swagger` | Swagger / OpenAPI UI (non-production only) |
+
+### Admin Portal (`https://localhost:5300`)
+
+| Endpoint | Purpose |
+|---|---|
+| `/` | Blazor WebAssembly admin UI |
+| `/health` | Health check (returns service status) |
+| `/swagger` | Admin API Swagger / OpenAPI UI (non-production only) |
+
+> **Note:** The OpenID Connect / OAuth endpoints (`/connect/*`, `/.well-known/*`) are served by IdentityServer. The Admin Portal is the management UI and its companion API.
+
+---
+
 ## Testing
 
 The solution contains 8 test projects (plus a shared `IdentityServer.Tests.Common` helper library) using **NUnit**, **NSubstitute**, and **AutoFixture**.
@@ -308,6 +339,71 @@ identity-server/
 |---|---|
 | `FeatureFlags:UseCustomRedirectUriValidator` | Enable loopback redirect URI validation (development) |
 | `FeatureFlags:CustomTokenLoggingSettings:EnableCustomTokenLogging` | Enable detailed token event logging |
+
+---
+
+## Logging
+
+Logging is configured with **Serilog** via the `Serilog` section in `appsettings.json`. Out of the box, each application writes to multiple sinks:
+
+| Sink | Destination | Notes |
+|---|---|---|
+| `TradingStandardSink` | Centralised log server (e.g. Logstash over HTTPS) | Custom sink from `IdentityServer.Core.Serilog`; configured under `Serilog:WriteTo`. Set `requestUri`/credentials per environment. |
+| `Async` → `File` | Rolling file on disk (default `c:\log\…`) | Size-limited, rolling files with a retained-file count. Adjust `path` for non-Windows hosts. |
+| `Console` | Standard output | Useful for local development and containers. |
+
+Diagnostics for Serilog itself are controlled by the `System` section:
+
+| Key | Description |
+|---|---|
+| `System:EnableLoggingDiagnosticsToConsole` | Write Serilog self-diagnostics to the console |
+| `System:EnableLoggingDiagnosticsToFile` | Write Serilog self-diagnostics to `System:LoggingDiagnosticsFile` |
+
+> **Local development:** The default file paths point at `c:\log\`. On non-Windows machines (or to avoid writing to disk), override the `Serilog:WriteTo` paths in `appsettings.local.json`, or rely on the console sink.
+
+---
+
+## Troubleshooting
+
+### IdentityServer fails to start / HTTPS binding error on port 5200
+
+`appsettings.json` configures Kestrel to load its TLS certificate from the **Windows certificate store** (`LocalMachine\My`):
+
+```json
+"Kestrel": {
+  "Endpoints": {
+    "IDPHttpsEndpoint": {
+      "Url": "https://*:5200",
+      "Certificate": { "Subject": "", "Store": "My", "Location": "LocalMachine", "AllowInvalid": false }
+    }
+  }
+}
+```
+
+If no matching certificate is installed, the host will fail to bind. For local development you have two options:
+
+1. **Use the ASP.NET Core developer certificate** and override the Kestrel endpoint in `appsettings.local.json` so Kestrel uses the default dev cert instead of the store lookup:
+   ```bash
+   dotnet dev-certs https --trust
+   ```
+   ```json
+   {
+     "Kestrel": {
+       "Endpoints": {
+         "IDPHttpsEndpoint": { "Url": "https://localhost:5200" }
+       }
+     }
+   }
+   ```
+2. **Install a certificate** into `LocalMachine\My` and set the `Subject` (and `AllowInvalid` if self-signed) accordingly.
+
+### `IDPDBConnectionString` connection failures
+
+Confirm the database has been deployed (see [Database Setup](#database-setup)) and that the connection string matches your environment. In containers or cross-platform setups where Windows Authentication is unavailable, switch to SQL authentication as described in [Getting Started](#getting-started).
+
+### Logs are not being written
+
+Check that the configured Serilog file paths exist and are writable (the defaults under `c:\log\` are Windows-specific) — see [Logging](#logging).
 
 ---
 
