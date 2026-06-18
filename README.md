@@ -77,7 +77,7 @@ Identity Server provides a secure token service for applications across the orga
 ### Authentication
 - Microsoft Entra ID (OpenID Connect, v1.0 & v2.0)
 - External login support
-- JWT ****** for API consumers
+- JWT Bearer authentication for API consumers
 - Configurable cookie lifetime
 
 ### Client & API Management
@@ -131,13 +131,13 @@ cd identity-server
 Each application reads configuration from the following sources (highest priority last):
 
 1. `appsettings.json` – base settings
-2. `appsettings.local.json` – local overrides (not committed)
+2. `appsettings.local.json` – local overrides (committed as examples; must not contain secrets)
 3. Environment variables
 4. .NET User Secrets (development)
 5. 1Password Vault – Entra ID credentials injected at startup
 6. Azure Key Vault – data-protection keys and Duende licence
 
-Create `appsettings.local.json` in both:
+Update `appsettings.local.json` in both locations (these files are already committed as examples):
 - `src/IdentityServer/IdentityServer/`
 - `src/IdentityServer.UI.Admin/IdentityServer.AdminPortal.Server/`
 
@@ -147,12 +147,13 @@ Minimum required settings:
 {
   "ConnectionStrings": {
     "IDPDBConnectionString": "Server=localhost;Database=IdentityServer;Trusted_Connection=True;"
-  },
+  }
+}
 ```
 
 > **SQL Authentication:** If Windows Authentication is not available (e.g. in containers or cross-platform environments), use SQL credentials instead:
 > ```
-> Server=localhost;Database=IdentityServer;User Id=<user>;******;
+> Server=localhost;Database=IdentityServer;User Id=<user>;Password=<password>;
 > ```
 > Store credentials in [.NET User Secrets](https://learn.microsoft.com/en-us/aspnet/core/security/app-secrets) or environment variables — never commit them to `appsettings.json`.
 
@@ -298,7 +299,10 @@ identity-server/
 | Key | Description |
 |---|---|
 | `IdentityServer:CachingOptions:Enabled` | Enable/disable distributed caching |
-| `IdentityServer:CachingOptions:Provider` | `InMemory` or `Valkey` |
+| `IdentityServer:CachingOptions:Provider:Kind` | Cache provider: `InMemory` or `Valkey` |
+| `IdentityServer:CachingOptions:Provider:ConnectionString` | Valkey connection string (Valkey only) |
+| `IdentityServer:CachingOptions:Provider:Username` | Valkey username (Valkey only) |
+| `IdentityServer:CachingOptions:Provider:Password` | Valkey password (Valkey only) |
 
 ### Feature Flags
 
