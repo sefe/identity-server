@@ -1,4 +1,7 @@
-﻿CREATE PROCEDURE [dbo].[GetClientsLastModifiedTimestamp]
+﻿-- Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+-- SPDX-License-Identifier: Apache-2.0
+
+CREATE PROCEDURE [dbo].[GetClientsLastModifiedTimestamp]
     @Ids [dbo].[IntIdList] READONLY      -- Empty = all clients, populated = specific clients
 AS
 BEGIN

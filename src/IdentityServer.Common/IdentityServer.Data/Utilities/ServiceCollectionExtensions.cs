@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+// SPDX-License-Identifier: Apache-2.0
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;

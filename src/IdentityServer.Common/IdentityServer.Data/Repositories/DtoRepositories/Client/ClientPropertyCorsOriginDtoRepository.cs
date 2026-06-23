@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+// SPDX-License-Identifier: Apache-2.0
+
 using AutoMapper;
 using Duende.IdentityServer.EntityFramework.Services;
 using Duende.IdentityServer.Stores;

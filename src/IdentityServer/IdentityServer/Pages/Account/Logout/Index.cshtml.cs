@@ -1,5 +1,5 @@
-// Copyright (c) Duende Software. All rights reserved.
-// See LICENSE in the project root for license information.
+// Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+// SPDX-License-Identifier: Apache-2.0
 
 using Duende.IdentityModel;
 using Duende.IdentityServer.Events;

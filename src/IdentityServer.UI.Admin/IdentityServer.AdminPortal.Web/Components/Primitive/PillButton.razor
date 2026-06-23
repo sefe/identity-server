@@ -1,4 +1,7 @@
-﻿@inherits EditableComponentBase
+﻿@* Copyright (c) 2026 SEFE Securing Energy for Europe GmbH. *@
+@* SPDX-License-Identifier: Apache-2.0 *@
+
+@inherits EditableComponentBase
 
 <div class="btn-group btn-group-sm @(string.IsNullOrEmpty(Tooltip) ? string.Empty : "tooltip-target")" role="group" aria-label="@Text" title="@Tooltip">
     <button type="button" class="btn btn-light border-dark" disabled>@Text</button>

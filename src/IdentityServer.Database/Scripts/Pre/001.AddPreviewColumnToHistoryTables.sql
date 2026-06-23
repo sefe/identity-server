@@ -1,3 +1,6 @@
+-- Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+-- SPDX-License-Identifier: Apache-2.0
+
 /*
 Pre-deployment script to handle Preview column migration for system-versioned tables
 This script only runs during deployment, not during build validation

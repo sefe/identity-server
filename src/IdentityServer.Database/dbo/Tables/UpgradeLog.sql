@@ -1,4 +1,7 @@
-﻿CREATE TABLE [dbo].[UpgradeLog] (
+﻿-- Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+-- SPDX-License-Identifier: Apache-2.0
+
+CREATE TABLE [dbo].[UpgradeLog] (
     [Id] INT NOT NULL IDENTITY(1,1),
     [Name] NVARCHAR(1024) NOT NULL, 
     [Type] NVARCHAR(50) NOT NULL, 

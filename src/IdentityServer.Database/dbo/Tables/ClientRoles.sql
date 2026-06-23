@@ -1,4 +1,7 @@
-﻿CREATE TABLE [dbo].[ClientRoles](
+﻿-- Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+-- SPDX-License-Identifier: Apache-2.0
+
+CREATE TABLE [dbo].[ClientRoles](
     [Id]            INT            IDENTITY(1,1) NOT NULL,
     [ClientId]      INT            NOT NULL,
     [RoleName]      NVARCHAR(100)  NOT NULL,

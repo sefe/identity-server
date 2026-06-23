@@ -1,4 +1,7 @@
-﻿IF (NOT EXISTS (SELECT 1 FROM [dbo].[ApiResources] WHERE [Name] = 'identityserver'))
+﻿-- Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+-- SPDX-License-Identifier: Apache-2.0
+
+IF (NOT EXISTS (SELECT 1 FROM [dbo].[ApiResources] WHERE [Name] = 'identityserver'))
 BEGIN
     ALTER TABLE [dbo].[ClientPostLogoutRedirectUris] DROP CONSTRAINT [FK_ClientPostLogoutRedirectUris_Clients_ClientId]
     ALTER TABLE [dbo].[ClientSecrets] DROP CONSTRAINT [FK_ClientSecrets_Clients_ClientId]

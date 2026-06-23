@@ -1,4 +1,7 @@
-﻿CREATE TABLE [dbo].[ClientPostLogoutRedirectUris] (
+﻿-- Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+-- SPDX-License-Identifier: Apache-2.0
+
+CREATE TABLE [dbo].[ClientPostLogoutRedirectUris] (
     [Id]                    INT            IDENTITY (1, 1) NOT NULL,
     [PostLogoutRedirectUri] NVARCHAR (400) NOT NULL,
     [ClientId]              INT            NOT NULL,

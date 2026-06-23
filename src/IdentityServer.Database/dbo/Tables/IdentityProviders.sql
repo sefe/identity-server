@@ -1,4 +1,7 @@
-﻿CREATE TABLE [dbo].[IdentityProviders] (
+﻿-- Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+-- SPDX-License-Identifier: Apache-2.0
+
+CREATE TABLE [dbo].[IdentityProviders] (
     [Id]           INT            IDENTITY (1, 1) NOT NULL,
     [Scheme]       NVARCHAR (200) NOT NULL,
     [DisplayName]  NVARCHAR (200) NULL,

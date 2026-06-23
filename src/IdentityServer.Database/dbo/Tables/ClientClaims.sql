@@ -1,4 +1,7 @@
-﻿CREATE TABLE [dbo].[ClientClaims] (
+﻿-- Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+-- SPDX-License-Identifier: Apache-2.0
+
+CREATE TABLE [dbo].[ClientClaims] (
     [Id]       INT            IDENTITY (1, 1) NOT NULL,
     [Type]     NVARCHAR (250) NOT NULL,
     [Value]    NVARCHAR (250) NOT NULL,

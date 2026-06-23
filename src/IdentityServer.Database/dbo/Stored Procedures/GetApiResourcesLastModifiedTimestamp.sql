@@ -1,4 +1,7 @@
-﻿CREATE PROCEDURE [dbo].[GetApiResourcesLastModifiedTimestamp]
+﻿-- Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+-- SPDX-License-Identifier: Apache-2.0
+
+CREATE PROCEDURE [dbo].[GetApiResourcesLastModifiedTimestamp]
     @Ids [dbo].[IntIdList] READONLY      -- Empty = all resources, populated = specific resources
 AS
 BEGIN

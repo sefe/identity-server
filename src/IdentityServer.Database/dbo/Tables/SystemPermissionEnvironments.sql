@@ -1,4 +1,7 @@
-﻿CREATE TABLE [dbo].[SystemPermissionEnvironments] (
+﻿-- Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+-- SPDX-License-Identifier: Apache-2.0
+
+CREATE TABLE [dbo].[SystemPermissionEnvironments] (
     [Id]                 INT            IDENTITY (1, 1) NOT NULL,
     [Environment]        NVARCHAR (50)  NOT NULL,
     [SystemPermissionId] INT            NOT NULL,

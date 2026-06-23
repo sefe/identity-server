@@ -1,4 +1,7 @@
-﻿PRINT 'Running script to add jwt.io as allowed cors value to the identityserver.admin application ...'
+﻿-- Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+-- SPDX-License-Identifier: Apache-2.0
+
+PRINT 'Running script to add jwt.io as allowed cors value to the identityserver.admin application ...'
 
 IF (NOT EXISTS (SELECT 1 FROM [dbo].[ClientCorsOrigins] WHERE [Origin] = 'https://www.jwt.io'))
 BEGIN

@@ -1,4 +1,7 @@
-﻿/* gets rid of the client-id and client-secret fields */
+﻿/* Copyright (c) 2026 SEFE Securing Energy for Europe GmbH. */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/* gets rid of the client-id and client-secret fields */
 .auth-container .wrapper {
     display: none;
 }

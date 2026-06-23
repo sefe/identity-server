@@ -1,4 +1,7 @@
-﻿CREATE TABLE [dbo].[ServerSideSessions] (
+﻿-- Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+-- SPDX-License-Identifier: Apache-2.0
+
+CREATE TABLE [dbo].[ServerSideSessions] (
     [Id]          BIGINT         IDENTITY (1, 1) NOT NULL,
     [Key]         NVARCHAR (100) NOT NULL,
     [Scheme]      NVARCHAR (100) NOT NULL,

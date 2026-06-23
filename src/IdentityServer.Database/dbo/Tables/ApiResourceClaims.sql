@@ -1,4 +1,7 @@
-﻿CREATE TABLE [dbo].[ApiResourceClaims] (
+﻿-- Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+-- SPDX-License-Identifier: Apache-2.0
+
+CREATE TABLE [dbo].[ApiResourceClaims] (
     [Id]            INT            IDENTITY (1, 1) NOT NULL,
     [ApiResourceId] INT            NOT NULL,
     [Type]          NVARCHAR (200) NOT NULL,

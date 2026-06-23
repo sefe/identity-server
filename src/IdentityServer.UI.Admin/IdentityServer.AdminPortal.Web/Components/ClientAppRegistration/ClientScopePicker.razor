@@ -1,4 +1,7 @@
-﻿@inject IAdminApiService AdminApi
+﻿@* Copyright (c) 2026 SEFE Securing Energy for Europe GmbH. *@
+@* SPDX-License-Identifier: Apache-2.0 *@
+
+@inject IAdminApiService AdminApi
 
 <div class="offcanvas offcanvas-end show @(isExpanded ? "" : "pager-compact-view")"
      style="visibility: @((isApiPickerOpen || isScopePickerOpen) ? "visible" : "hidden"); width: @(isExpanded ? "70%" : "550px");"

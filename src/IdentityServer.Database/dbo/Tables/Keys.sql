@@ -1,4 +1,7 @@
-﻿CREATE TABLE [dbo].[Keys] (
+﻿-- Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+-- SPDX-License-Identifier: Apache-2.0
+
+CREATE TABLE [dbo].[Keys] (
     [Id]                NVARCHAR (450) NOT NULL,
     [Version]           INT            NOT NULL,
     [Created]           DATETIME2 (7)  NOT NULL,

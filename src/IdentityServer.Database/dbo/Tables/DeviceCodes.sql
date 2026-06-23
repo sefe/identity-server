@@ -1,4 +1,7 @@
-﻿CREATE TABLE [dbo].[DeviceCodes] (
+﻿-- Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+-- SPDX-License-Identifier: Apache-2.0
+
+CREATE TABLE [dbo].[DeviceCodes] (
     [UserCode]     NVARCHAR (200) NOT NULL,
     [DeviceCode]   NVARCHAR (200) NOT NULL,
     [SubjectId]    NVARCHAR (200) NULL,

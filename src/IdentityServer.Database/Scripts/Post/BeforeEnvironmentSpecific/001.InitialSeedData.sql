@@ -1,4 +1,7 @@
-﻿PRINT 'Running script to seed static data...'
+﻿-- Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+-- SPDX-License-Identifier: Apache-2.0
+
+PRINT 'Running script to seed static data...'
 
 IF (NOT EXISTS (SELECT 1 FROM [dbo].[SystemPermissions] WHERE [Name] = N'identity-server'))
 BEGIN

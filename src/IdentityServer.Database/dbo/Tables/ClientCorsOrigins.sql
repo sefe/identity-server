@@ -1,4 +1,7 @@
-﻿CREATE TABLE [dbo].[ClientCorsOrigins] (
+﻿-- Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+-- SPDX-License-Identifier: Apache-2.0
+
+CREATE TABLE [dbo].[ClientCorsOrigins] (
     [Id]            INT            IDENTITY (1, 1) NOT NULL,
     [Origin]        NVARCHAR (150) NOT NULL,
     [ClientId]      INT            NOT NULL,

@@ -1,4 +1,7 @@
-﻿PRINT 'Running script to add scope ''identityserver.clients.read''...'
+﻿-- Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
+-- SPDX-License-Identifier: Apache-2.0
+
+PRINT 'Running script to add scope ''identityserver.clients.read''...'
 
 UPDATE [dbo].[ApiScopes] 
 SET [ShowInDiscoveryDocument] = 0 
