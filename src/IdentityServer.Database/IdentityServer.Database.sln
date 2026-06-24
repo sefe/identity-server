@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35728.132
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "IdentityServer.Database", "src\IdentityServer.Database\IdentityServer.Database.sqlproj", "{405D3AB6-A5C3-4739-A762-158B8475EA0B}"
+Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "IdentityServer.Database", "IdentityServer.Database.sqlproj", "{405D3AB6-A5C3-4739-A762-158B8475EA0B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
 EndProject

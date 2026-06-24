@@ -38,7 +38,7 @@ jobs:
     clean: False
   - task: MSBuild@1
     inputs:
-      solution: 'IdentityServer.Database.sln'
+      solution: 'src/IdentityServer.Database/IdentityServer.Database.sln'
       platform: '$(BuildPlatform)'
       configuration: '$(BuildConfiguration)'
       clean: true
