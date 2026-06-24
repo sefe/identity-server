@@ -1,0 +1,65 @@
+name: $(BuildDefinitionName).$(Build.SourceBranchName)_$(year:yy).$(Month).$(DayOfMonth)$(Rev:.r)
+
+trigger:
+  branches:
+    include:
+    - main
+    - releases/*
+    - feature/*
+    - features/*
+  paths:
+    include:
+      - 'src/IdentityServer.Database/**'
+    exclude:
+      - '**/*.yaml'
+      - '**/README.md'
+  tags:
+    include:
+    - release/*
+  batch: true
+
+pr:
+  branches:
+    include:
+      - feature/*
+      - features/*
+
+variables:
+  - template: build-variables.yaml
+
+jobs:
+- job: BuildDacpac
+  displayName: Build dacpac and publish
+  cancelTimeoutInMinutes: 1
+  pool:
+    name: TRADING-DOTNET-03
+  steps:
+  - checkout: self
+    clean: False
+  - task: MSBuild@1
+    inputs:
+      solution: 'IdentityServer.Database.sln'
+      platform: '$(BuildPlatform)'
+      configuration: '$(BuildConfiguration)'
+      clean: true
+      createLogFile: true
+      logFileVerbosity: 'diagnostic'
+  - task: CopyFiles@2
+    name: FileCopy
+    displayName: FileCopy
+    inputs:
+      SourceFolder: $(Build.SourcesDirectory)
+      Contents: |
+        **\IdentityServer.Database.dacpac
+        **\IdentityServer.Database.dacpac.json
+        **\IdentityServer.Database.restore.json
+      TargetFolder: $(Build.ArtifactStagingDirectory)\Database
+      flattenFolders: true
+  - task: PublishBuildArtifacts@1
+    name: PublishBuildArtifacts
+    displayName: 'Publish Artifact: drop'
+    inputs:
+      PathtoPublish: $(build.artifactstagingdirectory)
+      ArtifactType: FilePath
+      TargetPath: '\\appinst01\tfsbdev01lonuk_DROPs\IDP\$(Build.DefinitionName)\$(Build.BuildNumber)'
+...
