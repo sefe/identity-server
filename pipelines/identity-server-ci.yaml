@@ -1,0 +1,133 @@
+name: $(Build.DefinitionName).$(Build.SourceBranchName)_$(Date:yy).$(Date:MM).$(Date:dd)$(rev:.r)
+
+pool:
+  name: TRADING-DOTNET-03
+  demands:
+    - msbuild
+    - sqlpackage
+
+trigger:
+  branches:
+    include:
+      - main
+      - releases/*
+  paths:
+    exclude:
+      - '**/*.yaml'
+      - '**/README.md'
+  batch: true
+
+pr:
+  branches:
+    include:
+      - feature/*
+      - releases/*
+      - bug/*
+
+variables:
+  - name: 'ApiSourcePath'
+    value: '$(Build.SourcesDirectory)/src/IdentityServer/IdentityServer'
+  - name: 'AdminPortalPath'
+    value: '$(Build.SourcesDirectory)/src/IdentityServer.UI.Admin'
+  - name: 'CommonTestPath'
+    value: '$(Build.SourcesDirectory)/src/IdentityServer.Common'
+  - name: 'WixSourcePath'
+    value: '$(Build.SourcesDirectory)/src/IdentityServer/IdentityServer.Setup'
+  - template: build-variables.yaml
+
+steps:
+  - checkout: self
+    fetchDepth: 0
+
+  - task: NuGetToolInstaller@1
+    displayName: 'Use NuGet 6.0.0'
+    inputs:
+      versionSpec: 6.0.0
+
+  - task: NuGetCommand@2
+    displayName: 'Nuget Restore'
+    inputs:
+      restoreSolution: '**/*.sln'
+      feedsToUse: config
+      nugetConfigPath: '\\Itss.global\prod\GLO\APP\Proget\NuGet\NuGet-test.Config'
+      externalFeedCredentials: 'Nuget ProgetDV'
+      noCache: true
+
+  - task: PowerShell@2
+    displayName: 'Set SonarQube Analysis Date'
+    inputs:
+      targetType: 'inline'
+      script: |
+        $baseDate = Get-Date -Format "yyyy-MM-dd"
+        $uniqueSeconds = (Get-Date -UFormat "%S") % 60
+        $date = (Get-Date).AddSeconds($uniqueSeconds).ToString("yyyy-MM-dd")
+        Write-Host "##vso[task.setvariable variable=SonarQubeProjectDate]$date"
+    enabled: false
+
+  - task: SonarQubePrepare@7
+    inputs:
+      SonarQube: 'SonarQube.idp'
+      scannerMode: 'dotnet'
+      projectKey: 'tr.idp.app'
+      projectName: 'tr.idp.app'
+      projectVersion: '$(Build.BuildNumber)'
+      extraProperties: |
+        sonar.exclusions=**/AssemblyInfo.cs
+    enabled: true
+
+  - task: PowerShell@2
+    displayName: 'Calculate Assembly Version'
+    inputs:
+      targetType: 'filePath'
+      filePath: '$(System.DefaultWorkingDirectory)/build/scripts/CalculateAssemblyVersion.ps1'
+      arguments: '-BuildNumber "$(Build.BuildNumber)"'
+
+  - task: PowerShell@2
+    displayName: 'Update Assembly Version'
+    inputs:
+      filePath: '$(System.DefaultWorkingDirectory)/build/scripts/UpdateAssemblyVersion.ps1'
+      arguments: '-assemblyInfoPath "$(System.DefaultWorkingDirectory)/src/IdentityServer/IdentityServer/Properties/AssemblyInfo.cs" -assemblyVersion "$(assemblyVersion)"'
+      failOnStderr: true
+
+  - task: DotNetCoreCLI@2
+    displayName: Build Api
+    env:
+      SEFE_IDENTITY_SERVER_TOOL_DV_SECRET: $(sefe-identity-server-tool-dv-secret)
+    inputs:
+      command: build
+      projects: '$(ApiSourcePath)/**/*.csproj'
+      arguments: '--configuration $(BuildConfiguration)'
+    enabled: true
+
+  - task: DotNetCoreCLI@2
+    displayName: Build Admin Portal
+    inputs:
+      command: build
+      projects: '$(AdminPortalPath)/**/*.csproj'
+      arguments: '--configuration $(BuildConfiguration)'
+    env:
+      TELERIK_LICENSE: $(Telerik_License_Key)
+    enabled: true
+
+  - task: DotNetCoreCLI@2
+    displayName: Test
+    inputs:
+      command: test
+      projects: |
+        $(Build.SourcesDirectory)/src/IdentityServer/IdentityServer.Test/IdentityServer.Test.csproj
+        $(Build.SourcesDirectory)/src/IdentityServer.UI.Admin/IdentityServer.AdminPortal.Test/IdentityServer.AdminPortal.Test.csproj
+        $(Build.SourcesDirectory)/src/IdentityServer.UI.Admin/IdentityServer.AdminPortal.Web.Tests/IdentityServer.AdminPortal.Web.Tests.csproj
+        $(CommonTestPath)/IdentityServer.Data.Test/*.csproj
+        $(CommonTestPath)/IdentityServer.OnePassword.Tests/*.csproj
+        $(CommonTestPath)/IdentityServer.Abstraction.Tests/*.csproj
+        $(CommonTestPath)/IdentityServer.MicrosoftGraph.Tests/*.csproj
+        $(CommonTestPath)/IdentityServer.Core.Serilog.Test/*.csproj
+      arguments: '--configuration $(BuildConfiguration) --collect "Code Coverage" --settings "$(Build.SourcesDirectory)/src/code_coverage.runsettings"'
+
+  - task: SonarQubeAnalyze@7
+    displayName: 'Run Code Analysis'
+
+  - task: SonarQubePublish@7
+    displayName: 'Publish Quality Gate Result'
+    inputs:
+      pollingTimeoutSec: 300
