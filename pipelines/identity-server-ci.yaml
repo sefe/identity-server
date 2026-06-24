@@ -49,7 +49,7 @@ steps:
     inputs:
       restoreSolution: '**/*.sln'
       feedsToUse: config
-      nugetConfigPath: '\\Itss.global\prod\GLO\APP\Proget\NuGet\NuGet-test.Config'
+      nugetConfigPath: 'pipelines/NuGet.config'
       externalFeedCredentials: 'Nuget ProgetDV'
       noCache: true
 
@@ -79,14 +79,14 @@ steps:
     displayName: 'Calculate Assembly Version'
     inputs:
       targetType: 'filePath'
-      filePath: '$(System.DefaultWorkingDirectory)/build/scripts/CalculateAssemblyVersion.ps1'
+      filePath: '$(Build.SourcesDirectory)/pipelines/scripts/CalculateAssemblyVersion.ps1'
       arguments: '-BuildNumber "$(Build.BuildNumber)"'
 
   - task: PowerShell@2
     displayName: 'Update Assembly Version'
     inputs:
-      filePath: '$(System.DefaultWorkingDirectory)/build/scripts/UpdateAssemblyVersion.ps1'
-      arguments: '-assemblyInfoPath "$(System.DefaultWorkingDirectory)/src/IdentityServer/IdentityServer/Properties/AssemblyInfo.cs" -assemblyVersion "$(assemblyVersion)"'
+      filePath: '$(Build.SourcesDirectory)/pipelines/scripts/UpdateAssemblyVersion.ps1'
+      arguments: '-assemblyInfoPath "$(Build.SourcesDirectory)/src/IdentityServer/IdentityServer/Properties/AssemblyInfo.cs" -assemblyVersion "$(assemblyVersion)"'
       failOnStderr: true
 
   - task: DotNetCoreCLI@2
