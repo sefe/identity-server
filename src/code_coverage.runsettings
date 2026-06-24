@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="Code Coverage" uri="datacollector://Microsoft/CodeCoverage/2.0" assemblyQualifiedName="Microsoft.VisualStudio.Coverage.DynamicCoverageDataCollector, Microsoft.VisualStudio.TraceCollector, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+        <Configuration>
+          <CodeCoverage>
+            <Format>coverage</Format>
+            <ModulePaths>
+              <Include>
+                <ModulePath>.*IdentityServer.*\.dll$</ModulePath>
+                <ModulePath>.*\.exe$</ModulePath>
+              </Include>
+              <Exclude>
+                <ModulePath>.*IdentityServer\.Core\.dll$</ModulePath>
+                <ModulePath>.*IdentityServer\.Tests\.Common\.dll$</ModulePath>
+                <ModulePath>.*duende\.identityserver.*\.dll$</ModulePath>
+                <ModulePath>.*stackexchange\.redis\.dll$</ModulePath>
+                <ModulePath>.*elasticsearch\.dll$</ModulePath>
+                <ModulePath>.*system\..*\.dll$</ModulePath>
+                <ModulePath>.*\.Test\.dll$</ModulePath>
+                <ModulePath>.*\.Tests\.dll$</ModulePath>
+                <ModulePath>.*\\nunit\..*</ModulePath>
+                <ModulePath>.*\\NUnit\..*</ModulePath>
+                <ModulePath>.*nunit3\..*</ModulePath>
+                <ModulePath>.*\*coverlet*</ModulePath>
+                <ModulePath>.*bunit\.core\.dll$</ModulePath>
+                <ModulePath>.*bunit\.web\.dll$</ModulePath>
+              </Exclude>
+            </ModulePaths>
+
+            <Sources>
+              <Exclude>
+                <Source>.*\\bunit.*\\.*</Source>
+                <Source>.*\\nunit.*\\.*</Source>
+                <Source>.*\\NUnit.*\\.*</Source>
+                <Source>.*\\packages\\NUnit.*\\.*</Source>
+                <Source>.*\\nunit3-vs-adapter\\.*</Source>
+              </Exclude>
+            </Sources>
+
+            <CompanyNames>
+              <Exclude>
+                <CompanyName>.*microsoft.*</CompanyName>
+                <CompanyName>.*stackexchange.*</CompanyName>
+                <CompanyName>.*elasticsearch.*</CompanyName>
+              </Exclude>
+            </CompanyNames>
+
+            <!-- We recommend you do not change the following values: -->
+
+            <!-- Set this to True to collect coverage information for functions marked with the "SecuritySafeCritical" attribute. Instead of writing directly into a memory location from such functions, code coverage inserts a probe that redirects to another function, which in turns writes into memory. -->
+            <UseVerifiableInstrumentation>True</UseVerifiableInstrumentation>
+            <!-- When set to True, collects coverage information from child processes that are launched with low-level ACLs, for example, UWP apps. -->
+            <AllowLowIntegrityProcesses>True</AllowLowIntegrityProcesses>
+            <!-- When set to True, collects coverage information from child processes that are launched by test or production code. -->
+            <CollectFromChildProcesses>True</CollectFromChildProcesses>
+            <!-- When set to True, restarts the IIS process and collects coverage information from it. -->
+            <CollectAspDotNet>False</CollectAspDotNet>
+            <!-- When set to True, static native instrumentation will be enabled. -->
+            <EnableStaticNativeInstrumentation>True</EnableStaticNativeInstrumentation>
+            <!-- When set to True, dynamic native instrumentation will be enabled. -->
+            <EnableDynamicNativeInstrumentation>True</EnableDynamicNativeInstrumentation>
+            <!-- When set to True, instrumented binaries on disk are removed and original files are restored. -->
+            <EnableStaticNativeInstrumentationRestore>True</EnableStaticNativeInstrumentationRestore>
+            <!-- When set to False, test assemblies will not be added to the coverage report. -->
+            <IncludeTestAssembly>False</IncludeTestAssembly>
+          </CodeCoverage>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
