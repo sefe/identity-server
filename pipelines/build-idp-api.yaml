@@ -1,0 +1,132 @@
+name: $(Build.DefinitionName).$(Build.SourceBranchName)_$(Date:yy).$(Date:MM).$(Date:dd)$(rev:.r)
+
+pool:
+  name: TRADING-DOTNET-03
+  demands:
+    - msbuild
+
+trigger:
+  branches:
+    include:
+      - main
+      - releases/*
+  paths:
+    include:
+      - 'src/IdentityServer/**'
+      - 'src/IdentityServer.Common/**'
+    exclude:
+      - '**/*.yaml'
+      - '**/README.md'
+  tags:
+    include:
+      - release/*
+
+pr:
+  branches:
+    include:
+      - feature/*
+
+variables:
+  - name: 'ApiSourcePath'
+    value: '$(Build.SourcesDirectory)/src/IdentityServer/IdentityServer'
+  - name: 'ApiTestPath'
+    value: '$(Build.SourcesDirectory)/src/IdentityServer/IdentityServer.Test'
+  - name: 'CommonTestPath'
+    value: '$(Build.SourcesDirectory)/src/IdentityServer.Common'
+  - name: 'WixSourcePath'
+    value: '$(Build.SourcesDirectory)/src/IdentityServer/IdentityServer.Setup'
+  - template: build-variables.yaml
+
+steps:
+  - checkout: self
+    fetchDepth: 0
+
+  - task: NuGetToolInstaller@1
+    displayName: 'Use NuGet 6.0.0'
+    inputs:
+      versionSpec: 6.0.0
+
+  - task: NuGetCommand@2
+    displayName: 'Nuget Restore'
+    inputs:
+      restoreSolution: '**/*.sln'
+      feedsToUse: config
+      nugetConfigPath: 'pipelines/NuGet.config'
+      externalFeedCredentials: 'Nuget ProgetDV'
+      noCache: true
+
+  - task: PowerShell@2
+    displayName: 'Calculate Assembly Version'
+    inputs:
+      targetType: 'filePath'
+      filePath: '$(Build.SourcesDirectory)/pipelines/scripts/CalculateAssemblyVersion.ps1'
+      arguments: '-BuildNumber "$(Build.BuildNumber)"'
+
+  - task: PowerShell@2
+    name: UpdateVersion
+    displayName: 'Update Assembly Version'
+    inputs:
+      filePath: '$(Build.SourcesDirectory)/pipelines/scripts/UpdateAssemblyVersion.ps1'
+      arguments: '-assemblyInfoPath "$(Build.SourcesDirectory)/src/IdentityServer/IdentityServer/Properties/AssemblyInfo.cs" -assemblyVersion "$(assemblyVersion)"'
+      failOnStderr: true
+
+  - task: DotNetCoreCLI@2
+    displayName: Build Api
+    env:
+      SEFE_IDENTITY_SERVER_TOOL_DV_SECRET: $(sefe-identity-server-tool-dv-secret)
+    inputs:
+      command: build
+      projects: '$(ApiSourcePath)/**/*.csproj'
+      arguments: '--configuration $(BuildConfiguration)'
+    enabled: true
+
+  - task: DotNetCoreCLI@2
+    displayName: Test
+    inputs:
+      command: test
+      projects: |
+        $(ApiTestPath)/*.csproj
+        $(CommonTestPath)/IdentityServer.Data.Test/*.csproj
+        $(CommonTestPath)/IdentityServer.OnePassword.Tests/*.csproj
+        $(CommonTestPath)/IdentityServer.Abstraction.Tests/*.csproj
+        $(CommonTestPath)/IdentityServer.MicrosoftGraph.Tests/*.csproj
+        $(CommonTestPath)/IdentityServer.Core.Serilog.Test/*.csproj
+      arguments: '--configuration $(BuildConfiguration) --collect "Code Coverage" --settings "$(Build.SourcesDirectory)/src/code_coverage.runsettings"'
+
+  - task: DotNetCoreCLI@2
+    displayName: Build MSI
+    inputs:
+      command: build
+      projects: '$(WixSourcePath)/**/*.wixproj'
+      arguments: '--configuration $(BuildConfiguration) --property AppVersion=$(assemblyVersion)'
+    enabled: true
+
+  - task: DotNetCoreCLI@2
+    displayName: Publish Api Application
+    inputs:
+      command: publish
+      publishWebProjects: false
+      projects: '$(ApiSourcePath)/*.csproj'
+      arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory)'
+      zipAfterPublish: false
+    enabled: false
+
+  - task: CopyFiles@2
+    displayName: 'Copy installer files'
+    inputs:
+      SourceFolder: '$(Build.SourcesDirectory)/src/IdentityServer/'
+      Contents: |
+        **/bin/**/*msi.json
+        **/bin/**/*.msi
+      TargetFolder: '$(Build.ArtifactStagingDirectory)'
+      flattenFolders: true
+    continueOnError: true
+    enabled: true
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact'
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      publishLocation: FilePath
+      TargetPath: '$(DropFolder)\$(Build.DefinitionName)\$(Build.BuildNumber)'
+    condition: succeededOrFailed()
