@@ -1,6 +1,7 @@
 ﻿PRINT 'Running script to add jwt.io as allowed cors value to the identityserver.admin application ...'
 
 IF (NOT EXISTS (SELECT 1 FROM [dbo].[ClientCorsOrigins] WHERE [Origin] = 'https://www.jwt.io'))
+   AND EXISTS (SELECT 1 FROM [dbo].[Clients] WHERE [ClientId] = 'identityserver.admin')
 BEGIN
     INSERT INTO [dbo].[ClientCorsOrigins] ([Origin], [ClientId])
             VALUES ('https://www.jwt.io'
