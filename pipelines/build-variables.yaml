@@ -1,0 +1,12 @@
+variables:
+  - name: 'DropFolder'
+    value: '\\appinst01\tfsbdev01lonuk_DROPs\IDP'
+  - name: 'BuildPlatform'
+    value: 'Any CPU'
+  - name: 'BuildConfiguration'
+    value: 'Release'
+  - group: 'Identity_Server_NP'
+  - name: 'BUILD_NUMBER'
+    value: $[counter(variables['Build.DefinitionName'], 1)]
+  - name: 'SQLServer'
+    value: 'GMDV-IDPSQS01\IDP_DV01'
