@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
     <Name>IdentityServer.AdminPortal.Setup</Name>
-    <IdpWebDir>..\IdentityServer.AdminPortal.Server\bin\$(Configuration)\net8.0</IdpWebDir>
+    <IdpWebDir>..\IdentityServer.AdminPortal.Server\bin\$(Configuration)\net10.0</IdpWebDir>
     <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
     <ProjectGuid>{8f355c0a-c2d3-42fe-a5bd-d4447167ae9e}</ProjectGuid>
   </PropertyGroup>
