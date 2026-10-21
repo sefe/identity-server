@@ -263,7 +263,7 @@ public class RedisCache<T> : ICache<T> where T : class
         {
             try
             {
-                var item = JsonSerializer.Deserialize<T>(value!, _jsonOptions);
+                var item = JsonSerializer.Deserialize<T>((string)value!, _jsonOptions);
                 if (item != null)
                 {
                     _logger.CacheHit(nameof(GetManyAsync), _cacheTypeName, normalizedKey, 0);
@@ -303,7 +303,7 @@ public class RedisCache<T> : ICache<T> where T : class
 
         try
         {
-            var result = JsonSerializer.Deserialize<T>(value!, _jsonOptions);
+            var result = JsonSerializer.Deserialize<T>((string)value!, _jsonOptions);
             var elapsedMs = CommonHelpers.GetElapsedMilliseconds(startTimestamp);
 
             if (result != null)
