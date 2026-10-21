@@ -60,11 +60,11 @@ public class ApiResourceRoleMappingControllerTests : ControllerTestBase
     }
 
     [Test]
-    public void CreateRoleMapping_WithMissingApiResource_Fails()
+    public async Task CreateRoleMapping_WithMissingApiResource_Fails()
     {
         var newRoleMapping = ApiResourceRoleMappingControllerExtensions.NewRoleMappingFor(999, 1, RoleMapType.SecurityGroup, Guid.NewGuid().ToString());
 
-        Assert.ThrowsAsync<EntityNotFoundException>(() => _apiResourceRoleMappingController.Call_AddApiResourceRoleMappingAsync(newRoleMapping, Admin));
+        await Assert.ThrowsAsync<EntityNotFoundException>(() => _apiResourceRoleMappingController.Call_AddApiResourceRoleMappingAsync(newRoleMapping, Admin));
     }
 
     [Test]
@@ -112,7 +112,7 @@ public class ApiResourceRoleMappingControllerTests : ControllerTestBase
         await _apiResourceRoleMappingController.Call_AddApiResourceRoleMappingAsync(newRoleMapping, Admin);
 
         // Act
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _apiResourceRoleMappingController.Call_AddApiResourceRoleMappingAsync(newRoleMapping, Admin));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _apiResourceRoleMappingController.Call_AddApiResourceRoleMappingAsync(newRoleMapping, Admin));
     }
 
     [Test]
@@ -127,7 +127,7 @@ public class ApiResourceRoleMappingControllerTests : ControllerTestBase
         var newRoleMapping = ApiResourceRoleMappingControllerExtensions.NewRoleMappingFor(createdApiResource.Id, createdRole.Id, RoleMapType.SecurityGroup, groupObjectId);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityValidationException>(() => _apiResourceRoleMappingController.Call_AddApiResourceRoleMappingAsync(newRoleMapping, Admin));
+        await Assert.ThrowsAsync<EntityValidationException>(() => _apiResourceRoleMappingController.Call_AddApiResourceRoleMappingAsync(newRoleMapping, Admin));
     }
 
     [Test]
@@ -165,7 +165,7 @@ public class ApiResourceRoleMappingControllerTests : ControllerTestBase
         var newRoleMapping = ApiResourceRoleMappingControllerExtensions.NewRoleMappingFor(createdApiResource.Id, createdRole.Id, RoleMapType.UserObjectId, userObjectId);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityValidationException>(() => _apiResourceRoleMappingController.Call_AddApiResourceRoleMappingAsync(newRoleMapping, Admin));
+        await Assert.ThrowsAsync<EntityValidationException>(() => _apiResourceRoleMappingController.Call_AddApiResourceRoleMappingAsync(newRoleMapping, Admin));
     }
 
     [Test]
@@ -205,7 +205,7 @@ public class ApiResourceRoleMappingControllerTests : ControllerTestBase
         var newRoleMapping = ApiResourceRoleMappingControllerExtensions.NewRoleMappingFor(createdApiResource.Id, createdRole.Id, RoleMapType.ClientId, clientId);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityValidationException>(() => _apiResourceRoleMappingController.Call_AddApiResourceRoleMappingAsync(newRoleMapping, Admin));
+        await Assert.ThrowsAsync<EntityValidationException>(() => _apiResourceRoleMappingController.Call_AddApiResourceRoleMappingAsync(newRoleMapping, Admin));
     }
 
     [Test]
@@ -248,7 +248,7 @@ public class ApiResourceRoleMappingControllerTests : ControllerTestBase
         _ = await _apiResourceRoleMappingController.Call_AddApiResourceRoleMappingAsync(newRoleMapping, Admin);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _apiResourceRoleMappingController.Call_AddApiResourceRoleMappingAsync(newRoleMapping, Admin));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _apiResourceRoleMappingController.Call_AddApiResourceRoleMappingAsync(newRoleMapping, Admin));
     }
 
     [Test]
@@ -262,7 +262,7 @@ public class ApiResourceRoleMappingControllerTests : ControllerTestBase
         _ = await _apiResourceRoleMappingController.Call_AddApiResourceRoleMappingAsync(newRoleMapping, Admin);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _apiResourceRoleMappingController.Call_AddApiResourceRoleMappingAsync(newRoleMapping, Admin));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _apiResourceRoleMappingController.Call_AddApiResourceRoleMappingAsync(newRoleMapping, Admin));
     }
 
     [Test]
@@ -276,7 +276,7 @@ public class ApiResourceRoleMappingControllerTests : ControllerTestBase
         _ = await _apiResourceRoleMappingController.Call_AddApiResourceRoleMappingAsync(newRoleMapping, Admin);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _apiResourceRoleMappingController.Call_AddApiResourceRoleMappingAsync(newRoleMapping, Admin));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _apiResourceRoleMappingController.Call_AddApiResourceRoleMappingAsync(newRoleMapping, Admin));
     }
     [Test]
     public async Task Delete_WhenMappingExists_Succeeds()

@@ -154,7 +154,7 @@ public class RoleReplaceComparerTests
     }
 
     [Test]
-    public void CompareRoles_RoleWithNullMappings_DoesNotThrow()
+    public async Task CompareRoles_RoleWithNullMappings_DoesNotThrow()
     {
         var existing = new List<RoleValueObject<ApiResourceRoleMappingValueObject>>
         {
@@ -164,6 +164,6 @@ public class RoleReplaceComparerTests
         {
             new() { RoleName = _role1Name, Mappings = null! }
         };
-        Assert.DoesNotThrowAsync(() => RoleReplaceComparer.CompareRolesAsync(existing, imported));
+        await Assert.DoesNotThrowAsync(() => RoleReplaceComparer.CompareRolesAsync(existing, imported));
     }
 }

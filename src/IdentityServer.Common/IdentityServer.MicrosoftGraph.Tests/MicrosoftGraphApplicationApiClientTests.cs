@@ -66,7 +66,7 @@ public class MicrosoftGraphApplicationApiClientTests
     }
 
     [Test]
-    public void GetApplicationByAppIdAsync_ThrowsException_WhenResponseIsUnsuccessful()
+    public async Task GetApplicationByAppIdAsync_ThrowsException_WhenResponseIsUnsuccessful()
     {
         // Arrange
         var appId = "test-app-id";
@@ -74,7 +74,7 @@ public class MicrosoftGraphApplicationApiClientTests
         _httpClientFactory.CreateClient(Arg.Any<string>()).Returns(httpClient);
 
         // Act & Assert
-        Assert.ThrowsAsync<HttpRequestException>(() => _client.GetApplicationByAppIdAsync(appId));
+        await Assert.ThrowsAsync<HttpRequestException>(() => _client.GetApplicationByAppIdAsync(appId));
     }
 
     [Test]
@@ -111,7 +111,7 @@ public class MicrosoftGraphApplicationApiClientTests
     }
 
     [Test]
-    public void GetApplicationByAppIdAsync_ThrowsException_WhenResponseIsForbidden()
+    public async Task GetApplicationByAppIdAsync_ThrowsException_WhenResponseIsForbidden()
     {
         // Arrange
         var appId = "test-app-id";
@@ -119,13 +119,13 @@ public class MicrosoftGraphApplicationApiClientTests
         _httpClientFactory.CreateClient(Arg.Any<string>()).Returns(httpClient);
 
         // Act & Assert
-        Assert.ThrowsAsync<HttpRequestException>(() => _client.GetApplicationByAppIdAsync(appId));
+        await Assert.ThrowsAsync<HttpRequestException>(() => _client.GetApplicationByAppIdAsync(appId));
     }
 
     [Test]
     [TestCase(HttpStatusCode.Unauthorized)]
     [TestCase(HttpStatusCode.InternalServerError)]
-    public void GetApplicationByAppIdAsync_ThrowsException_WhenResponseHasErrorCode(HttpStatusCode code)
+    public async Task GetApplicationByAppIdAsync_ThrowsException_WhenResponseHasErrorCode(HttpStatusCode code)
     {
         // Arrange
         var appId = "test-app-id";
@@ -133,7 +133,7 @@ public class MicrosoftGraphApplicationApiClientTests
         _httpClientFactory.CreateClient(Arg.Any<string>()).Returns(httpClient);
 
         // Act & Assert
-        Assert.ThrowsAsync<HttpRequestException>(() => _client.GetApplicationByAppIdAsync(appId));
+        await Assert.ThrowsAsync<HttpRequestException>(() => _client.GetApplicationByAppIdAsync(appId));
     }
 
     [Test]

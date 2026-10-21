@@ -70,7 +70,7 @@ public class ClientImportDtoRepositoryTests
     }
 
     [Test]
-    public void ImportAsync_WithUnknownImportStrategy_ThrowsImportValidationException()
+    public async Task ImportAsync_WithUnknownImportStrategy_ThrowsImportValidationException()
     {
         // Arrange
         const string exceptionMessage = "Unknown import strategy for Client roles.";
@@ -97,7 +97,7 @@ public class ClientImportDtoRepositoryTests
         _roleMappingValidationService.ValidateImportRoleMappingsAsync(Arg.Any<List<RoleMappingValueObject>>(), Arg.Any<OperationStatus>()).Returns(Task.CompletedTask);
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<ImportValidationException>(async () =>
+        var ex = await Assert.ThrowsAsync<ImportValidationException>(async () =>
             await _sut.ImportAsync(_user, _clientId, resource));
 
         using (Assert.EnterMultipleScope())

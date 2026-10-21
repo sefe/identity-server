@@ -96,7 +96,7 @@ public class ApiResourceControllerCloningsTests : ControllerTestBase
     }
 
     [Test]
-    public void CloneApiResource_WithInvalidId_Fails()
+    public async Task CloneApiResource_WithInvalidId_Fails()
     {
         // Arrange
         var cloneRequest = new ApiResourceDtoClone
@@ -108,11 +108,11 @@ public class ApiResourceControllerCloningsTests : ControllerTestBase
         };
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityNotFoundException>(() => _apiResourceController.Call_CloneApiResourceAsync(cloneRequest, Admin));
+        await Assert.ThrowsAsync<EntityNotFoundException>(() => _apiResourceController.Call_CloneApiResourceAsync(cloneRequest, Admin));
     }
 
     [Test]
-    public void CloneApiResource_WithExistingName_Fails()
+    public async Task CloneApiResource_WithExistingName_Fails()
     {
         // Arrange
         var originalApiResource = _apiResourceController.Call_CreateApiResourceAsync(
@@ -127,7 +127,7 @@ public class ApiResourceControllerCloningsTests : ControllerTestBase
         };
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _apiResourceController.Call_CloneApiResourceAsync(cloneRequest, Admin));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _apiResourceController.Call_CloneApiResourceAsync(cloneRequest, Admin));
     }
 
     [Test]

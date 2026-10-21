@@ -66,7 +66,7 @@ public class ClientGrantControllerTests : ControllerTestBase
         await _clientGrantController.Call_AddClientGrantAsync(client.Id, grantType, Contributor);
 
         // Act
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientGrantController.Call_AddClientGrantAsync(client.Id, grantType, Contributor));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientGrantController.Call_AddClientGrantAsync(client.Id, grantType, Contributor));
     }
 
     [Test]
@@ -112,7 +112,7 @@ public class ClientGrantControllerTests : ControllerTestBase
         client = await _clientController.Call_UpdateClientAsync(new ClientDtoUpdate { Id = client.Id, AllowOfflineAccess = true }, Admin);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityReferenceException>(() => _clientGrantController.Call_AddClientGrantAsync(client.Id, grantType, Admin));
+        await Assert.ThrowsAsync<EntityReferenceException>(() => _clientGrantController.Call_AddClientGrantAsync(client.Id, grantType, Admin));
     }
 
     [Test]
@@ -123,7 +123,7 @@ public class ClientGrantControllerTests : ControllerTestBase
         var client = await _clientController.Call_CreateClientAsync(ClientControllerExtensions.GetDefaultClient(1), Contributor);
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<EntityReferenceException>(async () => await _clientGrantController.Call_DeleteClientGrantAsync(client.AllowedGrantTypes[0].Id, Contributor));
+        var ex = await Assert.ThrowsAsync<EntityReferenceException>(async () => await _clientGrantController.Call_DeleteClientGrantAsync(client.AllowedGrantTypes[0].Id, Contributor));
         Assert.That(ex.Message, Is.EqualTo("Cannot remove the last Grant Type."));
 
         var persistedClient = await _clientController.Call_GetClientAsync(client.Id, Contributor);
@@ -186,7 +186,7 @@ public class ClientGrantControllerTests : ControllerTestBase
         await _clientGrantController.Call_AddClientGrantAsync(client.Id, grantType, Admin);
 
         // Act & Assert
-        Assert.ThrowsAsync<InvalidOperationException>(() =>
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _clientController.Call_UpdateClientAsync(new ClientDtoUpdate { Id = client.Id, AllowOfflineAccess = true }, Admin));
     }
 
@@ -198,7 +198,7 @@ public class ClientGrantControllerTests : ControllerTestBase
         await _clientGrantController.Call_AddClientGrantAsync(client.Id, existingGrant, Contributor);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityReferenceException>(() => _clientGrantController.Call_AddClientGrantAsync(client.Id, newGrant, Admin));
+        await Assert.ThrowsAsync<EntityReferenceException>(() => _clientGrantController.Call_AddClientGrantAsync(client.Id, newGrant, Admin));
     }
 
     private static IEnumerable<TestCaseData> GetIncompatibleGrantTypes()

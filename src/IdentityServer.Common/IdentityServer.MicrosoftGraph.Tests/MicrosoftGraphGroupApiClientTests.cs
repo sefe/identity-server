@@ -436,7 +436,7 @@ public class MicrosoftGraphGroupApiClientTests
     }
 
     [Test]
-    public void GetUsersByGroupIdAsync_ThrowsException_WhenResponseIsUnsuccessful()
+    public async Task GetUsersByGroupIdAsync_ThrowsException_WhenResponseIsUnsuccessful()
     {
         // Arrange
         var groupId = Guid.NewGuid();
@@ -444,12 +444,12 @@ public class MicrosoftGraphGroupApiClientTests
         _httpClientFactory.CreateClient(Arg.Any<string>()).Returns(httpClient);
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<HttpRequestException>(() => _client.GetUsersByGroupIdAsync(groupId));
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(() => _client.GetUsersByGroupIdAsync(groupId));
         Assert.That(ex.Message, Does.Contain("Failed to retrieve users of a group"));
     }
 
     [Test]
-    public void GetUsersByGroupIdAsync_ThrowsHttpRequestException_OnFailure()
+    public async Task GetUsersByGroupIdAsync_ThrowsHttpRequestException_OnFailure()
     {
         // Arrange
         var groupId = Guid.NewGuid();
@@ -457,7 +457,7 @@ public class MicrosoftGraphGroupApiClientTests
         _httpClientFactory.CreateClient(Arg.Any<string>()).Returns(httpClient);
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<HttpRequestException>(() => _client.GetUsersByGroupIdAsync(groupId));
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(() => _client.GetUsersByGroupIdAsync(groupId));
         Assert.That(ex.Message, Does.Contain("Failed to retrieve users of a group"));
     }
 
@@ -732,7 +732,7 @@ public class MicrosoftGraphGroupApiClientTests
     }
 
     [Test]
-    public void SearchGroupsByDisplayNameAsync_ThrowsException_WhenResponseIsUnsuccessful()
+    public async Task SearchGroupsByDisplayNameAsync_ThrowsException_WhenResponseIsUnsuccessful()
     {
         // Arrange
         var displayName = "test-group";
@@ -740,6 +740,6 @@ public class MicrosoftGraphGroupApiClientTests
         _httpClientFactory.CreateClient(Arg.Any<string>()).Returns(httpClient);
 
         // Act & Assert
-        Assert.ThrowsAsync<HttpRequestException>(() => _client.SearchGroupsByDisplayNameAsync(displayName));
+        await Assert.ThrowsAsync<HttpRequestException>(() => _client.SearchGroupsByDisplayNameAsync(displayName));
     }
 }

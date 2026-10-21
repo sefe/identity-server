@@ -64,21 +64,21 @@ public class MicrosoftGraphUserApiClientTests
     }
 
     [Test]
-    public void GetUserByObjectIdAsync_WhenUserIdIsNull_ThrowsArgumentNullException()
+    public async Task GetUserByObjectIdAsync_WhenUserIdIsNull_ThrowsArgumentNullException()
     {
         // Act & Assert
-        Assert.ThrowsAsync<ArgumentNullException>(() => _client.GetUserByObjectIdAsync(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _client.GetUserByObjectIdAsync(null!));
     }
 
     [Test]
-    public void GetUserByObjectIdAsync_WhenUserIdIsEmpty_ThrowsArgumentException()
+    public async Task GetUserByObjectIdAsync_WhenUserIdIsEmpty_ThrowsArgumentException()
     {
         // Act & Assert
-        Assert.ThrowsAsync<ArgumentException>(() => _client.GetUserByObjectIdAsync(string.Empty));
+        await Assert.ThrowsAsync<ArgumentException>(() => _client.GetUserByObjectIdAsync(string.Empty));
     }
 
     [Test]
-    public void GetUserByObjectIdAsync_OnHttpError_ThrowsHttpRequestException()
+    public async Task GetUserByObjectIdAsync_OnHttpError_ThrowsHttpRequestException()
     {
         // Arrange
         var userObjectId = "test-user-id";
@@ -86,7 +86,7 @@ public class MicrosoftGraphUserApiClientTests
         _httpClientFactory.CreateClient(Arg.Any<string>()).Returns(httpClient);
 
         // Act & Assert
-        Assert.ThrowsAsync<HttpRequestException>(async () => await _client.GetUserByObjectIdAsync(userObjectId));
+        await Assert.ThrowsAsync<HttpRequestException>(async () => await _client.GetUserByObjectIdAsync(userObjectId));
     }
 
     [Test]
@@ -185,10 +185,10 @@ public class MicrosoftGraphUserApiClientTests
     }
 
     [Test]
-    public void GetUsersByObjectIdsAsync_WhenUserIdsIsNull_ThrowsArgumentNullException()
+    public async Task GetUsersByObjectIdsAsync_WhenUserIdsIsNull_ThrowsArgumentNullException()
     {
         // Act & Assert
-        Assert.ThrowsAsync<ArgumentNullException>(() => _client.GetUsersByObjectIdsAsync(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _client.GetUsersByObjectIdsAsync(null!));
     }
 
     [Test]
@@ -227,17 +227,17 @@ public class MicrosoftGraphUserApiClientTests
     }
 
     [Test]
-    public void GetUserOnPremisePropertiesAsync_WhenUserIdIsNull_ThrowsArgumentNullException()
+    public async Task GetUserOnPremisePropertiesAsync_WhenUserIdIsNull_ThrowsArgumentNullException()
     {
         // Act & Assert
-        Assert.ThrowsAsync<ArgumentNullException>(() => _client.GetUserOnPremisePropertiesAsync(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _client.GetUserOnPremisePropertiesAsync(null!));
     }
 
     [Test]
-    public void GetUserOnPremisePropertiesAsync_WhenUserIdIsEmpty_ThrowsArgumentException()
+    public async Task GetUserOnPremisePropertiesAsync_WhenUserIdIsEmpty_ThrowsArgumentException()
     {
         // Act & Assert
-        Assert.ThrowsAsync<ArgumentException>(() => _client.GetUserOnPremisePropertiesAsync(string.Empty));
+        await Assert.ThrowsAsync<ArgumentException>(() => _client.GetUserOnPremisePropertiesAsync(string.Empty));
     }
 
     [Test]
@@ -276,17 +276,17 @@ public class MicrosoftGraphUserApiClientTests
     }
 
     [Test]
-    public void GetUserPropertiesAsync_WhenUserIdIsNull_ThrowsArgumentNullException()
+    public async Task GetUserPropertiesAsync_WhenUserIdIsNull_ThrowsArgumentNullException()
     {
         // Act & Assert
-        Assert.ThrowsAsync<ArgumentNullException>(() => _client.GetUserPropertiesAsync(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _client.GetUserPropertiesAsync(null!));
     }
 
     [Test]
-    public void GetUserPropertiesAsync_WhenUserIdIsEmpty_ThrowsArgumentException()
+    public async Task GetUserPropertiesAsync_WhenUserIdIsEmpty_ThrowsArgumentException()
     {
         // Act & Assert
-        Assert.ThrowsAsync<ArgumentException>(() => _client.GetUserPropertiesAsync(string.Empty));
+        await Assert.ThrowsAsync<ArgumentException>(() => _client.GetUserPropertiesAsync(string.Empty));
     }
 
     [Test]
@@ -435,7 +435,7 @@ public class MicrosoftGraphUserApiClientTests
     }
 
     [Test]
-    public void SearchUsersByDisplayNameAsync_OnHttpError_ThrowsHttpRequestException()
+    public async Task SearchUsersByDisplayNameAsync_OnHttpError_ThrowsHttpRequestException()
     {
         // Arrange
         var displayName = "Test";
@@ -443,21 +443,21 @@ public class MicrosoftGraphUserApiClientTests
         _httpClientFactory.CreateClient(Arg.Any<string>()).Returns(httpClient);
 
         // Act & Assert
-        Assert.ThrowsAsync<HttpRequestException>(async () => await _client.SearchUsersByDisplayNameAsync(displayName));
+        await Assert.ThrowsAsync<HttpRequestException>(async () => await _client.SearchUsersByDisplayNameAsync(displayName));
     }
 
     [Test]
-    public void SearchUsersByDisplayNameAsync_WhenDisplayNameIsNull_ThrowsArgumentNullException()
+    public async Task SearchUsersByDisplayNameAsync_WhenDisplayNameIsNull_ThrowsArgumentNullException()
     {
         // Act & Assert
-        Assert.ThrowsAsync<ArgumentNullException>(() => _client.SearchUsersByDisplayNameAsync(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _client.SearchUsersByDisplayNameAsync(null!));
     }
 
     [Test]
-    public void SearchUsersByDisplayNameAsync_WhenDisplayNameIsEmpty_ThrowsArgumentException()
+    public async Task SearchUsersByDisplayNameAsync_WhenDisplayNameIsEmpty_ThrowsArgumentException()
     {
         // Act & Assert
-        Assert.ThrowsAsync<ArgumentException>(() => _client.SearchUsersByDisplayNameAsync(string.Empty));
+        await Assert.ThrowsAsync<ArgumentException>(() => _client.SearchUsersByDisplayNameAsync(string.Empty));
     }
 
     [Test]
@@ -522,23 +522,23 @@ public class MicrosoftGraphUserApiClientTests
     }
 
     [Test]
-    public void GetUserMembershipInGroups_WhenUserIdIsNull_ThrowsArgumentNullException()
+    public async Task GetUserMembershipInGroups_WhenUserIdIsNull_ThrowsArgumentNullException()
     {
         // Arrange
         var groupIds = new List<string> { "group-1" };
 
         // Act & Assert
-        Assert.ThrowsAsync<ArgumentNullException>(() => _client.GetUserMembershipInGroups(null!, groupIds));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _client.GetUserMembershipInGroups(null!, groupIds));
     }
 
     [Test]
-    public void GetUserMembershipInGroups_WhenUserIdIsEmpty_ThrowsArgumentException()
+    public async Task GetUserMembershipInGroups_WhenUserIdIsEmpty_ThrowsArgumentException()
     {
         // Arrange
         var groupIds = new List<string> { "group-1" };
 
         // Act & Assert
-        Assert.ThrowsAsync<ArgumentException>(() => _client.GetUserMembershipInGroups(string.Empty, groupIds));
+        await Assert.ThrowsAsync<ArgumentException>(() => _client.GetUserMembershipInGroups(string.Empty, groupIds));
     }
 
     [Test]
@@ -694,7 +694,7 @@ public class MicrosoftGraphUserApiClientTests
     }
 
     [Test]
-    public void GetUserMembershipInGroups_OnHttpError_ThrowsHttpRequestException()
+    public async Task GetUserMembershipInGroups_OnHttpError_ThrowsHttpRequestException()
     {
         // Arrange
         var userId = "test-user-id";
@@ -703,6 +703,6 @@ public class MicrosoftGraphUserApiClientTests
         _httpClientFactory.CreateClient(Arg.Any<string>()).Returns(httpClient);
 
         // Act & Assert
-        Assert.ThrowsAsync<HttpRequestException>(async () => await _client.GetUserMembershipInGroups(userId, groupIds));
+        await Assert.ThrowsAsync<HttpRequestException>(async () => await _client.GetUserMembershipInGroups(userId, groupIds));
     }
 }
