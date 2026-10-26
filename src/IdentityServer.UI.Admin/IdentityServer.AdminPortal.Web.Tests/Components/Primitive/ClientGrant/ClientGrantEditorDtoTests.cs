@@ -29,7 +29,7 @@ public class ClientGrantEditorDtoTests : Bunit.TestContext
         var grants = new List<ClientPropertyGrantDtoRead> { CreateGrant(_grantType1), CreateGrant(_grantType2) };
 
         // Act
-        var cut = RenderComponent<ClientGrantEditorDto>(parameters => parameters
+        var cut = Render<ClientGrantEditorDto>(parameters => parameters
             .Add(p => p.Value, grants)
             .Add(p => p.ValueChanged, EventCallback.Factory.Create<List<ClientPropertyGrantDtoRead>>(this, _ => { }))
             .Add(p => p.OnBeforeAdd, _ => Task.FromResult<(ClientPropertyGrantDtoRead, bool)>((null, false)))
@@ -51,7 +51,7 @@ public class ClientGrantEditorDtoTests : Bunit.TestContext
         var valueChangedCalled = false;
         var onAfterUpdateCalled = false;
 
-        var cut = RenderComponent<ClientGrantEditorDto>(parameters => parameters
+        var cut = Render<ClientGrantEditorDto>(parameters => parameters
             .Add(p => p.Value, grants)
             .Add(p => p.ValueChanged, EventCallback.Factory.Create<List<ClientPropertyGrantDtoRead>>(this, _ => valueChangedCalled = true))
             .Add(p => p.OnBeforeAdd, _ => Task.FromResult<(ClientPropertyGrantDtoRead, bool)>((newGrant, true)))
@@ -81,7 +81,7 @@ public class ClientGrantEditorDtoTests : Bunit.TestContext
         var valueChangedCalled = false;
         var onAfterUpdateCalled = false;
 
-        var cut = RenderComponent<ClientGrantEditorDto>(parameters => parameters
+        var cut = Render<ClientGrantEditorDto>(parameters => parameters
             .Add(p => p.Value, grants)
             .Add(p => p.ValueChanged, EventCallback.Factory.Create<List<ClientPropertyGrantDtoRead>>(this, _ => valueChangedCalled = true))
             .Add(p => p.OnBeforeAdd, _ => Task.FromResult<(ClientPropertyGrantDtoRead, bool)>((null, false)))
@@ -110,7 +110,7 @@ public class ClientGrantEditorDtoTests : Bunit.TestContext
         var valueChangedCalled = false;
         var onAfterUpdateCalled = false;
 
-        var cut = RenderComponent<ClientGrantEditorDto>(parameters => parameters
+        var cut = Render<ClientGrantEditorDto>(parameters => parameters
             .Add(p => p.Value, grants)
             .Add(p => p.ValueChanged, EventCallback.Factory.Create<List<ClientPropertyGrantDtoRead>>(this, _ => valueChangedCalled = true))
             .Add(p => p.OnBeforeAdd, _ => Task.FromResult<(ClientPropertyGrantDtoRead, bool)>((null, false)))
@@ -137,7 +137,7 @@ public class ClientGrantEditorDtoTests : Bunit.TestContext
     {
         // Arrange
         var grants = new List<ClientPropertyGrantDtoRead>();
-        var cut = RenderComponent<ClientGrantEditorDto>(parameters => parameters
+        var cut = Render<ClientGrantEditorDto>(parameters => parameters
             .Add(p => p.Value, grants)
             .Add(p => p.ClientAllowsOfflineAccess, allowOfflineAccess)
             .Add(p => p.ValueChanged, EventCallback.Factory.Create<List<ClientPropertyGrantDtoRead>>(this, _ => { }))
@@ -161,7 +161,7 @@ public class ClientGrantEditorDtoTests : Bunit.TestContext
     {
         // Arrange
         var grants = new List<ClientPropertyGrantDtoRead>();
-        var cut = RenderComponent<ClientGrantEditorDto>(parameters => parameters
+        var cut = Render<ClientGrantEditorDto>(parameters => parameters
             .Add(p => p.Value, grants)
             .Add(p => p.ClientAllowsOfflineAccess, clientAllowsOfflineAccess)
             .Add(p => p.ValueChanged, EventCallback.Factory.Create<List<ClientPropertyGrantDtoRead>>(this, _ => { }))
@@ -190,7 +190,7 @@ public class ClientGrantEditorDtoTests : Bunit.TestContext
         // Arrange
         const string grantType = ClientGrantTypeNames.Grant_Code;
         var grants = new List<ClientPropertyGrantDtoRead> { CreateGrant(grantType) };
-        var cut = RenderComponent<ClientGrantEditorDto>(parameters => parameters
+        var cut = Render<ClientGrantEditorDto>(parameters => parameters
             .Add(p => p.Value, grants)
             .Add(p => p.ValueChanged, EventCallback.Factory.Create<List<ClientPropertyGrantDtoRead>>(this, _ => { }))
             .Add(p => p.OnBeforeAdd, _ => Task.FromResult<(ClientPropertyGrantDtoRead, bool)>((null, false)))
@@ -212,7 +212,7 @@ public class ClientGrantEditorDtoTests : Bunit.TestContext
         const string existingGrant = ClientGrantTypeNames.Grant_Code;
         const string nonExistingGrant = ClientGrantTypeNames.Grant_ClientCredentials;
         var grants = new List<ClientPropertyGrantDtoRead> { CreateGrant(existingGrant) };
-        var cut = RenderComponent<ClientGrantEditorDto>(parameters => parameters
+        var cut = Render<ClientGrantEditorDto>(parameters => parameters
             .Add(p => p.Value, grants)
             .Add(p => p.ValueChanged, EventCallback.Factory.Create<List<ClientPropertyGrantDtoRead>>(this, _ => { }))
             .Add(p => p.OnBeforeAdd, _ => Task.FromResult<(ClientPropertyGrantDtoRead, bool)>((null, false)))
@@ -235,7 +235,7 @@ public class ClientGrantEditorDtoTests : Bunit.TestContext
         var grants = new List<ClientPropertyGrantDtoRead> { CreateGrant(unknownGrant) };
 
         // Act
-        var cut = RenderComponent<ClientGrantEditorDto>(parameters => parameters
+        var cut = Render<ClientGrantEditorDto>(parameters => parameters
             .Add(p => p.Value, grants)
             .Add(p => p.ValueChanged, EventCallback.Factory.Create<List<ClientPropertyGrantDtoRead>>(this, _ => { }))
             .Add(p => p.OnBeforeAdd, _ => Task.FromResult<(ClientPropertyGrantDtoRead, bool)>((null, false)))
@@ -259,7 +259,7 @@ public class ClientGrantEditorDtoTests : Bunit.TestContext
         };
 
         // Act
-        var cut = RenderComponent<ClientGrantEditorDto>(parameters => parameters
+        var cut = Render<ClientGrantEditorDto>(parameters => parameters
             .Add(p => p.Value, grants)
             .Add(p => p.ValueChanged, EventCallback.Factory.Create<List<ClientPropertyGrantDtoRead>>(this, _ => { }))
             .Add(p => p.OnBeforeAdd, _ => Task.FromResult<(ClientPropertyGrantDtoRead, bool)>((null, false)))
@@ -282,7 +282,7 @@ public class ClientGrantEditorDtoTests : Bunit.TestContext
         var grants = new List<ClientPropertyGrantDtoRead> { CreateGrant(_grantType1) };
 
         // Act
-        var cut = RenderComponent<ClientGrantEditorDto>(parameters => parameters
+        var cut = Render<ClientGrantEditorDto>(parameters => parameters
             .Add(p => p.Value, grants)
             .Add(p => p.ValueChanged, EventCallback.Factory.Create<List<ClientPropertyGrantDtoRead>>(this, _ => { }))
             .Add(p => p.OnBeforeAdd, _ => Task.FromResult<(ClientPropertyGrantDtoRead, bool)>((null, false)))
@@ -294,3 +294,4 @@ public class ClientGrantEditorDtoTests : Bunit.TestContext
         Assert.That(cut.Markup, Does.Contain(ClientGrantTypeNames.AllGrantTypes[_grantType1]));
     }
 }
+

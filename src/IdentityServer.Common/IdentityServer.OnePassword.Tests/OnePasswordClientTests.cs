@@ -65,7 +65,7 @@ public class OnePasswordClientTests
     }
 
     [Test]
-    public void GetSecretValueAsync_OnUnknownCategory_ThrowsException()
+    public async Task GetSecretValueAsync_OnUnknownCategory_ThrowsException()
     {
         // Arrange
         var item = new OnePasswordItem
@@ -77,12 +77,12 @@ public class OnePasswordClientTests
         var client = new OnePasswordClient(httpClient, _config);
 
         // Act & Assert
-        var exception = Assert.ThrowsAsync<IdentityServerException>(() => client.GetSecretValueAsync("item"));
+        var exception = await Assert.ThrowsAsync<IdentityServerException>(() => client.GetSecretValueAsync("item"));
         Assert.That(exception.Message, Does.Contain($"'other' category is not supported. Vault 'vault', item 'item'."));
     }
 
     [Test]
-    public void GetSecretValueAsync_OnEmptyResponse_ThrowsException()
+    public async Task GetSecretValueAsync_OnEmptyResponse_ThrowsException()
     {
         // Arrange
         var handler = new MockHttpMessageHandler(HttpStatusCode.OK, "{}");
@@ -90,12 +90,12 @@ public class OnePasswordClientTests
         var client = new OnePasswordClient(httpClient, _config);
 
         // Act & Assert
-        var exception = Assert.ThrowsAsync<IdentityServerException>(() => client.GetSecretValueAsync("item"));
+        var exception = await Assert.ThrowsAsync<IdentityServerException>(() => client.GetSecretValueAsync("item"));
         Assert.That(exception.Message, Does.Contain($"'' category is not supported. Vault 'vault', item 'item'."));
     }
 
     [Test]
-    public void GetSecretValueAsync_OnUnreadableResponse_ThrowsException()
+    public async Task GetSecretValueAsync_OnUnreadableResponse_ThrowsException()
     {
         // Arrange
         var handler = new MockHttpMessageHandler(HttpStatusCode.OK, false);
@@ -103,14 +103,14 @@ public class OnePasswordClientTests
         var client = new OnePasswordClient(httpClient, _config);
 
         // Act & Assert
-        var exception = Assert.ThrowsAsync<IdentityServerException>(() => client.GetSecretValueAsync("item"));
+        var exception = await Assert.ThrowsAsync<IdentityServerException>(() => client.GetSecretValueAsync("item"));
         Assert.That(exception.Message, Does.Contain($"Failed to deserialize 1Password response for item 'item'"));
     }
 
     [TestCase("<html><head>text</head><body>test</body></html>")]
     [TestCase("")]
     [TestCase("{\"field1\":\"value\"")]
-    public void GetSecretValueAsync_OnDeserializationError_ThrowsException(string response)
+    public async Task GetSecretValueAsync_OnDeserializationError_ThrowsException(string response)
     {
         // Arrange
         var handler = new MockHttpMessageHandler(HttpStatusCode.OK, response);
@@ -118,12 +118,12 @@ public class OnePasswordClientTests
         var client = new OnePasswordClient(httpClient, _config);
 
         // Act & Assert
-        var exception = Assert.ThrowsAsync<IdentityServerException>(() => client.GetSecretValueAsync("item"));
+        var exception = await Assert.ThrowsAsync<IdentityServerException>(() => client.GetSecretValueAsync("item"));
         Assert.That(exception.Message, Does.Contain($"Failed to deserialize 1Password response for item 'item' in vault 'vault'. Response: {response}"));
     }
 
     [Test]
-    public void GetSecretValueAsync_OnHttpError_ThrowsException()
+    public async Task GetSecretValueAsync_OnHttpError_ThrowsException()
     {
         // Arrange
         var handler = new MockHttpMessageHandler(HttpStatusCode.BadRequest, "error");
@@ -131,7 +131,7 @@ public class OnePasswordClientTests
         var client = new OnePasswordClient(httpClient, _config);
 
         // Act & Assert
-        var exception = Assert.ThrowsAsync<IdentityServerException>(async () =>
+        var exception = await Assert.ThrowsAsync<IdentityServerException>(async () =>
             await client.GetSecretValueAsync("item"));
         Assert.That(exception.Message, Does.Contain("Error fetching item 'item' in vault 'vault' from 1Password. Status code: BadRequest. Response: error"));
     }

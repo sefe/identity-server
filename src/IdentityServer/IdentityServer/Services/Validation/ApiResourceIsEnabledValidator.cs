@@ -44,7 +44,7 @@ public class ApiResourceIsEnabledValidator : DefaultResourceValidator
         }
 
         var apiName = scopeName.Split('.', 2)[0];
-        var storedApis = (await _store.FindApiResourcesByNameAsync(new[] { apiName })).ToList();
+        var storedApis = (await _store.FindApiResourcesByNameAsync(new[] { apiName }, CancellationToken.None)).ToList();
 
         if (storedApis.Count != 1)
         {

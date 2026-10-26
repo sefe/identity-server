@@ -146,7 +146,7 @@ public class UndoConfirmationDialogTests
         var preview = CreateTestUndoPreview();
         var cancelCalled = false;
 
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<UndoConfirmationDialog>(childParams => childParams
                 .Add(p => p.IsVisible, true)
                 .Add(p => p.Entry, entry)
@@ -169,7 +169,7 @@ public class UndoConfirmationDialogTests
         var preview = CreateTestUndoPreview();
         var confirmCalled = false;
 
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<UndoConfirmationDialog>(childParams => childParams
                 .Add(p => p.IsVisible, true)
                 .Add(p => p.Entry, entry)
@@ -192,7 +192,7 @@ public class UndoConfirmationDialogTests
         UndoPreview undoPreview = null!,
         bool isLoading = false)
     {
-        return _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        return _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<UndoConfirmationDialog>(childParams => childParams
                 .Add(p => p.IsVisible, isVisible)
                 .Add(p => p.Entry, entry)
@@ -226,3 +226,4 @@ public class UndoConfirmationDialogTests
 
     #endregion
 }
+

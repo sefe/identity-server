@@ -23,8 +23,10 @@ public class LoggedOut : PageModel
 
     public async Task<IActionResult> OnGetAsync(string? logoutId)
     {
+        var ct = HttpContext.RequestAborted;
+
         // get context information (client name, post logout redirect URI and iframe for federated signout)
-        var logout = await _interactionService.GetLogoutContextAsync(logoutId);
+        var logout = await _interactionService.GetLogoutContextAsync(logoutId, ct);
 
         View = new LoggedOutViewModel
         {

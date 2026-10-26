@@ -104,7 +104,7 @@ public class EntraApplicationServiceTests
     }
 
     [Test]
-    public void GetByIdAsync_ThrowsException_WhenGraphApiThrows()
+    public async Task GetByIdAsync_ThrowsException_WhenGraphApiThrows()
     {
         // Arrange
         var appId = "test-app-id";
@@ -112,7 +112,7 @@ public class EntraApplicationServiceTests
         _graphAppApi.GetApplicationByAppIdAsync(appId).Returns(Task.FromException<Application>(expectedException));
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<HttpRequestException>(() => _service.GetByIdAsync(appId));
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(() => _service.GetByIdAsync(appId));
         Assert.That(ex, Is.SameAs(expectedException));
     }
 

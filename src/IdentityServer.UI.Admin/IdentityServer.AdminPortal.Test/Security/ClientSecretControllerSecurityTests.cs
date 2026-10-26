@@ -69,7 +69,7 @@ public class ClientSecretControllerSecurityTests : ControllerTestBase
         var clientSecret = new ClientPropertySecretDtoCreate { ClientId = client.Id, Description = "secret1", ValidityPeriodYears = 2 };
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAccessException>(() => _clientSecretController.Call_CreateSecretAsync(clientSecret, Contributor));
+        await Assert.ThrowsAsync<EntityAccessException>(() => _clientSecretController.Call_CreateSecretAsync(clientSecret, Contributor));
     }
 
     [Test]
@@ -82,7 +82,7 @@ public class ClientSecretControllerSecurityTests : ControllerTestBase
         var clientSecret = new ClientPropertySecretDtoCreate { ClientId = client.Id, Description = "secret1", ValidityPeriodYears = 2 };
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAccessException>(() => _clientSecretController.Call_CreateSecretAsync(clientSecret, Contributor));
+        await Assert.ThrowsAsync<EntityAccessException>(() => _clientSecretController.Call_CreateSecretAsync(clientSecret, Contributor));
     }
 
     [Test]
@@ -113,7 +113,7 @@ public class ClientSecretControllerSecurityTests : ControllerTestBase
         _ = await _permissionUtil.AssignPermissionToUser(Contributor, permission, SystemPermissionEnvironmentNames.Development, SystemPermissionRoleType.Reader);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAccessException>(() => _clientSecretController.Call_DeleteSecretAsync(createdSecret.Id, Contributor));
+        await Assert.ThrowsAsync<EntityAccessException>(() => _clientSecretController.Call_DeleteSecretAsync(createdSecret.Id, Contributor));
     }
 
     [Test]
@@ -126,7 +126,7 @@ public class ClientSecretControllerSecurityTests : ControllerTestBase
         var createdSecret = await _clientSecretController.Call_CreateSecretAsync(clientSecret, Admin);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAccessException>(() => _clientSecretController.Call_DeleteSecretAsync(createdSecret.Id, Contributor));
+        await Assert.ThrowsAsync<EntityAccessException>(() => _clientSecretController.Call_DeleteSecretAsync(createdSecret.Id, Contributor));
     }
 
     private async Task<(SystemPermission permission, ClientDtoRead client)> SetupTestDataAsync()

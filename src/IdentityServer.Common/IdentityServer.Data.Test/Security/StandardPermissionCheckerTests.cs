@@ -103,13 +103,13 @@ public class StandardPermissionCheckerTests
     }
 
     [Test]
-    public void GetAllAccessiblePermissionEnvironmentsAsync_NonAdminRoleWrongRole_ThrowsException()
+    public async Task GetAllAccessiblePermissionEnvironmentsAsync_NonAdminRoleWrongRole_ThrowsException()
     {
         // Arrange
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[] { CreateOidClaim("user1") }));
 
         // Act & Assert
-        Assert.ThrowsAsync<NotImplementedException>(async () =>
+        await Assert.ThrowsAsync<NotImplementedException>(async () =>
             await _permissionChecker.GetAllAccessiblePermissionEnvironmentsAsync(user, SystemPermissionRoleType.None));
     }
 
@@ -168,13 +168,13 @@ public class StandardPermissionCheckerTests
     [TestCase(EntityAccessType.Create)]
     [TestCase(EntityAccessType.Update)]
     [TestCase(EntityAccessType.Delete)]
-    public void GetAccessRoleOrThrowIfNoAccessToEnvAsync_ReaderRole_OnWriteOperation_ThrowsException(EntityAccessType accessType)
+    public async Task GetAccessRoleOrThrowIfNoAccessToEnvAsync_ReaderRole_OnWriteOperation_ThrowsException(EntityAccessType accessType)
     {
         // Arrange
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[] { CreateOidClaim("user1"), _readerRole }));
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<EntityAccessException>(async () =>
+        var ex = await Assert.ThrowsAsync<EntityAccessException>(async () =>
             await _permissionChecker.GetAccessRoleOrThrowIfNoAccessToEnvAsync(user, 1, accessType, "TestItem"));
         Assert.That(ex!.Message, Does.Contain("user1"));
     }
@@ -201,7 +201,7 @@ public class StandardPermissionCheckerTests
     }
 
     [Test]
-    public void GetAccessRoleOrThrowIfNoAccessToEnvAsync_ReaderRole_NoSystemPermissionsOnReadOperation_ThrowsException()
+    public async Task GetAccessRoleOrThrowIfNoAccessToEnvAsync_ReaderRole_NoSystemPermissionsOnReadOperation_ThrowsException()
     {
         // Arrange
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[] { CreateOidClaim("user"), _readerRole }));
@@ -216,7 +216,7 @@ public class StandardPermissionCheckerTests
             .Returns(env1);
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<EntityAccessException>(async () =>
+        var ex = await Assert.ThrowsAsync<EntityAccessException>(async () =>
             await _permissionChecker.GetAccessRoleOrThrowIfNoAccessToEnvAsync(user, 1, EntityAccessType.Read, "custom text"));
         Assert.That(ex!.Message, Does.Contain($"Restricted system permission environment id: '{env1.Id}'."));
     }
@@ -225,7 +225,7 @@ public class StandardPermissionCheckerTests
     [TestCase(EntityAccessType.Read)]
     [TestCase(EntityAccessType.Update)]
     [TestCase(EntityAccessType.Delete)]
-    public void GetAccessRoleOrThrowIfNoAccessToEnvAsync_UserRole_WithNoSystemPermissionsOnAnyOperation_ThrowsException(EntityAccessType accessType)
+    public async Task GetAccessRoleOrThrowIfNoAccessToEnvAsync_UserRole_WithNoSystemPermissionsOnAnyOperation_ThrowsException(EntityAccessType accessType)
     {
         // Arrange
         // SPE1 belongs to SP11, SPE2 belongs to SP11, SPE2 has some other permissions
@@ -240,7 +240,7 @@ public class StandardPermissionCheckerTests
         _envStorage.GetByIdAsync(env1.Id).Returns(env1);
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<EntityAccessException>(async () =>
+        var ex = await Assert.ThrowsAsync<EntityAccessException>(async () =>
             await _permissionChecker.GetAccessRoleOrThrowIfNoAccessToEnvAsync(user, 1, accessType, "target"));
 
         Assert.That(ex!.Message, Does.Contain($"Restricted system permission environment id: '{env1.Id}'."));

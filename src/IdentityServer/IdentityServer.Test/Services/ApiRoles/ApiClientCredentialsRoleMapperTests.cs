@@ -42,7 +42,7 @@ public class ApiClientCredentialsRoleMapperTests
         };
 
         // Act
-        await _sut.ValidateAsync(context);
+        await _sut.ValidateAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.Result.ValidatedRequest.ClientClaims, Is.Empty);
@@ -88,7 +88,7 @@ public class ApiClientCredentialsRoleMapperTests
             .Returns(roleClaims.ToAsyncEnumerable());
 
         // Act
-        await _sut.ValidateAsync(context);
+        await _sut.ValidateAsync(context, CancellationToken.None);
 
         // Assert
         using (Assert.EnterMultipleScope())

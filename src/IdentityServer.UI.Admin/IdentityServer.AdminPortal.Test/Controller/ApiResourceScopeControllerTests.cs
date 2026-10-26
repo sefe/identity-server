@@ -66,13 +66,13 @@ public class ApiResourceScopeControllerTests : ControllerTestBase
     }
 
     [Test]
-    public void Create_IfMissingApiResource_Fails()
+    public async Task Create_IfMissingApiResource_Fails()
     {
         // Arrange 
         var newScope = ApiResourceScopeControllerExtensions.NewScopeFor(999, Guid.NewGuid().ToString());
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityNotFoundException>(() => _apiResourceScopeController.Call_AddApiResourceScopeAsync(newScope, Admin));
+        await Assert.ThrowsAsync<EntityNotFoundException>(() => _apiResourceScopeController.Call_AddApiResourceScopeAsync(newScope, Admin));
     }
 
     [Test]
@@ -121,7 +121,7 @@ public class ApiResourceScopeControllerTests : ControllerTestBase
 
         // Act & Assert
         await _apiResourceScopeController.Call_AddApiResourceScopeAsync(newScope, Admin);
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _apiResourceScopeController.Call_AddApiResourceScopeAsync(sameScope, Admin));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _apiResourceScopeController.Call_AddApiResourceScopeAsync(sameScope, Admin));
     }
 
     [Test]
@@ -152,7 +152,7 @@ public class ApiResourceScopeControllerTests : ControllerTestBase
         };
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityValidationException>(() => _apiResourceScopeController.Call_UpdateApiResourceScopeAsync(updateDto, Admin));
+        await Assert.ThrowsAsync<EntityValidationException>(() => _apiResourceScopeController.Call_UpdateApiResourceScopeAsync(updateDto, Admin));
     }
 
     [Test]
@@ -198,7 +198,7 @@ public class ApiResourceScopeControllerTests : ControllerTestBase
         };
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityValidationException>(() => _apiResourceScopeController.Call_UpdateApiResourceScopeAsync(updateDto, Admin));
+        await Assert.ThrowsAsync<EntityValidationException>(() => _apiResourceScopeController.Call_UpdateApiResourceScopeAsync(updateDto, Admin));
     }
 
     [Test]
@@ -328,13 +328,13 @@ public class ApiResourceScopeControllerTests : ControllerTestBase
     }
 
     [Test]
-    public void Delete_WithInvalidId_Fails()
+    public async Task Delete_WithInvalidId_Fails()
     {
         // Arrange 
         SetControllerContext(_apiResourceScopeController, Contributor);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityNotFoundException>(() => _apiResourceScopeController.DeletePropertyByIdAsync(999));
+        await Assert.ThrowsAsync<EntityNotFoundException>(() => _apiResourceScopeController.DeletePropertyByIdAsync(999));
     }
 
     [Test]

@@ -19,7 +19,7 @@ namespace IdentityServer.Test.Services;
 [TestFixture]
 public class CustomLoggingTokenServiceTests
 {
-    private IClock _clock;
+    private TimeProvider _timeProvider;
     private IKeyMaterialService _keys;
     private IClaimsService _claimsProvider;
     private IReferenceTokenStore _referenceTokenStore;
@@ -32,7 +32,7 @@ public class CustomLoggingTokenServiceTests
     [SetUp]
     public void SetUp()
     {
-        _clock = Substitute.For<IClock>();
+        _timeProvider = TimeProvider.System;
         _keys = Substitute.For<IKeyMaterialService>();
         _claimsProvider = Substitute.For<IClaimsService>();
         _referenceTokenStore = Substitute.For<IReferenceTokenStore>();
@@ -51,7 +51,7 @@ public class CustomLoggingTokenServiceTests
         _loggingSettings = Options.Create(settings);
 
         _service = new CustomLoggingTokenService(
-            _clock, _keys, _claimsProvider, _referenceTokenStore, _creationService, _logger, _options, _loggingSettings
+            _timeProvider, _keys, _claimsProvider, _referenceTokenStore, _creationService, _logger, _options, _loggingSettings
         );
     }
 
@@ -72,7 +72,7 @@ public class CustomLoggingTokenServiceTests
                 }
         };
         var rawToken = "header.payload.signature";
-        _creationService.CreateTokenAsync(token).Returns(Task.FromResult(rawToken));
+        _creationService.CreateTokenAsync(token, Arg.Any<CancellationToken>()).Returns(Task.FromResult(rawToken));
 
         // Act
         var result = await _service.CreateSecurityTokenAsync(token);
@@ -112,7 +112,7 @@ public class CustomLoggingTokenServiceTests
                 }
         };
         var rawToken = "referenceTokenValue1234_5678901234567890";
-        _referenceTokenStore.StoreReferenceTokenAsync(token).Returns(Task.FromResult(rawToken));
+        _referenceTokenStore.StoreReferenceTokenAsync(token, Arg.Any<CancellationToken>()).Returns(Task.FromResult(rawToken));
 
         // Act
         var result = await _service.CreateSecurityTokenAsync(token);
@@ -145,7 +145,7 @@ public class CustomLoggingTokenServiceTests
             AccessTokenType = AccessTokenType.Jwt
         };
         var rawToken = "header.payload.signature";
-        _creationService.CreateTokenAsync(token).Returns(Task.FromResult(rawToken));
+        _creationService.CreateTokenAsync(token, Arg.Any<CancellationToken>()).Returns(Task.FromResult(rawToken));
 
         // Act
         var result = await _service.CreateSecurityTokenAsync(token);
@@ -172,7 +172,7 @@ public class CustomLoggingTokenServiceTests
             AccessTokenType = AccessTokenType.Jwt
         };
         var rawToken = "123456789";
-        _creationService.CreateTokenAsync(token).Returns(Task.FromResult(rawToken));
+        _creationService.CreateTokenAsync(token, Arg.Any<CancellationToken>()).Returns(Task.FromResult(rawToken));
 
         // Act
         var result = await _service.CreateSecurityTokenAsync(token);

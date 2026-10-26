@@ -30,7 +30,7 @@ public class BannerSecretExpiringTests
         };
 
         // Act
-        var cut = ctx.RenderComponent<BannerSecretExpiring>(parameters => parameters
+        var cut = ctx.Render<BannerSecretExpiring>(parameters => parameters
             .Add(p => p.Secrets, secrets));
 
         // Assert
@@ -51,7 +51,7 @@ public class BannerSecretExpiringTests
         };
 
         // Act
-        var cut = ctx.RenderComponent<BannerSecretExpiring>(parameters => parameters
+        var cut = ctx.Render<BannerSecretExpiring>(parameters => parameters
             .Add(p => p.Secrets, secrets));
 
         // Assert
@@ -79,7 +79,7 @@ public class BannerSecretExpiringTests
         };
 
         // Act
-        var cut = ctx.RenderComponent<BannerSecretExpiring>(parameters => parameters
+        var cut = ctx.Render<BannerSecretExpiring>(parameters => parameters
             .Add(p => p.Secrets, secrets));
 
         // Assert
@@ -99,7 +99,7 @@ public class BannerSecretExpiringTests
             new() { Expiration = DateTime.UtcNow.AddDays(30) }
         };
 
-        var cut = ctx.RenderComponent<BannerSecretExpiring>(parameters => parameters
+        var cut = ctx.Render<BannerSecretExpiring>(parameters => parameters
             .Add(p => p.Secrets, secrets));
 
         // Act
@@ -126,7 +126,7 @@ public class BannerSecretExpiringTests
         };
 
         // Act
-        var cut = ctx.RenderComponent<BannerSecretExpiring>(parameters => parameters
+        var cut = ctx.Render<BannerSecretExpiring>(parameters => parameters
             .Add(p => p.Secrets, secrets));
 
         // Assert
@@ -148,7 +148,7 @@ public class BannerSecretExpiringTests
         };
 
         // Act
-        var cut = ctx.RenderComponent<BannerSecretExpiring>(parameters => parameters
+        var cut = ctx.Render<BannerSecretExpiring>(parameters => parameters
             .Add(p => p.Secrets, secrets));
 
         // Assert
@@ -174,10 +174,11 @@ public class BannerSecretExpiringTests
         };
 
         // Act
-        var cut = ctx.RenderComponent<BannerSecretExpiring>(parameters => parameters
+        var cut = ctx.Render<BannerSecretExpiring>(parameters => parameters
             .Add(p => p.Secrets, secrets));
 
         // Assert
         Assert.That(cut.Markup, Does.Contain("1 secret"));
     }
 }
+

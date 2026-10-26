@@ -78,7 +78,7 @@ public class ClientEntraAppControllerTests : ControllerTestBase
         await _clientEntraAppController.Call_AddClientEntraAppAsync(client.Id, originalEntraAppId, Contributor);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientEntraAppController.Call_AddClientEntraAppAsync(client.Id, caseDifferentEntraAppId, Contributor));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientEntraAppController.Call_AddClientEntraAppAsync(client.Id, caseDifferentEntraAppId, Contributor));
     }
 
     [Test]
@@ -115,11 +115,11 @@ public class ClientEntraAppControllerTests : ControllerTestBase
 
         // Act & Assert
         await _clientEntraAppController.Call_AddClientEntraAppAsync(client.Id, appId, Contributor);
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientEntraAppController.Call_AddClientEntraAppAsync(client.Id, appId, Contributor));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientEntraAppController.Call_AddClientEntraAppAsync(client.Id, appId, Contributor));
     }
 
     [Test]
-    public void AddClientEntraAppAsync_ToInvalidClient_Fails()
+    public async Task AddClientEntraAppAsync_ToInvalidClient_Fails()
     {
         // Arrange
         const string appId = "12345678-1234-1234-1234-123456789012";
@@ -133,7 +133,7 @@ public class ClientEntraAppControllerTests : ControllerTestBase
 
         // Act & Assert
         SetControllerContext(_clientEntraAppController, Contributor);
-        Assert.ThrowsAsync<EntityNotFoundException>(() => _clientEntraAppController.CreatePropertyAsync(entraAppDto));
+        await Assert.ThrowsAsync<EntityNotFoundException>(() => _clientEntraAppController.CreatePropertyAsync(entraAppDto));
     }
 
     [Test]

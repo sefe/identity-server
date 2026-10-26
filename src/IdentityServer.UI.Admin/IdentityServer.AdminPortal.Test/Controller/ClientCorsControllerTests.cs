@@ -65,7 +65,7 @@ public class ClientCorsControllerTests : ControllerTestBase
         await _clientCorsController.Call_AddClientCorsAsync(client.Id, corsOrigin, Contributor);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientCorsController.Call_AddClientCorsAsync(client.Id, corsOrigin, Contributor));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientCorsController.Call_AddClientCorsAsync(client.Id, corsOrigin, Contributor));
     }
 
     [Test]

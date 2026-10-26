@@ -15,7 +15,7 @@ public class ErrorAlertTests
     {
         // Arrange & Act
         using var ctx = new TestContext();
-        var cut = ctx.RenderComponent<ErrorAlert>(parameters => parameters
+        var cut = ctx.Render<ErrorAlert>(parameters => parameters
             .Add(p => p.ErrorMessage, null));
 
         // Assert
@@ -27,7 +27,7 @@ public class ErrorAlertTests
     {
         // Arrange & Act
         using var ctx = new TestContext();
-        var cut = ctx.RenderComponent<ErrorAlert>(parameters => parameters
+        var cut = ctx.Render<ErrorAlert>(parameters => parameters
             .Add(p => p.ErrorMessage, string.Empty));
 
         // Assert
@@ -39,7 +39,7 @@ public class ErrorAlertTests
     {
         // Arrange & Act
         using var ctx = new TestContext();
-        var cut = ctx.RenderComponent<ErrorAlert>(parameters => parameters
+        var cut = ctx.Render<ErrorAlert>(parameters => parameters
             .Add(p => p.ErrorMessage, "   "));
 
         // Assert
@@ -54,7 +54,7 @@ public class ErrorAlertTests
 
         // Act
         using var ctx = new TestContext();
-        var cut = ctx.RenderComponent<ErrorAlert>(parameters => parameters
+        var cut = ctx.Render<ErrorAlert>(parameters => parameters
             .Add(p => p.ErrorMessage, errorMessage));
 
         // Assert
@@ -75,7 +75,7 @@ public class ErrorAlertTests
 
         // Act
         using var ctx = new TestContext();
-        var cut = ctx.RenderComponent<ErrorAlert>(parameters => parameters
+        var cut = ctx.Render<ErrorAlert>(parameters => parameters
             .Add(p => p.ErrorMessage, errorMessage));
 
         // Assert
@@ -92,7 +92,7 @@ public class ErrorAlertTests
 
         // Act
         using var ctx = new TestContext();
-        var cut = ctx.RenderComponent<ErrorAlert>(parameters => parameters
+        var cut = ctx.Render<ErrorAlert>(parameters => parameters
             .Add(p => p.ErrorMessage, errorMessage)
             .Add(p => p.CssClass, customClass));
 
@@ -109,7 +109,7 @@ public class ErrorAlertTests
 
         // Act
         using var ctx = new TestContext();
-        var cut = ctx.RenderComponent<ErrorAlert>(parameters => parameters
+        var cut = ctx.Render<ErrorAlert>(parameters => parameters
             .Add(p => p.ErrorMessage, errorMessage)
             .Add(p => p.CssClass, string.Empty));
 
@@ -131,7 +131,7 @@ public class ErrorAlertTests
 
         // Act
         using var ctx = new TestContext();
-        var cut = ctx.RenderComponent<ErrorAlert>(parameters => parameters
+        var cut = ctx.Render<ErrorAlert>(parameters => parameters
             .Add(p => p.ErrorMessage, longErrorMessage));
 
         // Assert
@@ -147,7 +147,7 @@ public class ErrorAlertTests
 
         // Act
         using var ctx = new TestContext();
-        var cut = ctx.RenderComponent<ErrorAlert>(parameters => parameters
+        var cut = ctx.Render<ErrorAlert>(parameters => parameters
             .Add(p => p.ErrorMessage, errorWithSpecialChars));
 
         // Assert
@@ -163,7 +163,7 @@ public class ErrorAlertTests
 
         // Act
         using var ctx = new TestContext();
-        var cut = ctx.RenderComponent<ErrorAlert>(parameters => parameters
+        var cut = ctx.Render<ErrorAlert>(parameters => parameters
             .Add(p => p.ErrorMessage, errorMessage));
 
         // Assert
@@ -184,11 +184,11 @@ public class ErrorAlertTests
         const string updatedMessage = "Updated error";
 
         using var ctx = new TestContext();
-        var cut = ctx.RenderComponent<ErrorAlert>(parameters => parameters
+        var cut = ctx.Render<ErrorAlert>(parameters => parameters
             .Add(p => p.ErrorMessage, initialMessage));
 
         // Act
-        cut.SetParametersAndRender(parameters => parameters
+        cut.Render(parameters => parameters
             .Add(p => p.ErrorMessage, updatedMessage));
 
         // Assert
@@ -207,11 +207,11 @@ public class ErrorAlertTests
         const string initialMessage = "Initial error";
 
         using var ctx = new TestContext();
-        var cut = ctx.RenderComponent<ErrorAlert>(parameters => parameters
+        var cut = ctx.Render<ErrorAlert>(parameters => parameters
             .Add(p => p.ErrorMessage, initialMessage));
 
         // Act
-        cut.SetParametersAndRender(parameters => parameters
+        cut.Render(parameters => parameters
             .Add(p => p.ErrorMessage, null));
 
         // Assert
@@ -226,7 +226,7 @@ public class ErrorAlertTests
 
         // Act
         using var ctx = new TestContext();
-        var cut = ctx.RenderComponent<ErrorAlert>(parameters => parameters
+        var cut = ctx.Render<ErrorAlert>(parameters => parameters
             .Add(p => p.ErrorMessage, errorMessage));
 
         // Assert
@@ -251,7 +251,7 @@ public class ErrorAlertTests
         string capturedValue = errorMessage;
 
         using var ctx = new TestContext();
-        var cut = ctx.RenderComponent<ErrorAlert>(parameters => parameters
+        var cut = ctx.Render<ErrorAlert>(parameters => parameters
             .Add(p => p.ErrorMessage, errorMessage)
             .Add(p => p.ErrorMessageChanged, newValue => { capturedValue = newValue; }));
 
@@ -270,7 +270,7 @@ public class ErrorAlertTests
         const string errorMessage = "Test error";
 
         using var ctx = new TestContext();
-        var cut = ctx.RenderComponent<ErrorAlert>(parameters => parameters
+        var cut = ctx.Render<ErrorAlert>(parameters => parameters
             .Add(p => p.ErrorMessage, errorMessage));
 
         // Act & Assert - Should not throw
@@ -285,7 +285,7 @@ public class ErrorAlertTests
         string errorMessage = "Test error";
 
         using var ctx = new TestContext();
-        var cut = ctx.RenderComponent<ErrorAlert>(parameters => parameters
+        var cut = ctx.Render<ErrorAlert>(parameters => parameters
             .Add(p => p.ErrorMessage, errorMessage)
             .Add(p => p.ErrorMessageChanged, newValue => { errorMessage = newValue; }));
 
@@ -310,7 +310,7 @@ public class ErrorAlertTests
         string errorMessage = "Test error";
 
         using var ctx = new TestContext();
-        var cut = ctx.RenderComponent<ErrorAlert>(parameters => parameters
+        var cut = ctx.Render<ErrorAlert>(parameters => parameters
             .Add(p => p.ErrorMessage, errorMessage)
             .Add(p => p.ErrorMessageChanged, newValue => { errorMessage = newValue; }));
 
@@ -321,7 +321,7 @@ public class ErrorAlertTests
         closeButton.Click();
 
         // Re-render with updated error message
-        cut.SetParametersAndRender(parameters => parameters
+        cut.Render(parameters => parameters
             .Add(p => p.ErrorMessage, errorMessage));
 
         // Assert
@@ -336,7 +336,7 @@ public class ErrorAlertTests
 
         // Act
         using var ctx = new TestContext();
-        var cut = ctx.RenderComponent<ErrorAlert>(parameters => parameters
+        var cut = ctx.Render<ErrorAlert>(parameters => parameters
             .Add(p => p.ErrorMessage, errorMessage));
 
         // Assert
@@ -353,7 +353,7 @@ public class ErrorAlertTests
         using var ctx = new TestContext();
 
         // Simulate @bind-ErrorMessage syntax by setting both parameters
-        var cut = ctx.RenderComponent<ErrorAlert>(parameters => parameters
+        var cut = ctx.Render<ErrorAlert>(parameters => parameters
             .Add(p => p.ErrorMessage, errorMessage)
             .Add(p => p.ErrorMessageChanged, newValue => { errorMessage = newValue; }));
 
@@ -370,10 +370,11 @@ public class ErrorAlertTests
             Assert.That(errorMessage, Is.Null, "Bound error message should be null");
 
             // Re-render with new value
-            cut.SetParametersAndRender(parameters => parameters
+            cut.Render(parameters => parameters
                 .Add(p => p.ErrorMessage, errorMessage));
 
             Assert.That(cut.Markup, Is.Empty, "Alert should not render when error message is null");
         }
     }
 }
+

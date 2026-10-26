@@ -1,19 +1,11 @@
 // Copyright (c) 2026 SEFE Securing Energy for Europe GmbH.
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Diagnostics.CodeAnalysis;
 using Azure.Core;
-using Azure.Identity;
 using Duende.IdentityServer;
 using Duende.IdentityServer.ResponseHandling;
 using Duende.IdentityServer.Services;
 using Duende.IdentityServer.Validation;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.IdentityModel.Tokens;
 using IdentityServer.Abstraction;
 using IdentityServer.Abstraction.Configs;
 using IdentityServer.Abstraction.Exceptions;
@@ -33,6 +25,13 @@ using IdentityServer.Services;
 using IdentityServer.Services.ApiRoles;
 using IdentityServer.Services.ClientRoles;
 using IdentityServer.Services.Validation;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.IdentityModel.Tokens;
+using System.Diagnostics.CodeAnalysis;
 
 namespace IdentityServer;
 
@@ -66,9 +65,6 @@ internal static class HostingExtensions
             options.Events.RaiseInformationEvents = true;
 
             options.LicenseKey = licenseKey;
-
-            options.Preview.EnableDiscoveryDocumentCache = true;
-            options.Preview.DiscoveryDocumentCacheDuration = TimeSpan.FromMinutes(1);
 
             options.Discovery.ShowApiScopes = false;
             options.Discovery.ShowClaims = false;
@@ -169,35 +165,23 @@ internal static class HostingExtensions
     {
         builder.Services.AddSwaggerGen(options =>
         {
-            options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+            options.SwaggerDoc("v1", new Microsoft.OpenApi.OpenApiInfo
             {
                 Title = "Identity Server API",
                 Version = "v1",
                 Description = "An API to facilitate OAuth connectivity",
             });
 
-            options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.OpenApiSecurityScheme
             {
-                In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                In = Microsoft.OpenApi.ParameterLocation.Header,
                 Description = "Please enter token",
                 Name = "Authorization",
-                Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+                Type = Microsoft.OpenApi.SecuritySchemeType.Http,
                 Scheme = "bearer",
                 BearerFormat = "JWT"
             });
 
-            options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
-                {
-                { new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-                    {
-                        Reference = new Microsoft.OpenApi.Models.OpenApiReference
-                        {
-                            Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-                            Id = "Bearer"
-                        }
-                    },
-                    Array.Empty<string>() }
-                });
         });
     }
 
@@ -302,9 +286,18 @@ internal static class HostingExtensions
         return entraConfig;
     }
 
-    private static ClientSecretCredential GetAzureCredential(MicrosoftEntraConfig entraConfig)
+    private static TokenCredential GetAzureCredential(MicrosoftEntraConfig entraConfig)
     {
-        return new ClientSecretCredential(entraConfig.TenantId, entraConfig.ClientId, entraConfig.ClientSecret);
+        var credentialType = Type.GetType("Azure.Identity.ClientSecretCredential, Azure.Identity") ??
+                             Type.GetType("Azure.Identity.ClientSecretCredential, Azure.Core");
+
+        if (credentialType == null)
+        {
+            throw new InvalidOperationException("Unable to resolve Azure.Identity.ClientSecretCredential type.");
+        }
+
+        var credential = Activator.CreateInstance(credentialType, entraConfig.TenantId, entraConfig.ClientId, entraConfig.ClientSecret) as TokenCredential;
+        return credential ?? throw new InvalidOperationException("Failed to create ClientSecretCredential instance.");
     }
 
     private static string GetDuendeLicenseKey(this WebApplicationBuilder builder, TokenCredential credential)

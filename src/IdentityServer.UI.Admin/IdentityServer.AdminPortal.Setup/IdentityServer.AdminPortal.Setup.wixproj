@@ -1,8 +1,8 @@
-<Project Sdk="WixToolset.Sdk/6.0.0">
+﻿<Project Sdk="WixToolset.Sdk/6.0.0">
   <PropertyGroup>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
     <Name>IdentityServer.AdminPortal.Setup</Name>
-    <IdpWebDir>..\IdentityServer.AdminPortal.Server\bin\$(Configuration)\net8.0</IdpWebDir>
+    <IdpWebDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\IdentityServer.AdminPortal.Server\bin\p\'))</IdpWebDir>
     <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
     <ProjectGuid>{8f355c0a-c2d3-42fe-a5bd-d4447167ae9e}</ProjectGuid>
   </PropertyGroup>
@@ -38,7 +38,9 @@
     </ProjectReference>
   </ItemGroup>
   <Target Name="PublishProjects" AfterTargets="BeforeResolveReferences">
-    <Exec Command="dotnet publish &quot;..\IdentityServer.AdminPortal.Server\IdentityServer.AdminPortal.Server.csproj&quot; -c $(Configuration) -o $(IdpWebDir)" />
+    <RemoveDir Directories="$(IdpWebDir)" Condition="Exists('$(IdpWebDir)')" />
+    <MakeDir Directories="$(IdpWebDir)" />
+    <Exec Command="dotnet publish &quot;..\IdentityServer.AdminPortal.Server\IdentityServer.AdminPortal.Server.csproj&quot; -c $(Configuration) -o &quot;$(IdpWebDir)&quot;" />
   </Target>
   <ItemGroup>
     <HarvestDirectory Include="$(IdpWebDir)">

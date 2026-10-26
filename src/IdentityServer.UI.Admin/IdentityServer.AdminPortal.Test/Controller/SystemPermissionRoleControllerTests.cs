@@ -64,7 +64,7 @@ public class SystemPermissionRoleControllerTests : ControllerTestBase
         };
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityReferenceException>(() => _roleController.Call_CreateSystemPermissionRoleAsync(role, user));
+        await Assert.ThrowsAsync<EntityReferenceException>(() => _roleController.Call_CreateSystemPermissionRoleAsync(role, user));
     }
 
     [Test]
@@ -83,7 +83,7 @@ public class SystemPermissionRoleControllerTests : ControllerTestBase
         };
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _roleController.Call_CreateSystemPermissionRoleAsync(role, TestUser.SuperUser));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _roleController.Call_CreateSystemPermissionRoleAsync(role, TestUser.SuperUser));
     }
 
     [Test]
@@ -107,7 +107,7 @@ public class SystemPermissionRoleControllerTests : ControllerTestBase
         };
 
         // Act & Assert
-        Assert.ThrowsAsync<UserInsufficientRoleException>(() => _roleController.Call_CreateSystemPermissionRoleAsync(role, TestUser.SuperUser));
+        await Assert.ThrowsAsync<UserInsufficientRoleException>(() => _roleController.Call_CreateSystemPermissionRoleAsync(role, TestUser.SuperUser));
     }
 
     [Test]
@@ -133,7 +133,7 @@ public class SystemPermissionRoleControllerTests : ControllerTestBase
         };
 
         // Act & Assert
-        Assert.ThrowsAsync<UserInsufficientRoleException>(() => _roleController.Call_CreateSystemPermissionRoleAsync(role, TestUser.SuperUser));
+        await Assert.ThrowsAsync<UserInsufficientRoleException>(() => _roleController.Call_CreateSystemPermissionRoleAsync(role, TestUser.SuperUser));
     }
 
     [Test]
@@ -157,7 +157,7 @@ public class SystemPermissionRoleControllerTests : ControllerTestBase
         };
 
         // Act & Assert
-        Assert.ThrowsAsync<InvalidOperationException>(() => _roleController.Call_CreateSystemPermissionRoleAsync(role, TestUser.SuperUser));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _roleController.Call_CreateSystemPermissionRoleAsync(role, TestUser.SuperUser));
     }
 
     [Test]
@@ -191,7 +191,7 @@ public class SystemPermissionRoleControllerTests : ControllerTestBase
         };
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityReferenceException>(() => _roleController.Call_CreateSystemPermissionRoleAsync(role, user));
+        await Assert.ThrowsAsync<EntityReferenceException>(() => _roleController.Call_CreateSystemPermissionRoleAsync(role, user));
     }
 
     [Test]
@@ -203,7 +203,7 @@ public class SystemPermissionRoleControllerTests : ControllerTestBase
         var role = sp.Environments[0].Permissions[0];
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityReferenceException>(() => _roleController.Call_DeleteSystemPermissionRoleByIdAsync(role.Id, TestUser.Admin));
+        await Assert.ThrowsAsync<EntityReferenceException>(() => _roleController.Call_DeleteSystemPermissionRoleByIdAsync(role.Id, TestUser.Admin));
     }
 
     [Test]
@@ -239,7 +239,7 @@ public class SystemPermissionRoleControllerTests : ControllerTestBase
         var role = sp.Environments[0].Permissions.First(r => r.OId == oid);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityReferenceException>(() => _roleController.Call_DeleteSystemPermissionRoleByIdAsync(role.Id, TestUser.Admin));
+        await Assert.ThrowsAsync<EntityReferenceException>(() => _roleController.Call_DeleteSystemPermissionRoleByIdAsync(role.Id, TestUser.Admin));
     }
 
     [Test]
@@ -317,6 +317,6 @@ public class SystemPermissionRoleControllerTests : ControllerTestBase
         };
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityReferenceException>(() => _roleController.Call_UpdateSystemPermissionRoleAsync(updateDto, user));
+        await Assert.ThrowsAsync<EntityReferenceException>(() => _roleController.Call_UpdateSystemPermissionRoleAsync(updateDto, user));
     }
 }
