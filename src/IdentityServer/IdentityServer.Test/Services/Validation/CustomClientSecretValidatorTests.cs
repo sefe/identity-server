@@ -38,10 +38,10 @@ public class CustomClientSecretValidatorTests
     {
         // Arrange
         var context = new DefaultHttpContext();
-        _parser.ParseAsync(context).Returns(Task.FromResult<ParsedSecret>(null));
+        _parser.ParseAsync(context, Arg.Any<CancellationToken>()).Returns(Task.FromResult<ParsedSecret>(null));
 
         // Act
-        var result = await _sut.ValidateAsync(context);
+        var result = await _sut.ValidateAsync(context, CancellationToken.None);
 
         // Assert
         using (Assert.EnterMultipleScope())
@@ -58,11 +58,11 @@ public class CustomClientSecretValidatorTests
         // Arrange
         var context = new DefaultHttpContext();
         var parsedSecret = new ParsedSecret { Id = "unknown-client", Type = "SharedSecret" };
-        _parser.ParseAsync(context).Returns(parsedSecret);
-        _clientStore.FindEnabledClientByIdAsync(parsedSecret.Id).Returns(Task.FromResult<Client>(null));
+        _parser.ParseAsync(context, Arg.Any<CancellationToken>()).Returns(parsedSecret);
+        _clientStore.FindEnabledClientByIdAsync(parsedSecret.Id, Arg.Any<CancellationToken>()).Returns(Task.FromResult<Client>(null));
 
         // Act
-        var result = await _sut.ValidateAsync(context);
+        var result = await _sut.ValidateAsync(context, CancellationToken.None);
 
         // Assert
         using (Assert.EnterMultipleScope())
@@ -79,14 +79,14 @@ public class CustomClientSecretValidatorTests
         var context = new DefaultHttpContext();
         var parsedSecret = new ParsedSecret { Id = "client1", Type = "SharedSecret" };
         var client = new Client { ClientId = "client1", RequireClientSecret = true };
-        _parser.ParseAsync(context).Returns(parsedSecret);
-        _clientStore.FindEnabledClientByIdAsync(parsedSecret.Id).Returns(client);
-        _validator.ValidateAsync(client.ClientSecrets, parsedSecret).Returns(new SecretValidationResult { Success = false });
+        _parser.ParseAsync(context, Arg.Any<CancellationToken>()).Returns(parsedSecret);
+        _clientStore.FindEnabledClientByIdAsync(parsedSecret.Id, Arg.Any<CancellationToken>()).Returns(client);
+        _validator.ValidateAsync(client.ClientSecrets, parsedSecret, Arg.Any<CancellationToken>()).Returns(new SecretValidationResult { Success = false });
 
         context.Request.Form = CreateForm("client_credentials");
 
         // Act
-        var result = await _sut.ValidateAsync(context);
+        var result = await _sut.ValidateAsync(context, CancellationToken.None);
 
         // Assert
         using (Assert.EnterMultipleScope())
@@ -103,13 +103,13 @@ public class CustomClientSecretValidatorTests
         var context = new DefaultHttpContext();
         var parsedSecret = new ParsedSecret { Id = "public-client", Type = "NoSecret" };
         var client = new Client { ClientId = "public-client", RequireClientSecret = false };
-        _parser.ParseAsync(context).Returns(parsedSecret);
-        _clientStore.FindEnabledClientByIdAsync(parsedSecret.Id).Returns(client);
+        _parser.ParseAsync(context, Arg.Any<CancellationToken>()).Returns(parsedSecret);
+        _clientStore.FindEnabledClientByIdAsync(parsedSecret.Id, Arg.Any<CancellationToken>()).Returns(client);
 
         context.Request.Form = CreateForm("authorization_code");
 
         // Act
-        var result = await _sut.ValidateAsync(context);
+        var result = await _sut.ValidateAsync(context, CancellationToken.None);
 
         // Assert
         using (Assert.EnterMultipleScope())
@@ -127,14 +127,14 @@ public class CustomClientSecretValidatorTests
         var parsedSecret = new ParsedSecret { Id = "client2", Type = "SharedSecret" };
         var client = new Client { ClientId = "client2", RequireClientSecret = true };
         var secretValidationResult = new SecretValidationResult { Success = true };
-        _parser.ParseAsync(context).Returns(parsedSecret);
-        _clientStore.FindEnabledClientByIdAsync(parsedSecret.Id).Returns(client);
-        _validator.ValidateAsync(client.ClientSecrets, parsedSecret).Returns(secretValidationResult);
+        _parser.ParseAsync(context, Arg.Any<CancellationToken>()).Returns(parsedSecret);
+        _clientStore.FindEnabledClientByIdAsync(parsedSecret.Id, Arg.Any<CancellationToken>()).Returns(client);
+        _validator.ValidateAsync(client.ClientSecrets, parsedSecret, Arg.Any<CancellationToken>()).Returns(secretValidationResult);
 
         context.Request.Form = CreateForm("client_credentials");
 
         // Act
-        var result = await _sut.ValidateAsync(context);
+        var result = await _sut.ValidateAsync(context, CancellationToken.None);
 
         // Assert
         using (Assert.EnterMultipleScope())

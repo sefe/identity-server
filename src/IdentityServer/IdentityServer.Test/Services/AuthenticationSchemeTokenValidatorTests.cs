@@ -33,7 +33,7 @@ public class AuthenticationSchemeTokenValidatorTests
         var authResult = AuthenticateResult.Fail("fail reason");
         _authService.AuthenticateAsync(Arg.Any<HttpContext>(), _schemeName).Returns(Task.FromResult(authResult));
 
-        var result = await _validator.ValidateAccessTokenAsync(token);
+        var result = await _validator.ValidateAccessTokenAsync(token, null, CancellationToken.None);
 
         using (Assert.EnterMultipleScope())
         {
@@ -52,7 +52,7 @@ public class AuthenticationSchemeTokenValidatorTests
         var authResult = AuthenticateResult.Success(new AuthenticationTicket(principal, _schemeName));
         _authService.AuthenticateAsync(Arg.Any<HttpContext>(), _schemeName).Returns(Task.FromResult(authResult));
 
-        var result = await _validator.ValidateAccessTokenAsync(token);
+        var result = await _validator.ValidateAccessTokenAsync(token, null, CancellationToken.None);
 
         using (Assert.EnterMultipleScope())
         {
@@ -66,6 +66,6 @@ public class AuthenticationSchemeTokenValidatorTests
     [Test]
     public void ValidateIdentityTokenAsync_WhenCalled_ShouldThrowNotImplementedException()
     {
-        Assert.That(() => _validator.ValidateIdentityTokenAsync("token"), Throws.TypeOf<NotImplementedException>());
+        Assert.That(() => _validator.ValidateIdentityTokenAsync("token", null, true, CancellationToken.None), Throws.TypeOf<NotImplementedException>());
     }
 }

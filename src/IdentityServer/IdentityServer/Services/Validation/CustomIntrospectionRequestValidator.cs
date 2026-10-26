@@ -26,13 +26,13 @@ internal class CustomIntrospectionRequestValidator : IIntrospectionRequestValida
         _logger = logger;
     }
 
-    public async Task<IntrospectionRequestValidationResult> ValidateAsync(IntrospectionRequestValidationContext context)
+    public async Task<IntrospectionRequestValidationResult> ValidateAsync(IntrospectionRequestValidationContext context, CancellationToken cancellationToken)
     {
         var tokenPreview = GetObfuscatedToken(context);
         _logger.LogInformation("Introspecting reference token for API '{ApiResourceId}' / Application '{ClientId}'. TokenPreview={TokenPreview}",
             context.Api?.Name ?? "", context.Client?.ClientId ?? "", tokenPreview ?? "");
 
-        var result = await _defaultValidator.ValidateAsync(context);
+        var result = await _defaultValidator.ValidateAsync(context, cancellationToken);
         return result;
     }
 
