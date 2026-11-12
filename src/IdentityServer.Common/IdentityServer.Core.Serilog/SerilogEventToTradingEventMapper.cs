@@ -25,7 +25,7 @@ public class SerilogEventToTradingEventMapper
             Message = source.RenderMessage(),
             Ecs = new Ecs
             {
-                Version = Base.Version
+                Version = EcsDocument.Version
             }
         };
         MapException(source, target);
@@ -78,18 +78,12 @@ public class SerilogEventToTradingEventMapper
             HttpContextData value2 = value.Value!;
             target.Http = new Http
             {
-                Request = new HttpRequest
-                {
-                    Method = value2.HttpMethod,
-                    Referrer = value2.RequestPath
-                }
+                RequestMethod = value2.HttpMethod,
+                RequestReferrer = value2.RequestPath
             };
             if (value2.ResponseStatusCode.HasValue)
             {
-                target.Http.Response = new HttpResponse
-                {
-                    StatusCode = value2.ResponseStatusCode.Value
-                };
+                target.Http.ResponseStatusCode = value2.ResponseStatusCode.Value;
             }
 
             target.Client = target.Client ?? new Client();
@@ -168,8 +162,7 @@ public class SerilogEventToTradingEventMapper
 
         if (!string.IsNullOrWhiteSpace(text))
         {
-            target.Trace = target.Trace ?? new Trace();
-            target.Trace.Id = text;
+            target.TraceId = text;
         }
     }
 
@@ -185,9 +178,8 @@ public class SerilogEventToTradingEventMapper
             logEvent.Process.Title = string.IsNullOrEmpty(value2) ? null : value2;
             logEvent.Process.Name = value2;
             logEvent.Process.Pid = value;
-            logEvent.Process.Thread = logEvent.Process.Thread ?? new ProcessThread();
-            logEvent.Process.Thread.Id = value3;
-            logEvent.Process.Thread.Name = value4;
+            logEvent.Process.ThreadId = value3;
+            logEvent.Process.ThreadName = value4;
         }
     }
 

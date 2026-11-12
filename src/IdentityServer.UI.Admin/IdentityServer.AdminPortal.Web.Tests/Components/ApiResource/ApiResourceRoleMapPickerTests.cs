@@ -54,7 +54,7 @@ public class ApiResourceRoleMapPickerTests
     public void Render_WhenClosed_DoesNotRenderOffcanvas()
     {
         // Arrange & Act
-        var cut = _ctx.RenderComponent<ApiResourceRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, _testRoles));
 
         // Assert
@@ -68,7 +68,7 @@ public class ApiResourceRoleMapPickerTests
     {
         // Arrange
         var roleMapping = new ApiResourceRoleMappingDtoCreateBuilder(roleMapType).Build();
-        var cut = _ctx.RenderComponent<ApiResourceRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, _testRoles));
 
         // Act
@@ -84,7 +84,7 @@ public class ApiResourceRoleMapPickerTests
     {
         // Arrange
         var roleMapping = new ApiResourceRoleMappingDtoCreateBuilder(RoleMapType.SecurityGroup).Build();
-        var cut = _ctx.RenderComponent<ApiResourceRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, _testRoles));
 
         // Act
@@ -106,7 +106,7 @@ public class ApiResourceRoleMapPickerTests
     {
         // Arrange
         var roleMapping = new ApiResourceRoleMappingDtoCreateBuilder(RoleMapType.SecurityGroup).Build();
-        var cut = _ctx.RenderComponent<ApiResourceRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, _testRoles));
         await cut.InvokeAsync(() => cut.Instance.OpenRoleMappingPicker(roleMapping));
 
@@ -123,7 +123,7 @@ public class ApiResourceRoleMapPickerTests
     {
         // Arrange
         var roleMapping = new ApiResourceRoleMappingDtoCreateBuilder(RoleMapType.SecurityGroup).Build();
-        var cut = _ctx.RenderComponent<ApiResourceRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, _testRoles));
         await cut.InvokeAsync(() => cut.Instance.OpenRoleMappingPicker(roleMapping));
 
@@ -140,7 +140,7 @@ public class ApiResourceRoleMapPickerTests
     {
         // Arrange
         var roleMapping = new ApiResourceRoleMappingDtoCreateBuilder(RoleMapType.SecurityGroup).Build();
-        var cut = _ctx.RenderComponent<ApiResourceRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, _testRoles));
         await cut.InvokeAsync(() => cut.Instance.OpenRoleMappingPicker(roleMapping));
 
@@ -158,7 +158,7 @@ public class ApiResourceRoleMapPickerTests
         // Arrange
         var roleMapping = new ApiResourceRoleMappingDtoCreateBuilder(RoleMapType.ClientId).Build();
         SetupClientSearchResponse();
-        var cut = _ctx.RenderComponent<ApiResourceRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, _testRoles));
         await cut.InvokeAsync(() => cut.Instance.OpenRoleMappingPicker(roleMapping));
 
@@ -175,7 +175,7 @@ public class ApiResourceRoleMapPickerTests
     {
         // Arrange
         var roleMapping = new ApiResourceRoleMappingDtoCreateBuilder(RoleMapType.UserObjectId).Build();
-        var cut = _ctx.RenderComponent<ApiResourceRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, _testRoles));
         await cut.InvokeAsync(() => cut.Instance.OpenRoleMappingPicker(roleMapping));
 
@@ -196,7 +196,7 @@ public class ApiResourceRoleMapPickerTests
 
         var roleMapping = new ApiResourceRoleMappingDtoCreateBuilder(RoleMapType.SecurityGroup).Build();
 
-        var cut = _ctx.RenderComponent<ApiResourceRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, _testRoles)
             .Add(p => p.OnRoleMappingConfirmed, EventCallback.Factory.Create<ApiResourcePropertyRoleMappingDtoCreate>(this, mapping =>
             {
@@ -236,7 +236,7 @@ public class ApiResourceRoleMapPickerTests
         var roleMapping = new ApiResourceRoleMappingDtoCreateBuilder(RoleMapType.ClientId).Build();
         SetupClientSearchResponse();
 
-        var cut = _ctx.RenderComponent<ApiResourceRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, _testRoles)
             .Add(p => p.OnRoleMappingConfirmed, EventCallback.Factory.Create<ApiResourcePropertyRoleMappingDtoCreate>(this, mapping =>
             {
@@ -273,7 +273,7 @@ public class ApiResourceRoleMapPickerTests
 
         var roleMapping = new ApiResourceRoleMappingDtoCreateBuilder(RoleMapType.UserObjectId).Build();
 
-        var cut = _ctx.RenderComponent<ApiResourceRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, _testRoles)
             .Add(p => p.OnRoleMappingConfirmed, EventCallback.Factory.Create<ApiResourcePropertyRoleMappingDtoCreate>(this, mapping =>
             {
@@ -308,7 +308,7 @@ public class ApiResourceRoleMapPickerTests
         var rolesWithMappings = CreateTestRolesWithMappings();
         var roleMapping = new ApiResourceRoleMappingDtoCreateBuilder(RoleMapType.SecurityGroup).Build();
 
-        var cut = _ctx.RenderComponent<ApiResourceRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, rolesWithMappings));
         await cut.InvokeAsync(() => cut.Instance.OpenRoleMappingPicker(roleMapping));
 
@@ -334,7 +334,7 @@ public class ApiResourceRoleMapPickerTests
         var roleMapping = new ApiResourceRoleMappingDtoCreateBuilder(RoleMapType.ClientId).Build();
         SetupClientSearchResponse();
 
-        var cut = _ctx.RenderComponent<ApiResourceRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, rolesWithMappings));
         await cut.InvokeAsync(() => cut.Instance.OpenRoleMappingPicker(roleMapping));
 
@@ -359,7 +359,7 @@ public class ApiResourceRoleMapPickerTests
         var rolesWithMappings = CreateTestRolesWithMappings();
         var roleMapping = new ApiResourceRoleMappingDtoCreateBuilder(RoleMapType.UserObjectId).Build();
 
-        var cut = _ctx.RenderComponent<ApiResourceRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, rolesWithMappings));
         await cut.InvokeAsync(() => cut.Instance.OpenRoleMappingPicker(roleMapping));
 
@@ -459,3 +459,4 @@ public class ApiResourceRoleMapPickerTests
                .SetResult(new { width = 100, height = 100 });
     }
 }
+

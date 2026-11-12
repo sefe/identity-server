@@ -15,7 +15,7 @@ public class CardHeaderTextTests : Bunit.TestContext
         var text = "Header Title";
 
         // Act
-        var cut = RenderComponent<CardHeaderText>(parameters => parameters
+        var cut = Render<CardHeaderText>(parameters => parameters
             .Add(p => p.Text, text)
         );
 
@@ -27,7 +27,7 @@ public class CardHeaderTextTests : Bunit.TestContext
     public void RendersEmptyHeader_WhenTextIsNull()
     {
         // Act
-        var cut = RenderComponent<CardHeaderText>(parameters => parameters
+        var cut = Render<CardHeaderText>(parameters => parameters
             .Add(p => p.Text, null)
         );
 
@@ -35,3 +35,4 @@ public class CardHeaderTextTests : Bunit.TestContext
         Assert.That(cut.Markup, Is.EqualTo("<div class=\"row\"><h5 class=\"my-auto\"></h5></div>"));
     }
 }
+

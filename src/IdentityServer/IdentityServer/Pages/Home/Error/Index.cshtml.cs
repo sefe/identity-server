@@ -25,8 +25,10 @@ public class Index : PageModel
 
     public async Task OnGet(string? errorId)
     {
+        var ct = HttpContext.RequestAborted;
+
         // retrieve error details from identityserver
-        var message = await _interaction.GetErrorContextAsync(errorId);
+        var message = await _interaction.GetErrorContextAsync(errorId, ct);
         if (message != null)
         {
             View.Error = message;

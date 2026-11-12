@@ -77,7 +77,7 @@ public class ApiResourceControllerTests : ControllerTestBase
         _ = await _apiResourceController.Call_CreateApiResourceAsync(client, Admin);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _apiResourceController.Call_CreateApiResourceAsync(client, Admin));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _apiResourceController.Call_CreateApiResourceAsync(client, Admin));
     }
 
     [Test]
@@ -208,7 +208,7 @@ public class ApiResourceControllerTests : ControllerTestBase
         await _clientPropertyScopeController.Call_AddClientScopeAsync(createdClient.Id, createdScope.Scope, Admin);
 
         // Act
-        Assert.ThrowsAsync<EntityReferenceException>(() => _apiResourceController.Call_DeleteApiResourceAsync(createdApiResource.Id, Admin));
+        await Assert.ThrowsAsync<EntityReferenceException>(() => _apiResourceController.Call_DeleteApiResourceAsync(createdApiResource.Id, Admin));
     }
 
     [Test]

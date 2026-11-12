@@ -1058,7 +1058,7 @@ public class HistoryTimelineTests
 
     private IRenderedComponent<TelerikRootComponent> RenderHistoryTimeline(List<HistoryEntryDto> entries)
     {
-        return _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        return _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<TestableHistoryTimeline>(childParameters => childParameters
                 .Add(p => p.HistoryEntries, entries)));
     }
@@ -1068,7 +1068,7 @@ public class HistoryTimelineTests
         string searchText)
     {
         var textBox = cut.FindComponent<TelerikTextBox>();
-        textBox.SetParametersAndRender(parameters => parameters
+        textBox.Render(parameters => parameters
             .Add(p => p.Value, searchText));
         await textBox.InvokeAsync(() =>
         {

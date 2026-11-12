@@ -113,7 +113,7 @@ public class ClientDtoCloneRepositoryTests
     }
 
     [Test]
-    public void CloneAsync_WithNonExistentSourceClient_ThrowsEntityNotFoundException()
+    public async Task CloneAsync_WithNonExistentSourceClient_ThrowsEntityNotFoundException()
     {
         // Arrange
         var cloneRequest = new ClientDtoClone
@@ -127,12 +127,12 @@ public class ClientDtoCloneRepositoryTests
         _clientStorage.GetByIdAsync(999).Returns((ClientExt)null);
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<EntityNotFoundException>(() => _sut.CloneAsync(_user, cloneRequest));
+        var ex = await Assert.ThrowsAsync<EntityNotFoundException>(() => _sut.CloneAsync(_user, cloneRequest));
         Assert.That(ex!.Message, Does.Contain("Application with Id 999 was not found"));
     }
 
     [Test]
-    public void CloneAsync_WithExistingClientId_ThrowsEntityAlreadyExistsException()
+    public async Task CloneAsync_WithExistingClientId_ThrowsEntityAlreadyExistsException()
     {
         // Arrange
         var sourceClient = new ClientExtBuilder("source-client", "Source Client")
@@ -159,12 +159,12 @@ public class ClientDtoCloneRepositoryTests
             .Returns(SystemPermissionRoleType.Reader);
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _sut.CloneAsync(_user, cloneRequest));
+        var ex = await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _sut.CloneAsync(_user, cloneRequest));
         Assert.That(ex!.Message, Does.Contain("Application with id 'cloned-client' already exists"));
     }
 
     [Test]
-    public void CloneAsync_WithNonExistentTargetEnvironment_ThrowsEntityNotFoundException()
+    public async Task CloneAsync_WithNonExistentTargetEnvironment_ThrowsEntityNotFoundException()
     {
         // Arrange
         var sourceClient = new ClientExtBuilder("source-client", "Source Client")
@@ -188,12 +188,12 @@ public class ClientDtoCloneRepositoryTests
             .Returns(SystemPermissionRoleType.Reader);
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<EntityNotFoundException>(() => _sut.CloneAsync(_user, cloneRequest));
+        var ex = await Assert.ThrowsAsync<EntityNotFoundException>(() => _sut.CloneAsync(_user, cloneRequest));
         Assert.That(ex!.Message, Does.Contain("System Permission Environment with Id 999 was not found"));
     }
 
     [Test]
-    public void CloneAsync_WithNoCreatePermissionOnTargetEnv_ThrowsPermissionException()
+    public async Task CloneAsync_WithNoCreatePermissionOnTargetEnv_ThrowsPermissionException()
     {
         // Arrange
         var cloneRequest = new ClientDtoClone
@@ -208,11 +208,11 @@ public class ClientDtoCloneRepositoryTests
             .Returns<SystemPermissionRoleType>(x => throw new EntityAccessException(_user, "Application", EntityAccessType.Create));
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAccessException>(() => _sut.CloneAsync(_user, cloneRequest));
+        await Assert.ThrowsAsync<EntityAccessException>(() => _sut.CloneAsync(_user, cloneRequest));
     }
 
     [Test]
-    public void CloneAsync_WithNoReadPermissionOnSourceEnv_ThrowsPermissionException()
+    public async Task CloneAsync_WithNoReadPermissionOnSourceEnv_ThrowsPermissionException()
     {
         // Arrange
         var sourceClient = new ClientExtBuilder("source-client", "Source Client")
@@ -234,7 +234,7 @@ public class ClientDtoCloneRepositoryTests
             .Returns<SystemPermissionRoleType>(x => throw new EntityAccessException(_user, sourceClient.ToString()!, EntityAccessType.Read));
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAccessException>(() => _sut.CloneAsync(_user, cloneRequest));
+        await Assert.ThrowsAsync<EntityAccessException>(() => _sut.CloneAsync(_user, cloneRequest));
     }
 
     [Test]

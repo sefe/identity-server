@@ -61,7 +61,7 @@ public class UserControllerTests : ControllerTestBase
     }
 
     [Test]
-    public void GetUserById_WhenServiceThrowsException_PropagatesException()
+    public async Task GetUserById_WhenServiceThrowsException_PropagatesException()
     {
         // Arrange
         var expectedException = _fixture.Create<InvalidOperationException>();
@@ -69,7 +69,7 @@ public class UserControllerTests : ControllerTestBase
         SetControllerContext(_controller, Admin);
 
         // Act & Assert
-        var exception = Assert.ThrowsAsync<InvalidOperationException>(() => _controller.GetUserById("userId"));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.GetUserById("userId"));
         Assert.That(exception.Message, Is.EqualTo(expectedException.Message));
     }
 
@@ -154,7 +154,7 @@ public class UserControllerTests : ControllerTestBase
         SetControllerContext(_controller, Admin);
 
         // Act & Assert
-        var exception = Assert.ThrowsAsync<InvalidOperationException>(() => _controller.SearchUsersByDisplayName(searchString));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.SearchUsersByDisplayName(searchString));
         Assert.That(exception.Message, Is.EqualTo(expectedException.Message));
         await _mockEntraUserService.Received(1).GetUsersByDisplayNameAsync(searchString);
     }

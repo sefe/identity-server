@@ -17,7 +17,7 @@ public class IdentityServerEventSink : IEventSink
         _logger = logger;
         _httpContextAccessor = httpContextAccessor;
     }
-    public Task PersistAsync(Event evt)
+    public Task PersistAsync(Event evt, CancellationToken cancellationToken)
     {
         _logger.LogInformation("IdentityServer Event: {@Event}", evt);
 

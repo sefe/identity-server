@@ -46,13 +46,13 @@ public class ClientRoleControllerTests : ControllerTestBase
     }
 
     [Test]
-    public void CreateRole_WithMissingClient_Fails()
+    public async Task CreateRole_WithMissingClient_Fails()
     {
         // Arrange
         var newRole = ClientRoleControllerExtensions.NewRoleFor(999, "TestRole");
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityNotFoundException>(() => _clientRoleController.Call_AddClientRoleAsync(newRole, Admin));
+        await Assert.ThrowsAsync<EntityNotFoundException>(() => _clientRoleController.Call_AddClientRoleAsync(newRole, Admin));
     }
 
     [Test]
@@ -96,7 +96,7 @@ public class ClientRoleControllerTests : ControllerTestBase
         await _clientRoleController.Call_AddClientRoleAsync(newRole, Admin);
 
         // Act
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientRoleController.Call_AddClientRoleAsync(newRole, Admin));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientRoleController.Call_AddClientRoleAsync(newRole, Admin));
     }
 
     [Test]

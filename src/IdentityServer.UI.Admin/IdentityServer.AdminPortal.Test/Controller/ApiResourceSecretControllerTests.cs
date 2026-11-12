@@ -53,11 +53,11 @@ public class ApiResourceSecretControllerTests : ControllerTestBase
     }
 
     [Test]
-    public void Create_Secret_Missing_ApiResource_Fail()
+    public async Task Create_Secret_Missing_ApiResource_Fail()
     {
         var newSecret = ApiResourceSecretControllerExtensions.GetDefaultApiResourceSecretFor(999);
 
-        Assert.ThrowsAsync<EntityNotFoundException>(() => _secretController.Call_CreateSecretAsync(newSecret, Admin));
+        await Assert.ThrowsAsync<EntityNotFoundException>(() => _secretController.Call_CreateSecretAsync(newSecret, Admin));
     }
 
     [Test]
@@ -103,7 +103,7 @@ public class ApiResourceSecretControllerTests : ControllerTestBase
         var newSecret = ApiResourceSecretControllerExtensions.GetDefaultApiResourceSecretFor(createdApiResource.Id);
         _ = await _secretController.Call_CreateSecretAsync(newSecret, Admin);
 
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _secretController.Call_CreateSecretAsync(newSecret, Admin));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _secretController.Call_CreateSecretAsync(newSecret, Admin));
     }
 
     [Test]

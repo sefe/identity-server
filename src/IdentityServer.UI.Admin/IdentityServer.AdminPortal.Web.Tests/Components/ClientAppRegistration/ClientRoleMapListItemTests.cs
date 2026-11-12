@@ -48,7 +48,7 @@ public class ClientRoleMapListItemTests
         _mockStorageService.GetItem<int?>(Arg.Any<string>()).Returns(cachedPageSize);
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRoleMapListItem>(childParameters => childParameters
                 .Add(p => p.MapType, roleMapType)
                 .Add(p => p.MappedRoles, CreateMappedRoles(roleMapType))
@@ -72,7 +72,7 @@ public class ClientRoleMapListItemTests
         _mockStorageService.GetItem<int?>(Arg.Any<string>()).Returns(10);
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRoleMapListItem>(childParameters => childParameters
                 .Add(p => p.MapType, roleMapType)
                 .Add(p => p.IsReadonly, false)
@@ -99,7 +99,7 @@ public class ClientRoleMapListItemTests
         _mockStorageService.GetItem<int?>(Arg.Any<string>()).Returns(10);
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRoleMapListItem>(childParameters => childParameters
                 .Add(p => p.MapType, roleMapType)
                 .Add(p => p.IsReadonly, true)
@@ -121,7 +121,7 @@ public class ClientRoleMapListItemTests
     {
         // Arrange
         var createNewCalled = false;
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRoleMapListItem>(childParameters => childParameters
             .Add(p => p.MapType, RoleMapType.UserObjectId)
             .Add(p => p.MappedRoles, new List<ClientMappedRole>())
@@ -144,7 +144,7 @@ public class ClientRoleMapListItemTests
         var mappedRoles = CreateMappedRoles();
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRoleMapListItem>(childParameters => childParameters
             .Add(p => p.MapType, RoleMapType.UserObjectId)
             .Add(p => p.MappedRoles, mappedRoles)
@@ -169,7 +169,7 @@ public class ClientRoleMapListItemTests
         _mockStorageService.GetItem<int?>(Arg.Any<string>()).Throws(new InvalidOperationException("Pre-rendering error"));
 
         // Act & Assert - Should not throw
-        var cut = _ctx.RenderComponent<ClientRoleMapListItem>(parameters => parameters
+        var cut = _ctx.Render<ClientRoleMapListItem>(parameters => parameters
             .Add(p => p.MapType, RoleMapType.UserObjectId)
             .Add(p => p.MappedRoles, new List<ClientMappedRole>())
             .Add(p => p.OnCreateNew, EventCallback.Factory.Create(this, () => { }))
@@ -183,7 +183,7 @@ public class ClientRoleMapListItemTests
     public void Component_WhenNoMappedRoles_RendersNoDataMessage()
     {
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRoleMapListItem>(childParameters => childParameters
             .Add(p => p.MapType, RoleMapType.UserObjectId)
             .Add(p => p.MappedRoles, new List<ClientMappedRole>())
@@ -207,7 +207,7 @@ public class ClientRoleMapListItemTests
         ClientPropertyRoleMappingDtoRead deletedMapping = null;
         var mappedRoles = CreateMappedRoles();
 
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRoleMapListItem>(childParameters => childParameters
             .Add(p => p.MapType, RoleMapType.UserObjectId)
             .Add(p => p.MappedRoles, mappedRoles)
@@ -266,3 +266,4 @@ public class ClientRoleMapListItemTests
         };
     }
 }
+

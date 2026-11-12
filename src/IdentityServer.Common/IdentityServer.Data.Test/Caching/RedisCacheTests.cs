@@ -64,18 +64,18 @@ public class RedisCacheTests
     #region GetAsync Tests
 
     [Test]
-    public void GetAsync_WithNullKey_ThrowsArgumentNullException()
+    public async Task GetAsync_WithNullKey_ThrowsArgumentNullException()
     {
         // Arrange, Act & Assert
-        var exception = Assert.ThrowsAsync<ArgumentNullException>(async () => await _cache.GetAsync(null!));
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(async () => await _cache.GetAsync(null!));
         Assert.That(exception!.ParamName, Is.EqualTo("key"));
     }
 
     [Test]
-    public void GetAsync_WithEmptyKey_ThrowsArgumentNullException()
+    public async Task GetAsync_WithEmptyKey_ThrowsArgumentNullException()
     {
         // Arrange, Act & Assert
-        var exception = Assert.ThrowsAsync<ArgumentException>(async () => await _cache.GetAsync(string.Empty));
+        var exception = await Assert.ThrowsAsync<ArgumentException>(async () => await _cache.GetAsync(string.Empty));
         Assert.That(exception!.ParamName, Is.EqualTo("key"));
     }
 
@@ -146,10 +146,10 @@ public class RedisCacheTests
     #region GetManyAsync Tests
 
     [Test]
-    public void GetManyAsync_WithNullKeys_ThrowsArgumentNullException()
+    public async Task GetManyAsync_WithNullKeys_ThrowsArgumentNullException()
     {
         // Arrange, Act & Assert
-        var exception = Assert.ThrowsAsync<ArgumentNullException>(async () => await _cache.GetManyAsync(null!));
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(async () => await _cache.GetManyAsync(null!));
         Assert.That(exception!.ParamName, Is.EqualTo("keys"));
     }
 
@@ -327,34 +327,34 @@ public class RedisCacheTests
     #region SetAsync Tests
 
     [Test]
-    public void SetAsync_WithNullKey_ThrowsArgumentNullException()
+    public async Task SetAsync_WithNullKey_ThrowsArgumentNullException()
     {
         // Arrange
         var testData = new TestData { Id = 1, Name = "Test" };
 
         // Act & Assert
-        var exception = Assert.ThrowsAsync<ArgumentNullException>(async () =>
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(async () =>
             await _cache.SetAsync(null!, testData, TimeSpan.FromMinutes(5)));
         Assert.That(exception!.ParamName, Is.EqualTo("key"));
     }
 
     [Test]
-    public void SetAsync_WithEmptyKey_ThrowsArgumentNullException()
+    public async Task SetAsync_WithEmptyKey_ThrowsArgumentNullException()
     {
         // Arrange
         var testData = new TestData { Id = 1, Name = "Test" };
 
         // Act & Assert
-        var exception = Assert.ThrowsAsync<ArgumentException>(async () =>
+        var exception = await Assert.ThrowsAsync<ArgumentException>(async () =>
             await _cache.SetAsync(string.Empty, testData, TimeSpan.FromMinutes(5)));
         Assert.That(exception!.ParamName, Is.EqualTo("key"));
     }
 
     [Test]
-    public void SetAsync_WithNullItem_ThrowsArgumentNullException()
+    public async Task SetAsync_WithNullItem_ThrowsArgumentNullException()
     {
         // Arrange, Act & Assert
-        var exception = Assert.ThrowsAsync<ArgumentNullException>(async () =>
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(async () =>
             await _cache.SetAsync(_testKey, null!, TimeSpan.FromMinutes(5)));
         Assert.That(exception!.ParamName, Is.EqualTo("item"));
     }
@@ -407,7 +407,7 @@ public class RedisCacheTests
     }
 
     [Test]
-    public void SetAsync_WhenDatabaseThrowsException_DoesNotPropagateException()
+    public async Task SetAsync_WhenDatabaseThrowsException_DoesNotPropagateException()
     {
         // Arrange
         var testData = new TestData { Id = 1, Name = "Test" };
@@ -415,7 +415,7 @@ public class RedisCacheTests
             .Returns<bool>(_ => throw new RedisConnectionException(ConnectionFailureType.UnableToConnect, "Connection failed"));
 
         // Act & Assert
-        Assert.DoesNotThrowAsync(async () => await _cache.SetAsync(_testKey, testData, TimeSpan.FromMinutes(5)));
+        await Assert.DoesNotThrowAsync(async () => await _cache.SetAsync(_testKey, testData, TimeSpan.FromMinutes(5)));
     }
 
     #endregion
@@ -423,10 +423,10 @@ public class RedisCacheTests
     #region SetManyAsync Tests
 
     [Test]
-    public void SetManyAsync_WithNullItems_ThrowsArgumentNullException()
+    public async Task SetManyAsync_WithNullItems_ThrowsArgumentNullException()
     {
         // Arrange, Act & Assert
-        var exception = Assert.ThrowsAsync<ArgumentNullException>(async () =>
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(async () =>
             await _cache.SetManyAsync(null!, TimeSpan.FromMinutes(5)));
         Assert.That(exception!.ParamName, Is.EqualTo("items"));
     }
@@ -574,7 +574,7 @@ public class RedisCacheTests
     }
 
     [Test]
-    public void SetManyAsync_WhenDatabaseThrowsException_DoesNotPropagateException()
+    public async Task SetManyAsync_WhenDatabaseThrowsException_DoesNotPropagateException()
     {
         // Arrange
         var items = new Dictionary<string, TestData>
@@ -585,11 +585,11 @@ public class RedisCacheTests
                  .Returns(_ => throw new RedisConnectionException(ConnectionFailureType.UnableToConnect, "Connection failed"));
 
         // Act & Assert
-        Assert.DoesNotThrowAsync(async () => await _cache.SetManyAsync(items, TimeSpan.FromMinutes(5)));
+        await Assert.DoesNotThrowAsync(async () => await _cache.SetManyAsync(items, TimeSpan.FromMinutes(5)));
     }
 
     [Test]
-    public void SetManyAsync_WhenBatchExecuteThrowsException_DoesNotPropagateException()
+    public async Task SetManyAsync_WhenBatchExecuteThrowsException_DoesNotPropagateException()
     {
         // Arrange
         var items = new Dictionary<string, TestData>
@@ -603,7 +603,7 @@ public class RedisCacheTests
         batch.When(b => b.Execute()).Do(_ => throw new RedisConnectionException(ConnectionFailureType.UnableToConnect, "Connection failed"));
 
         // Act & Assert
-        Assert.DoesNotThrowAsync(async () => await _cache.SetManyAsync(items, TimeSpan.FromMinutes(5)));
+        await Assert.DoesNotThrowAsync(async () => await _cache.SetManyAsync(items, TimeSpan.FromMinutes(5)));
     }
 
     #endregion
@@ -611,18 +611,18 @@ public class RedisCacheTests
     #region RemoveAsync Tests
 
     [Test]
-    public void RemoveAsync_WithNullKey_ThrowsArgumentNullException()
+    public async Task RemoveAsync_WithNullKey_ThrowsArgumentNullException()
     {
         // Arrange, Act & Assert
-        var exception = Assert.ThrowsAsync<ArgumentNullException>(async () => await _cache.RemoveAsync(null!));
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(async () => await _cache.RemoveAsync(null!));
         Assert.That(exception!.ParamName, Is.EqualTo("key"));
     }
 
     [Test]
-    public void RemoveAsync_WithEmptyKey_ThrowsArgumentNullException()
+    public async Task RemoveAsync_WithEmptyKey_ThrowsArgumentNullException()
     {
         // Arrange, Act & Assert
-        var exception = Assert.ThrowsAsync<ArgumentException>(async () => await _cache.RemoveAsync(string.Empty));
+        var exception = await Assert.ThrowsAsync<ArgumentException>(async () => await _cache.RemoveAsync(string.Empty));
         Assert.That(exception!.ParamName, Is.EqualTo("key"));
     }
 
@@ -659,14 +659,14 @@ public class RedisCacheTests
     }
 
     [Test]
-    public void RemoveAsync_WhenDatabaseThrowsException_DoesNotPropagateException()
+    public async Task RemoveAsync_WhenDatabaseThrowsException_DoesNotPropagateException()
     {
         // Arrange
         _database.KeyDeleteAsync(Arg.Any<RedisKey>(), Arg.Any<CommandFlags>())
             .Returns<bool>(_ => throw new RedisConnectionException(ConnectionFailureType.UnableToConnect, "Connection failed"));
 
         // Act & Assert
-        Assert.DoesNotThrowAsync(async () => await _cache.RemoveAsync(_testKey));
+        await Assert.DoesNotThrowAsync(async () => await _cache.RemoveAsync(_testKey));
     }
 
     #endregion
@@ -674,34 +674,34 @@ public class RedisCacheTests
     #region GetOrAddAsync Tests
 
     [Test]
-    public void GetOrAddAsync_WithNullKey_ThrowsArgumentNullException()
+    public async Task GetOrAddAsync_WithNullKey_ThrowsArgumentNullException()
     {
         // Arrange
         static Task<TestData> get() => Task.FromResult(new TestData { Id = 1, Name = "Test" });
 
         // Act & Assert
-        var exception = Assert.ThrowsAsync<ArgumentNullException>(async () =>
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(async () =>
             await _cache.GetOrAddAsync(null!, TimeSpan.FromMinutes(5), get));
         Assert.That(exception!.ParamName, Is.EqualTo("key"));
     }
 
     [Test]
-    public void GetOrAddAsync_WithEmptyKey_ThrowsArgumentNullException()
+    public async Task GetOrAddAsync_WithEmptyKey_ThrowsArgumentNullException()
     {
         // Arrange
         static Task<TestData> get() => Task.FromResult(new TestData { Id = 1, Name = "Test" });
 
         // Act & Assert
-        var exception = Assert.ThrowsAsync<ArgumentException>(async () =>
+        var exception = await Assert.ThrowsAsync<ArgumentException>(async () =>
             await _cache.GetOrAddAsync(string.Empty, TimeSpan.FromMinutes(5), get));
         Assert.That(exception!.ParamName, Is.EqualTo("key"));
     }
 
     [Test]
-    public void GetOrAddAsync_WithNullGetFunction_ThrowsArgumentNullException()
+    public async Task GetOrAddAsync_WithNullGetFunction_ThrowsArgumentNullException()
     {
         // Arrange, Act & Assert
-        var exception = Assert.ThrowsAsync<ArgumentNullException>(async () =>
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(async () =>
               await _cache.GetOrAddAsync(_testKey, TimeSpan.FromMinutes(5), null!));
         Assert.That(exception!.ParamName, Is.EqualTo("get"));
     }

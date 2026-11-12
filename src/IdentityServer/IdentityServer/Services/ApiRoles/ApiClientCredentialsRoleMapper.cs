@@ -23,7 +23,7 @@ public class ApiClientCredentialsRoleMapper : ICustomTokenRequestValidator
         _logger = logger;
     }
 
-    public async Task ValidateAsync(CustomTokenRequestValidationContext context)
+    public async Task ValidateAsync(CustomTokenRequestValidationContext context, CancellationToken cancellationToken)
     {
         if (context.Result?.ValidatedRequest.GrantType != ClientGrantTypeNames.Grant_ClientCredentials)
         {

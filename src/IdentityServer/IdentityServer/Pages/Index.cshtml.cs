@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Duende.IdentityServer;
+using Duende.IdentityServer.Licensing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using IdentityServer.Abstraction;
@@ -11,7 +12,7 @@ namespace IdentityServer.Pages;
 [AllowAnonymous]
 public class Index : PageModel
 {
-    public Index(IdentityServerLicense? license = null)
+    public Index(LicenseInformation? license = null)
     {
         License = license;
     }
@@ -22,5 +23,5 @@ public class Index : PageModel
         return version ?? "";
     } 
 
-    public IdentityServerLicense? License { get; }
+    public LicenseInformation? License { get; }
 }

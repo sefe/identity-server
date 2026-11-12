@@ -84,7 +84,7 @@ public class ClientPropertySecretDtoRepositoryTests
             Arg.Any<string>()).Returns(Abstraction.Entities.IdentityServerConfig.SystemPermissions.SystemPermissionRoleType.Writer);
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<EntityValidationException>(async () => await _sut.CreateAsync(_user, createDto));
+        var ex = await Assert.ThrowsAsync<EntityValidationException>(async () => await _sut.CreateAsync(_user, createDto));
         Assert.That(ex.Message, Does.Contain("Validity period cannot exceed 2 years"));
     }
 
@@ -300,7 +300,7 @@ public class ClientPropertySecretDtoRepositoryTests
             Arg.Any<string>()).Returns(Abstraction.Entities.IdentityServerConfig.SystemPermissions.SystemPermissionRoleType.Writer);
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<EntityAlreadyExistsException>(async () => await _sut.CreateAsync(_user, createDto));
+        var ex = await Assert.ThrowsAsync<EntityAlreadyExistsException>(async () => await _sut.CreateAsync(_user, createDto));
         Assert.That(ex.Message, Does.Contain($"Application '{clientId}' already contains Secret '{description}'"));
     }
 }

@@ -51,7 +51,7 @@ public class CustomProfileServiceTests
         _userService.GetUserByObjectIdAsync(userObjectId).Returns(userResponse);
 
         // Act
-        await _service.IsActiveAsync(context);
+        await _service.IsActiveAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.IsActive, Is.True);
@@ -72,7 +72,7 @@ public class CustomProfileServiceTests
         _userService.GetUserByObjectIdAsync(userObjectId).Returns(userResponse);
 
         // Act
-        await _service.IsActiveAsync(context);
+        await _service.IsActiveAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.IsActive, Is.False);
@@ -89,7 +89,7 @@ public class CustomProfileServiceTests
         _userService.GetUserByObjectIdAsync(userObjectId).Returns((UserResponse)null);
 
         // Act
-        await _service.IsActiveAsync(context);
+        await _service.IsActiveAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.IsActive, Is.False);
@@ -104,7 +104,7 @@ public class CustomProfileServiceTests
         var context = new IsActiveContext(subject, new Client(), "test-caller");
 
         // Act
-        await _service.IsActiveAsync(context);
+        await _service.IsActiveAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.IsActive, Is.False);
@@ -118,7 +118,7 @@ public class CustomProfileServiceTests
         var context = CreateIsActiveContext(string.Empty);
 
         // Act
-        await _service.IsActiveAsync(context);
+        await _service.IsActiveAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.IsActive, Is.False);
@@ -143,7 +143,7 @@ public class CustomProfileServiceTests
         _userService.GetUserByObjectIdAsync(userObjectId).Returns(userResponse);
 
         // Act
-        await _service.IsActiveAsync(context);
+        await _service.IsActiveAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.IsActive, Is.False);
@@ -168,7 +168,7 @@ public class CustomProfileServiceTests
         _userService.GetUserByObjectIdAsync(userObjectId).Returns(userResponse);
 
         // Act
-        await _service.IsActiveAsync(context);
+        await _service.IsActiveAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.IsActive, Is.False);
@@ -194,7 +194,7 @@ public class CustomProfileServiceTests
         _userService.GetUserByObjectIdAsync(userObjectId).Returns(userResponse);
 
         // Act
-        await _service.IsActiveAsync(context);
+        await _service.IsActiveAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.IsActive, Is.True);
@@ -211,7 +211,7 @@ public class CustomProfileServiceTests
         _userService.GetUserByObjectIdAsync(userObjectId).ThrowsAsync(new Exception("Service error"));
 
         // Act
-        await _service.IsActiveAsync(context);
+        await _service.IsActiveAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.IsActive, Is.False);
@@ -238,7 +238,7 @@ public class CustomProfileServiceTests
         var context = TestHelpers.CreateProfileDataRequestContext(IdentityServerConstants.ProfileDataCallers.ClaimsProviderAccessToken);
 
         // Act
-        await _service.GetProfileDataAsync(context);
+        await _service.GetProfileDataAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.IssuedClaims, Is.Not.Null);
@@ -390,7 +390,7 @@ public class CustomProfileServiceTests
     {
         // Arrange
         var context = TestHelpers.CreateProfileDataRequestContext();
-        context.Client = new Client { ClientId = "client1" };
+        context.Subject = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim> { new("client_id", "client1") }));
         var claim = new Claim(ClaimNames.UserObjectId, "123");
         var claims = new[] { new Claim("role", "client") };
         _clientRoleMapper.ProcessClientRoleMappingsForUserAsync("client1", "123")

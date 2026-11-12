@@ -142,7 +142,7 @@ public class LoopbackDynamicPortRedirectUriValidatorTests
         };
 
         // Act
-        var result = await _validator.IsPostLogoutRedirectUriValidAsync(actualUri, client);
+        var result = await _validator.IsPostLogoutRedirectUriValidAsync(actualUri, client, CancellationToken.None);
 
         // Assert
         Assert.That(result, Is.EqualTo(expectedResult));

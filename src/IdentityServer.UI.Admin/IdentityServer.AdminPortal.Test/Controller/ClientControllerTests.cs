@@ -95,7 +95,7 @@ public class ClientControllerTests : ControllerTestBase
         _ = await _clientController.Call_CreateClientAsync(client, Admin);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientController.Call_CreateClientAsync(client, Admin));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientController.Call_CreateClientAsync(client, Admin));
     }
 
     [Test]
@@ -114,7 +114,7 @@ public class ClientControllerTests : ControllerTestBase
         });
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityReferenceException>(() => _clientController.Call_DeleteClientAsync(createdClient.Id, Admin));
+        await Assert.ThrowsAsync<EntityReferenceException>(() => _clientController.Call_DeleteClientAsync(createdClient.Id, Admin));
     }
 
     [Test]

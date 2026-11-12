@@ -66,15 +66,13 @@ namespace IdentityServer.Core.Serilog.Test
                 Assert.That(result.Event, Is.Not.Null);
                 Assert.That(result.Event.Id, Is.EqualTo("req-123"));
 
-                Assert.That(result.Trace, Is.Not.Null);
-                Assert.That(result.Trace.Id, Is.EqualTo("11111111-1111-1111-1111-111111111111"));
+                Assert.That(result.TraceId, Is.EqualTo("11111111-1111-1111-1111-111111111111"));
 
                 Assert.That(result.Process, Is.Not.Null);
                 Assert.That(result.Process.Pid, Is.EqualTo(42));
                 Assert.That(result.Process.Name, Is.EqualTo("proc-name"));
-                Assert.That(result.Process.Thread, Is.Not.Null);
-                Assert.That(result.Process.Thread.Id, Is.EqualTo(7));
-                Assert.That(result.Process.Thread.Name, Is.EqualTo("thread-1"));
+                Assert.That(result.Process.ThreadId, Is.EqualTo(7));
+                Assert.That(result.Process.ThreadName, Is.EqualTo("thread-1"));
 
                 Assert.That(result.Host, Is.Not.Null);
                 Assert.That(result.Host.Name, Is.EqualTo("MACHINE"));

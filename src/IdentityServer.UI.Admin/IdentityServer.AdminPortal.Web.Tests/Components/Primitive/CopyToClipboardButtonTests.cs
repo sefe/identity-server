@@ -28,7 +28,7 @@ public class CopyToClipboardButtonTests
         ctx.Services.AddSingleton(Substitute.For<ILogger<CopyToClipboardButton>>());
 
         // Act
-        var cut = ctx.RenderComponent<CopyToClipboardButton>(parameters => parameters
+        var cut = ctx.Render<CopyToClipboardButton>(parameters => parameters
             .Add(p => p.ValueToCopy, "test value"));
 
         // Assert
@@ -46,7 +46,7 @@ public class CopyToClipboardButtonTests
         ctx.Services.AddSingleton(Substitute.For<NotificationService>());
         ctx.Services.AddSingleton(Substitute.For<ILogger<CopyToClipboardButton>>());
 
-        var cut = ctx.RenderComponent<CopyToClipboardButton>(parameters => parameters
+        var cut = ctx.Render<CopyToClipboardButton>(parameters => parameters
             .Add(p => p.ValueToCopy, ""));
 
         // Act
@@ -63,7 +63,7 @@ public class CopyToClipboardButtonTests
         using var ctx = new Bunit.TestContext();
         var clipboardService = SetupDependencies(ctx);
         var value = "copy me";
-        var cut = ctx.RenderComponent<CopyToClipboardButton>(parameters => parameters
+        var cut = ctx.Render<CopyToClipboardButton>(parameters => parameters
             .Add(p => p.ValueToCopy, value));
 
         // Act
@@ -80,7 +80,7 @@ public class CopyToClipboardButtonTests
         using var ctx = new TestContext();
         var clipboardService = SetupDependencies(ctx);
         var value = "copy me";
-        var cut = ctx.RenderComponent<CopyToClipboardButton>(parameters => parameters
+        var cut = ctx.Render<CopyToClipboardButton>(parameters => parameters
             .Add(p => p.ValueToCopy, value));
 
         // Act
@@ -100,7 +100,7 @@ public class CopyToClipboardButtonTests
         var clipboardService = SetupDependencies(ctx);
         clipboardService.CopyToClipboard(Arg.Any<string>()).ThrowsAsync<ArgumentException>();
         var value = "copy me";
-        var cut = ctx.RenderComponent<CopyToClipboardButton>(parameters => parameters
+        var cut = ctx.Render<CopyToClipboardButton>(parameters => parameters
             .Add(p => p.ValueToCopy, value));
 
         // Act
@@ -127,3 +127,4 @@ public class CopyToClipboardButtonTests
         return clipboardService;
     }
 }
+

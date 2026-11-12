@@ -49,7 +49,7 @@ public class ApiResourceRoleMapListItemTests
         _mockStorageService.GetItem<int?>(Arg.Any<string>()).Returns(cachedPageSize);
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ApiResourceRoleMapListItem>(childParameters => childParameters
                 .Add(p => p.MapType, roleMapType)
                 .Add(p => p.MappedRoles, CreateMappedRoles(roleMapType))
@@ -74,7 +74,7 @@ public class ApiResourceRoleMapListItemTests
         _mockStorageService.GetItem<int?>(Arg.Any<string>()).Returns(10);
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ApiResourceRoleMapListItem>(childParameters => childParameters
                 .Add(p => p.MapType, roleMapType)
                 .Add(p => p.IsReadonly, false)
@@ -102,7 +102,7 @@ public class ApiResourceRoleMapListItemTests
         _mockStorageService.GetItem<int?>(Arg.Any<string>()).Returns(10);
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ApiResourceRoleMapListItem>(childParameters => childParameters
                 .Add(p => p.MapType, roleMapType)
                 .Add(p => p.IsReadonly, true)
@@ -124,7 +124,7 @@ public class ApiResourceRoleMapListItemTests
     {
         // Arrange
         var createNewCalled = false;
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ApiResourceRoleMapListItem>(childParameters => childParameters
             .Add(p => p.MapType, RoleMapType.ClientId)
             .Add(p => p.MappedRoles, new List<ApiResourceMappedRole>())
@@ -147,7 +147,7 @@ public class ApiResourceRoleMapListItemTests
         var mappedRoles = CreateMappedRoles();
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ApiResourceRoleMapListItem>(childParameters => childParameters
             .Add(p => p.MapType, RoleMapType.ClientId)
             .Add(p => p.MappedRoles, mappedRoles)
@@ -173,7 +173,7 @@ public class ApiResourceRoleMapListItemTests
         _mockStorageService.GetItem<int?>(Arg.Any<string>()).Throws(new InvalidOperationException("Pre-rendering error"));
 
         // Act & Assert - Should not throw
-        var cut = _ctx.RenderComponent<ApiResourceRoleMapListItem>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleMapListItem>(parameters => parameters
             .Add(p => p.MapType, RoleMapType.ClientId)
             .Add(p => p.MappedRoles, new List<ApiResourceMappedRole>())
             .Add(p => p.OnCreateNew, EventCallback.Factory.Create(this, () => { }))
@@ -187,7 +187,7 @@ public class ApiResourceRoleMapListItemTests
     public void Component_WhenNoMappedRoles_RendersNoDataMessage()
     {
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ApiResourceRoleMapListItem>(childParameters => childParameters
             .Add(p => p.MapType, RoleMapType.ClientId)
             .Add(p => p.MappedRoles, new List<ApiResourceMappedRole>())
@@ -211,7 +211,7 @@ public class ApiResourceRoleMapListItemTests
         ApiResourcePropertyRoleMappingDtoRead deletedMapping = null;
         var mappedRoles = CreateMappedRoles();
 
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ApiResourceRoleMapListItem>(childParameters => childParameters
             .Add(p => p.MapType, RoleMapType.ClientId)
             .Add(p => p.MappedRoles, mappedRoles)
@@ -269,3 +269,4 @@ public class ApiResourceRoleMapListItemTests
         };
     }
 }
+

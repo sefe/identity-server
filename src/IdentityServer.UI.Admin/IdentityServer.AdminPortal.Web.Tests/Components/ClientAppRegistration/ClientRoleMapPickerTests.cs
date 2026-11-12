@@ -49,7 +49,7 @@ public class ClientRoleMapPickerTests
     public void Render_WhenClosed_DoesNotRenderOffcanvas()
     {
         // Arrange & Act
-        var cut = _ctx.RenderComponent<ClientRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ClientRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, _testRoles));
 
         // Assert
@@ -62,7 +62,7 @@ public class ClientRoleMapPickerTests
     {
         // Arrange
         var roleMapping = new ClientRoleMappingDtoCreateBuilder(roleMapType).Build();
-        var cut = _ctx.RenderComponent<ClientRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ClientRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, _testRoles));
 
         // Act
@@ -77,7 +77,7 @@ public class ClientRoleMapPickerTests
     public async Task OpenRoleMappingPicker_WhenOpened_ShowsRoleSelection()
     {
         var roleMapping = new ClientRoleMappingDtoCreateBuilder(ClientRoleMapType.SecurityGroup).Build();
-        var cut = _ctx.RenderComponent<ClientRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ClientRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, _testRoles));
 
         // Act
@@ -99,7 +99,7 @@ public class ClientRoleMapPickerTests
     {
         // Arrange
         var roleMapping = new ClientRoleMappingDtoCreateBuilder(ClientRoleMapType.SecurityGroup).Build();
-        var cut = _ctx.RenderComponent<ClientRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ClientRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, _testRoles));
         await cut.InvokeAsync(() => cut.Instance.OpenRoleMappingPicker(roleMapping));
 
@@ -116,7 +116,7 @@ public class ClientRoleMapPickerTests
     {
         // Arrange
         var roleMapping = new ClientRoleMappingDtoCreateBuilder(ClientRoleMapType.SecurityGroup).Build();
-        var cut = _ctx.RenderComponent<ClientRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ClientRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, _testRoles));
         await cut.InvokeAsync(() => cut.Instance.OpenRoleMappingPicker(roleMapping));
 
@@ -133,7 +133,7 @@ public class ClientRoleMapPickerTests
     {
         // Arrange
         var roleMapping = new ClientRoleMappingDtoCreateBuilder(ClientRoleMapType.SecurityGroup).Build();
-        var cut = _ctx.RenderComponent<ClientRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ClientRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, _testRoles));
         await cut.InvokeAsync(() => cut.Instance.OpenRoleMappingPicker(roleMapping));
 
@@ -150,7 +150,7 @@ public class ClientRoleMapPickerTests
     {
         // Arrange
         var roleMapping = new ClientRoleMappingDtoCreateBuilder(ClientRoleMapType.UserObjectId).Build();
-        var cut = _ctx.RenderComponent<ClientRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ClientRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, _testRoles));
         await cut.InvokeAsync(() => cut.Instance.OpenRoleMappingPicker(roleMapping));
 
@@ -171,7 +171,7 @@ public class ClientRoleMapPickerTests
 
         var roleMapping = new ClientRoleMappingDtoCreateBuilder(ClientRoleMapType.SecurityGroup).Build();
 
-        var cut = _ctx.RenderComponent<ClientRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ClientRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, _testRoles)
             .Add(p => p.OnRoleMappingConfirmed, EventCallback.Factory.Create<ClientPropertyRoleMappingDtoCreate>(this, mapping =>
             {
@@ -210,7 +210,7 @@ public class ClientRoleMapPickerTests
 
         var roleMapping = new ClientRoleMappingDtoCreateBuilder(ClientRoleMapType.UserObjectId).Build();
 
-        var cut = _ctx.RenderComponent<ClientRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ClientRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, _testRoles)
             .Add(p => p.OnRoleMappingConfirmed, EventCallback.Factory.Create<ClientPropertyRoleMappingDtoCreate>(this, mapping =>
             {
@@ -245,7 +245,7 @@ public class ClientRoleMapPickerTests
         var rolesWithMappings = CreateTestRolesWithMappings();
         var roleMapping = new ClientRoleMappingDtoCreateBuilder(ClientRoleMapType.SecurityGroup).Build();
 
-        var cut = _ctx.RenderComponent<ClientRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ClientRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, rolesWithMappings));
         await cut.InvokeAsync(() => cut.Instance.OpenRoleMappingPicker(roleMapping));
 
@@ -270,7 +270,7 @@ public class ClientRoleMapPickerTests
         var rolesWithMappings = CreateTestRolesWithMappings();
         var roleMapping = new ClientRoleMappingDtoCreateBuilder(ClientRoleMapType.UserObjectId).Build();
 
-        var cut = _ctx.RenderComponent<ClientRoleMapPicker>(parameters => parameters
+        var cut = _ctx.Render<ClientRoleMapPicker>(parameters => parameters
             .Add(p => p.ExistingRoles, rolesWithMappings));
         await cut.InvokeAsync(() => cut.Instance.OpenRoleMappingPicker(roleMapping));
 
@@ -356,3 +356,4 @@ public class ClientRoleMapPickerTests
                .SetResult(new { width = 100, height = 100 });
     }
 }
+

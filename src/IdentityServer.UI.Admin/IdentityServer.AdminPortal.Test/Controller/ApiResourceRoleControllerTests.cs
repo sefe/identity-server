@@ -46,13 +46,13 @@ public class ApiResourceRoleControllerTests : ControllerTestBase
     }
 
     [Test]
-    public void CreateRole_WithMissingApiResource_Fails()
+    public async Task CreateRole_WithMissingApiResource_Fails()
     {
         // Arrange
         var newRole = ApiResourceRoleControllerExtensions.NewRoleFor(999, "TestRole");
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityNotFoundException>(() => _apiResourceRoleController.Call_AddApiResourceRoleAsync(newRole, Admin));
+        await Assert.ThrowsAsync<EntityNotFoundException>(() => _apiResourceRoleController.Call_AddApiResourceRoleAsync(newRole, Admin));
     }
 
     [Test]
@@ -93,7 +93,7 @@ public class ApiResourceRoleControllerTests : ControllerTestBase
         await _apiResourceRoleController.Call_AddApiResourceRoleAsync(newRole, Admin);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _apiResourceRoleController.Call_AddApiResourceRoleAsync(newRole, Admin));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _apiResourceRoleController.Call_AddApiResourceRoleAsync(newRole, Admin));
     }
 
     [Test]

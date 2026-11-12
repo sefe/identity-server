@@ -17,7 +17,7 @@ public class AuthenticationSchemeTokenValidator : ITokenValidator
         _serviceProvider = serviceProvider;
     }
 
-    public async Task<TokenValidationResult> ValidateAccessTokenAsync(string token, string? expectedScope = null)
+    public async Task<TokenValidationResult> ValidateAccessTokenAsync(string token, string? expectedScope, CancellationToken cancellationToken)
     {
         // Create a mock HTTP context to use the authentication handler
         var httpContext = new DefaultHttpContext
@@ -45,7 +45,7 @@ public class AuthenticationSchemeTokenValidator : ITokenValidator
         return new TokenValidationResult { IsError = false, Claims = result.Principal.Claims };
     }
 
-    public Task<TokenValidationResult> ValidateIdentityTokenAsync(string token, string? clientId = null, bool validateLifetime = true)
+    public Task<TokenValidationResult> ValidateIdentityTokenAsync(string token, string? clientId, bool validateLifetime, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }

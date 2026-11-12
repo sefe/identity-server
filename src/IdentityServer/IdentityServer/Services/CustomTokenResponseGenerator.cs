@@ -12,18 +12,18 @@ namespace IdentityServer.Services;
 public class CustomTokenResponseGenerator : TokenResponseGenerator
 {
     public CustomTokenResponseGenerator(
-        IClock clock,
+        TimeProvider timeProvider,
         ITokenService tokenService,
         IRefreshTokenService refreshTokenService,
         IScopeParser scopeParser,
         IResourceStore resources,
         IClientStore clients,
         ILogger<CustomTokenResponseGenerator> logger)
-        : base(clock, tokenService, refreshTokenService, scopeParser, resources, clients, logger)
+        : base(timeProvider, tokenService, refreshTokenService, scopeParser, resources, clients, logger)
     {
     }
 
-    protected override Task<TokenResponse> ProcessTokenRequestAsync(TokenRequestValidationResult validationResult)
+    protected override Task<TokenResponse> ProcessTokenRequestAsync(TokenRequestValidationResult validationResult, CancellationToken cancellationToken)
     {
         if (validationResult.CustomResponse != null &&
             validationResult.CustomResponse.TryGetValue(Abstraction.Constants.TokenExchange.AccessTokenLifetimeTemporaryClaimName, out var lifetimeObj) &&
@@ -32,6 +32,6 @@ public class CustomTokenResponseGenerator : TokenResponseGenerator
         {
             validationResult.ValidatedRequest.AccessTokenLifetime = lifetimeParsed;
         }
-        return base.ProcessTokenRequestAsync(validationResult);
+        return base.ProcessTokenRequestAsync(validationResult, cancellationToken);
     }
 }

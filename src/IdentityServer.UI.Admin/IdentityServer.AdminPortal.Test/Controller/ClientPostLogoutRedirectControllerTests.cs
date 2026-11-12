@@ -71,7 +71,7 @@ public class ClientPostLogoutRedirectControllerTests : ControllerTestBase
         await _clientPostLogoutRedirectController.Call_AddClientPostLogoutRedirectAsync(client.Id, originalUri, Contributor);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientPostLogoutRedirectController.Call_AddClientPostLogoutRedirectAsync(client.Id, caseDifferentUri, Contributor));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientPostLogoutRedirectController.Call_AddClientPostLogoutRedirectAsync(client.Id, caseDifferentUri, Contributor));
     }
 
     [Test]

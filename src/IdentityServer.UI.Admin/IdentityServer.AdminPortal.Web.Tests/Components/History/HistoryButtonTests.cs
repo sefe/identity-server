@@ -33,7 +33,7 @@ public class HistoryButtonTests
     public void Component_WithApplicationId_RendersButtonWithDefaultText()
     {
         // Arrange & Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<HistoryButton>(childParameters => childParameters
                 .Add(p => p.ApplicationId, 123)));
 
@@ -46,7 +46,7 @@ public class HistoryButtonTests
     public void Component_WithCustomButtonText_DisplaysCustomText()
     {
         // Arrange & Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<HistoryButton>(childParameters => childParameters
                 .Add(p => p.ApplicationId, 123)
                 .Add(p => p.ButtonText, "View History")));
@@ -60,7 +60,7 @@ public class HistoryButtonTests
     public void Component_WithDefaultSize_UsesSmallSize()
     {
         // Arrange & Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<HistoryButton>(childParameters => childParameters
                 .Add(p => p.ApplicationId, 123)));
 
@@ -73,7 +73,7 @@ public class HistoryButtonTests
     public void Component_WithCustomSize_UsesCustomSize()
     {
         // Arrange & Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<HistoryButton>(childParameters => childParameters
                 .Add(p => p.ApplicationId, 123)
                 .Add(p => p.Size, "medium")));
@@ -87,7 +87,7 @@ public class HistoryButtonTests
     public void NavigateToHistory_WithApplicationId_NavigatesToCorrectUrl()
     {
         // Arrange
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<HistoryButton>(childParameters => childParameters
                 .Add(p => p.ApplicationId, 42)));
 
@@ -103,7 +103,7 @@ public class HistoryButtonTests
     public void NavigateToHistory_WithApiResourceId_NavigatesToCorrectUrl()
     {
         // Arrange
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<HistoryButton>(childParameters => childParameters
                 .Add(p => p.ApiResourceId, 99)));
 
@@ -119,7 +119,7 @@ public class HistoryButtonTests
     public void NavigateToHistory_WithSystemPermissionId_NavigatesToCorrectUrl()
     {
         // Arrange
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<HistoryButton>(childParameters => childParameters
                 .Add(p => p.SystemPermissionId, 7)));
 
@@ -135,7 +135,7 @@ public class HistoryButtonTests
     public void NavigateToHistory_WithApplicationIdAndEntityTypeFilter_AppendsQueryString()
     {
         // Arrange
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<HistoryButton>(childParameters => childParameters
                 .Add(p => p.ApplicationId, 10)
                 .Add(p => p.EntityTypeFilter, "Role")));
@@ -152,7 +152,7 @@ public class HistoryButtonTests
     public void NavigateToHistory_WithApplicationIdAndEntityIdFilter_AppendsQueryString()
     {
         // Arrange
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<HistoryButton>(childParameters => childParameters
                 .Add(p => p.ApplicationId, 10)
                 .Add(p => p.EntityIdFilter, "entity-123")));
@@ -169,7 +169,7 @@ public class HistoryButtonTests
     public void NavigateToHistory_WithApplicationIdAndBothFilters_AppendsBothQueryStrings()
     {
         // Arrange
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<HistoryButton>(childParameters => childParameters
                 .Add(p => p.ApplicationId, 10)
                 .Add(p => p.EntityTypeFilter, "Role")
@@ -187,7 +187,7 @@ public class HistoryButtonTests
     public void NavigateToHistory_WithApiResourceIdAndBothFilters_AppendsBothQueryStrings()
     {
         // Arrange
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<HistoryButton>(childParameters => childParameters
                 .Add(p => p.ApiResourceId, 5)
                 .Add(p => p.EntityTypeFilter, "Scope")
@@ -205,7 +205,7 @@ public class HistoryButtonTests
     public void NavigateToHistory_WithSystemPermissionIdAndBothFilters_AppendsBothQueryStrings()
     {
         // Arrange
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<HistoryButton>(childParameters => childParameters
                 .Add(p => p.SystemPermissionId, 3)
                 .Add(p => p.EntityTypeFilter, "Permission")
@@ -223,7 +223,7 @@ public class HistoryButtonTests
     public void NavigateToHistory_WithSpecialCharactersInEntityTypeFilter_EscapesQueryString()
     {
         // Arrange
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<HistoryButton>(childParameters => childParameters
                 .Add(p => p.ApplicationId, 10)
                 .Add(p => p.EntityTypeFilter, "Role & Permission")));
@@ -240,7 +240,7 @@ public class HistoryButtonTests
     public void NavigateToHistory_WithSpecialCharactersInEntityIdFilter_EscapesQueryString()
     {
         // Arrange
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<HistoryButton>(childParameters => childParameters
                 .Add(p => p.ApplicationId, 10)
                 .Add(p => p.EntityIdFilter, "entity/with/slashes")));
@@ -258,7 +258,7 @@ public class HistoryButtonTests
     {
         // Arrange
         var initialUri = _navigationManager.LastNavigatedUri;
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<HistoryButton>());
 
         // Act
@@ -273,7 +273,7 @@ public class HistoryButtonTests
     public void NavigateToHistory_WithMultipleIds_UsesFirstNonNullId()
     {
         // Arrange - ApplicationId should take precedence
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<HistoryButton>(childParameters => childParameters
                 .Add(p => p.ApplicationId, 1)
                 .Add(p => p.ApiResourceId, 2)
@@ -291,7 +291,7 @@ public class HistoryButtonTests
     public void NavigateToHistory_WithOnlyApiResourceIdSet_UsesApiResourceRoute()
     {
         // Arrange
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<HistoryButton>(childParameters => childParameters
                 .Add(p => p.ApiResourceId, 2)
                 .Add(p => p.SystemPermissionId, 3)));
@@ -308,7 +308,7 @@ public class HistoryButtonTests
     public void NavigateToHistory_WithEmptyEntityTypeFilter_DoesNotAppendEntityType()
     {
         // Arrange
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<HistoryButton>(childParameters => childParameters
                 .Add(p => p.ApplicationId, 10)
                 .Add(p => p.EntityTypeFilter, string.Empty)
@@ -326,7 +326,7 @@ public class HistoryButtonTests
     public void NavigateToHistory_WithEmptyEntityIdFilter_DoesNotAppendEntityId()
     {
         // Arrange
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<HistoryButton>(childParameters => childParameters
                 .Add(p => p.ApplicationId, 10)
                 .Add(p => p.EntityTypeFilter, "Role")
@@ -357,3 +357,4 @@ public class HistoryButtonTests
         }
     }
 }
+

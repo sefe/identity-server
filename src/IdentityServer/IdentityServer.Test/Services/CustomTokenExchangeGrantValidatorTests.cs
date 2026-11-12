@@ -111,12 +111,12 @@ public class CustomTokenExchangeGrantValidatorTests
         var context = CreateContextWithRaw();
         var tokenValidator = Substitute.For<ITokenValidator>();
         var claims = new[] { new Claim(JwtClaimTypes.Email, "a@b.com") };
-        tokenValidator.ValidateAccessTokenAsync(Arg.Any<string>())
+        tokenValidator.ValidateAccessTokenAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(new TokenValidationResult { Claims = claims, IsError = false }));
         _validatorSelector.SelectValidator(Arg.Any<string>()).Returns(tokenValidator);
 
         // Act
-        var result = await _validator.ValidateSubjectTokenAsync("token", context);
+        var result = await _validator.ValidateSubjectTokenAsync("token", context, CancellationToken.None);
 
         // Assert
         using (Assert.EnterMultipleScope())
@@ -132,12 +132,12 @@ public class CustomTokenExchangeGrantValidatorTests
         // Arrange
         var context = CreateContextWithRaw();
         var tokenValidator = Substitute.For<ITokenValidator>();
-        tokenValidator.ValidateAccessTokenAsync(Arg.Any<string>())
+        tokenValidator.ValidateAccessTokenAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(new TokenValidationResult { IsError = true, Error = "err" }));
         _validatorSelector.SelectValidator(Arg.Any<string>()).Returns(tokenValidator);
 
         // Act
-        _ = await _validator.ValidateSubjectTokenAsync("token", context);
+        _ = await _validator.ValidateSubjectTokenAsync("token", context, CancellationToken.None);
 
         // Assert
         Assert.That(context.Result.IsError, Is.True);
@@ -149,12 +149,12 @@ public class CustomTokenExchangeGrantValidatorTests
         // Arrange
         var context = CreateContextWithRaw();
         var tokenValidator = Substitute.For<ITokenValidator>();
-        tokenValidator.ValidateAccessTokenAsync(Arg.Any<string>())
+        tokenValidator.ValidateAccessTokenAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(new TokenValidationResult { Claims = null }));
         _validatorSelector.SelectValidator(Arg.Any<string>()).Returns(tokenValidator);
 
         // Act
-        _ = await _validator.ValidateSubjectTokenAsync("token", context);
+        _ = await _validator.ValidateSubjectTokenAsync("token", context, CancellationToken.None);
 
         // Assert
         Assert.That(context.Result.IsError, Is.True);
@@ -489,7 +489,7 @@ public class CustomTokenExchangeGrantValidatorTests
         };
         var tokenValidationResult = new TokenValidationResult { Claims = claims, IsError = false };
         var tokenValidator = Substitute.For<ITokenValidator>();
-        tokenValidator.ValidateAccessTokenAsync(subjectToken)
+        tokenValidator.ValidateAccessTokenAsync(subjectToken, Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(tokenValidationResult));
         _validatorSelector.SelectValidator(subjectToken).Returns(tokenValidator);
 
@@ -508,7 +508,7 @@ public class CustomTokenExchangeGrantValidatorTests
         };
 
         // Act
-        await _validator.ValidateAsync(context);
+        await _validator.ValidateAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.Result, Is.Not.Null);
@@ -543,7 +543,7 @@ public class CustomTokenExchangeGrantValidatorTests
         };
         var tokenValidationResult = new TokenValidationResult { Claims = claims, IsError = false };
         var tokenValidator = Substitute.For<ITokenValidator>();
-        tokenValidator.ValidateAccessTokenAsync(subjectToken)
+        tokenValidator.ValidateAccessTokenAsync(subjectToken, Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(tokenValidationResult));
         _validatorSelector.SelectValidator(subjectToken).Returns(tokenValidator);
 
@@ -560,11 +560,11 @@ public class CustomTokenExchangeGrantValidatorTests
                 Secret = new ParsedSecret { Type = IdentityServerConstants.ParsedSecretTypes.SharedSecret }
             }
         };
-        _clientSecretValidator.ValidateAsync(context.Request.Client.ClientSecrets, context.Request.Secret)
+        _clientSecretValidator.ValidateAsync(context.Request.Client.ClientSecrets, context.Request.Secret, Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(new SecretValidationResult { Success = true }));
 
         // Act
-        await _validator.ValidateAsync(context);
+        await _validator.ValidateAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.Result, Is.Not.Null);
@@ -690,12 +690,12 @@ public class CustomTokenExchangeGrantValidatorTests
         var context = CreateContextWithActorRaw(actorToken: "actor-token", actorTokenType: Abstraction.Constants.TokenTypes.AccessToken);
         var tokenValidator = Substitute.For<ITokenValidator>();
         var claims = new[] { new Claim(JwtClaimTypes.Email, "actor@b.com") };
-        tokenValidator.ValidateAccessTokenAsync(Arg.Any<string>())
+        tokenValidator.ValidateAccessTokenAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(new TokenValidationResult { Claims = claims, IsError = false }));
         _validatorSelector.SelectValidator(Arg.Any<string>()).Returns(tokenValidator);
 
         // Act
-        var result = await _validator.ValidateActorTokenAsync("actor-token", context);
+        var result = await _validator.ValidateActorTokenAsync("actor-token", context, CancellationToken.None);
 
         // Assert
         using (Assert.EnterMultipleScope())
@@ -711,12 +711,12 @@ public class CustomTokenExchangeGrantValidatorTests
         // Arrange
         var context = CreateContextWithActorRaw(actorToken: "actor-token", actorTokenType: Abstraction.Constants.TokenTypes.AccessToken);
         var tokenValidator = Substitute.For<ITokenValidator>();
-        tokenValidator.ValidateAccessTokenAsync(Arg.Any<string>())
+        tokenValidator.ValidateAccessTokenAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(new TokenValidationResult { IsError = true, Error = "err" }));
         _validatorSelector.SelectValidator(Arg.Any<string>()).Returns(tokenValidator);
 
         // Act
-        var result = await _validator.ValidateActorTokenAsync("actor-token", context);
+        var result = await _validator.ValidateActorTokenAsync("actor-token", context, CancellationToken.None);
 
         // Assert
         using (Assert.EnterMultipleScope())
@@ -732,12 +732,12 @@ public class CustomTokenExchangeGrantValidatorTests
         // Arrange
         var context = CreateContextWithActorRaw(actorToken: "actor-token", actorTokenType: Abstraction.Constants.TokenTypes.AccessToken);
         var tokenValidator = Substitute.For<ITokenValidator>();
-        tokenValidator.ValidateAccessTokenAsync(Arg.Any<string>())
+        tokenValidator.ValidateAccessTokenAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(new TokenValidationResult { Claims = null }));
         _validatorSelector.SelectValidator(Arg.Any<string>()).Returns(tokenValidator);
 
         // Act
-        var result = await _validator.ValidateActorTokenAsync("actor-token", context);
+        var result = await _validator.ValidateActorTokenAsync("actor-token", context, CancellationToken.None);
 
         // Assert
         using (Assert.EnterMultipleScope())
@@ -975,7 +975,7 @@ public class CustomTokenExchangeGrantValidatorTests
         };
         var tokenValidationResult = new TokenValidationResult { Claims = claims, IsError = false };
         var tokenValidator = Substitute.For<ITokenValidator>();
-        tokenValidator.ValidateAccessTokenAsync(subjectToken)
+        tokenValidator.ValidateAccessTokenAsync(subjectToken, Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(tokenValidationResult));
         _validatorSelector.SelectValidator(subjectToken).Returns(tokenValidator);
 
@@ -989,7 +989,7 @@ public class CustomTokenExchangeGrantValidatorTests
         };
         var actorValidationResult = new TokenValidationResult { Claims = actorClaims, IsError = false };
         var actorValidator = Substitute.For<ITokenValidator>();
-        actorValidator.ValidateAccessTokenAsync(actorToken)
+        actorValidator.ValidateAccessTokenAsync(actorToken, Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(actorValidationResult));
         _validatorSelector.SelectValidator(actorToken).Returns(actorValidator);
 
@@ -1010,7 +1010,7 @@ public class CustomTokenExchangeGrantValidatorTests
         };
 
         // Act
-        await _validator.ValidateAsync(context);
+        await _validator.ValidateAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.Result, Is.Not.Null);
@@ -1130,7 +1130,7 @@ public class CustomTokenExchangeGrantValidatorTests
         };
         var tokenValidationResult = new TokenValidationResult { Claims = claims, IsError = false };
         var tokenValidator = Substitute.For<ITokenValidator>();
-        tokenValidator.ValidateAccessTokenAsync(subjectToken)
+        tokenValidator.ValidateAccessTokenAsync(subjectToken, Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(tokenValidationResult));
         _validatorSelector.SelectValidator(subjectToken).Returns(tokenValidator);
 
@@ -1145,7 +1145,7 @@ public class CustomTokenExchangeGrantValidatorTests
         };
         var actorValidationResult = new TokenValidationResult { Claims = actorClaims, IsError = false };
         var actorValidator = Substitute.For<ITokenValidator>();
-        actorValidator.ValidateAccessTokenAsync(actorToken)
+        actorValidator.ValidateAccessTokenAsync(actorToken, Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(actorValidationResult));
         _validatorSelector.SelectValidator(actorToken).Returns(actorValidator);
 
@@ -1166,7 +1166,7 @@ public class CustomTokenExchangeGrantValidatorTests
         };
 
         // Act
-        await _validator.ValidateAsync(context);
+        await _validator.ValidateAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.Result, Is.Not.Null);

@@ -25,7 +25,7 @@ public class BannerSecretNoExpirationTests
         };
 
         // Act
-        var cut = ctx.RenderComponent<BannerSecretNoExpiration>(parameters => parameters
+        var cut = ctx.Render<BannerSecretNoExpiration>(parameters => parameters
             .Add(p => p.Secrets, secrets));
 
         // Assert
@@ -44,7 +44,7 @@ public class BannerSecretNoExpirationTests
         };
 
         // Act
-        var cut = ctx.RenderComponent<BannerSecretNoExpiration>(parameters => parameters
+        var cut = ctx.Render<BannerSecretNoExpiration>(parameters => parameters
             .Add(p => p.Secrets, secrets));
 
         // Assert
@@ -67,7 +67,7 @@ public class BannerSecretNoExpirationTests
         };
 
         // Act
-        var cut = ctx.RenderComponent<BannerSecretNoExpiration>(parameters => parameters
+        var cut = ctx.Render<BannerSecretNoExpiration>(parameters => parameters
             .Add(p => p.Secrets, secrets));
 
         // Assert
@@ -86,7 +86,7 @@ public class BannerSecretNoExpirationTests
         };
 
         // Act
-        var cut = ctx.RenderComponent<BannerSecretNoExpiration>(parameters => parameters
+        var cut = ctx.Render<BannerSecretNoExpiration>(parameters => parameters
             .Add(p => p.Secrets, secrets));
 
         // Assert
@@ -104,7 +104,7 @@ public class BannerSecretNoExpirationTests
             new() { Expiration = null }
         };
 
-        var cut = ctx.RenderComponent<BannerSecretNoExpiration>(parameters => parameters
+        var cut = ctx.Render<BannerSecretNoExpiration>(parameters => parameters
             .Add(p => p.Secrets, secrets));
 
         // Act
@@ -129,7 +129,7 @@ public class BannerSecretNoExpirationTests
         };
 
         // Act
-        var cut = ctx.RenderComponent<BannerSecretNoExpiration>(parameters => parameters
+        var cut = ctx.Render<BannerSecretNoExpiration>(parameters => parameters
             .Add(p => p.Secrets, secrets));
 
         // Assert
@@ -145,7 +145,7 @@ public class BannerSecretNoExpirationTests
         var secrets = new List<TestSecret>();
 
         // Act
-        var cut = ctx.RenderComponent<BannerSecretNoExpiration>(parameters => parameters
+        var cut = ctx.Render<BannerSecretNoExpiration>(parameters => parameters
             .Add(p => p.Secrets, secrets));
 
         // Assert
@@ -166,10 +166,11 @@ public class BannerSecretNoExpirationTests
         };
 
         // Act
-        var cut = ctx.RenderComponent<BannerSecretNoExpiration>(parameters => parameters
+        var cut = ctx.Render<BannerSecretNoExpiration>(parameters => parameters
             .Add(p => p.Secrets, secrets));
 
         // Assert
         Assert.That(cut.Markup, Does.Contain("1 secret exists"));
     }
 }
+

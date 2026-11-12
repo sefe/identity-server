@@ -101,7 +101,7 @@ public class PermissionEnvironmentSecurityTests : PermissionSecurityTestBase
         }
         else
         {
-            Assert.ThrowsAsync<EntityAccessException>(() => _envController.Call_CreateSystemPermissionEnvironmentAsync(newEnvironment, user));
+            await Assert.ThrowsAsync<EntityAccessException>(() => _envController.Call_CreateSystemPermissionEnvironmentAsync(newEnvironment, user));
         }
     }
 
@@ -156,7 +156,7 @@ public class PermissionEnvironmentSecurityTests : PermissionSecurityTestBase
         }
         else
         {
-            Assert.ThrowsAsync<EntityAccessException>(() => _envController.Call_DeleteSystemPermissionEnvironmentByIdAsync(envToRemove.Id, user));
+            await Assert.ThrowsAsync<EntityAccessException>(() => _envController.Call_DeleteSystemPermissionEnvironmentByIdAsync(envToRemove.Id, user));
         }
     }
 
@@ -224,7 +224,7 @@ public class PermissionEnvironmentSecurityTests : PermissionSecurityTestBase
         }
         else
         {
-            Assert.ThrowsAsync<EntityAccessException>(() => _roleController.Call_CreateSystemPermissionRoleAsync(assignment1, user));
+            await Assert.ThrowsAsync<EntityAccessException>(() => _roleController.Call_CreateSystemPermissionRoleAsync(assignment1, user));
         }
     }
 
@@ -278,7 +278,7 @@ public class PermissionEnvironmentSecurityTests : PermissionSecurityTestBase
         }
         else
         {
-            Assert.ThrowsAsync(Is.TypeOf(exceptionType), () => _roleController.Call_DeleteSystemPermissionRoleByIdAsync(permissionToDelete.Id, user));
+            await Assert.ThrowsAsync(Is.TypeOf(exceptionType), () => _roleController.Call_DeleteSystemPermissionRoleByIdAsync(permissionToDelete.Id, user));
         }
     }
 }

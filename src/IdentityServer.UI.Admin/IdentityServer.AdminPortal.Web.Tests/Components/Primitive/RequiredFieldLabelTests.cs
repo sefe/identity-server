@@ -17,7 +17,7 @@ public class RequiredFieldLabelTests : Bunit.TestContext
         var forTarget = "inputId";
 
         // Act
-        var cut = RenderComponent<RequiredFieldLabel>(parameters => parameters
+        var cut = Render<RequiredFieldLabel>(parameters => parameters
             .Add(p => p.LabelText, labelText)
             .Add(p => p.ForTarget, forTarget)
         );
@@ -26,3 +26,4 @@ public class RequiredFieldLabelTests : Bunit.TestContext
         cut.Find("label").MarkupMatches($"<label for=\"{forTarget}\" class=\"k-label k-form-label\">{labelText}<span style=\"color:red\">&nbsp;*</span></label>");
     }
 }
+

@@ -17,7 +17,7 @@ public class ClientGrantItemListTests : Bunit.TestContext
     public void Renders_Label_And_None_When_Items_Is_Null()
     {
         // Arrange & Act
-        var cut = RenderComponent<ClientGrantItemList>(parameters => parameters
+        var cut = Render<ClientGrantItemList>(parameters => parameters
             .Add(p => p.Label, _labelText)
             .Add(p => p.Items, null)
         );
@@ -40,7 +40,7 @@ public class ClientGrantItemListTests : Bunit.TestContext
     public void Renders_Label_And_None_When_Items_Is_Empty()
     {
         // Arrange & Act
-        var cut = RenderComponent<ClientGrantItemList>(parameters => parameters
+        var cut = Render<ClientGrantItemList>(parameters => parameters
             .Add(p => p.Label, _labelText)
             .Add(p => p.Items, Enumerable.Empty<ClientGrantItemListItem>())
         );
@@ -70,7 +70,7 @@ public class ClientGrantItemListTests : Bunit.TestContext
         };
 
         // Act
-        var cut = RenderComponent<ClientGrantItemList>(parameters => parameters
+        var cut = Render<ClientGrantItemList>(parameters => parameters
             .Add(p => p.Label, _labelText)
             .Add(p => p.Items, items)
         );
@@ -97,7 +97,7 @@ public class ClientGrantItemListTests : Bunit.TestContext
         };
 
         // Act
-        var cut = RenderComponent<ClientGrantItemList>(parameters => parameters
+        var cut = Render<ClientGrantItemList>(parameters => parameters
             .Add(p => p.Label, _labelText)
             .Add(p => p.Items, items)
             .Add(p => p.IsAdd, true)
@@ -122,7 +122,7 @@ public class ClientGrantItemListTests : Bunit.TestContext
         };
 
         // Act
-        var cut = RenderComponent<ClientGrantItemList>(parameters => parameters
+        var cut = Render<ClientGrantItemList>(parameters => parameters
             .Add(p => p.Label, _labelText)
             .Add(p => p.Items, items)
             .Add(p => p.IsReadonly, true)
@@ -138,3 +138,4 @@ public class ClientGrantItemListTests : Bunit.TestContext
         }
     }
 }
+

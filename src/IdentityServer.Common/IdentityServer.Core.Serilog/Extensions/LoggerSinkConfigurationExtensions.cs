@@ -32,6 +32,7 @@ public static class LoggerSinkConfigurationExtensions
             sinkConfig.LogEventsInBatchLimit,
             sinkConfig.BatchSizeLimitBytes,
             period,
+            false,
             textFormatter,
             batchFormatter,
             httpClient

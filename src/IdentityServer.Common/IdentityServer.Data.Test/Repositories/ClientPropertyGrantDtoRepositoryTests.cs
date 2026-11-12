@@ -130,7 +130,7 @@ public class ClientPropertyGrantDtoRepositoryTests
     }
 
     [Test]
-    public void DeleteAsync_WithLastGrant_ThrowsException()
+    public async Task DeleteAsync_WithLastGrant_ThrowsException()
     {
         // Arrange
         _client.AllowAccessTokensViaBrowser = true;
@@ -159,6 +159,6 @@ public class ClientPropertyGrantDtoRepositoryTests
         _clientStorage.UpdateAsync(_client).Returns(_client);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityReferenceException>(async () => await _sut.DeleteAsync(_user, deleteDto.Id));
+        await Assert.ThrowsAsync<EntityReferenceException>(async () => await _sut.DeleteAsync(_user, deleteDto.Id));
     }
 }

@@ -68,7 +68,7 @@ public class ClientRedirectUriListTests
         var client = CreateTestClient();
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -100,7 +100,7 @@ public class ClientRedirectUriListTests
         });
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -123,7 +123,7 @@ public class ClientRedirectUriListTests
         var client = CreateTestClient();
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -143,7 +143,7 @@ public class ClientRedirectUriListTests
         var client = CreateTestClient();
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, true)
@@ -170,7 +170,7 @@ public class ClientRedirectUriListTests
         });
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, true)
@@ -202,7 +202,7 @@ public class ClientRedirectUriListTests
         });
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -228,7 +228,7 @@ public class ClientRedirectUriListTests
         });
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -247,7 +247,7 @@ public class ClientRedirectUriListTests
         // Arrange
         var client = CreateTestClient();
 
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -274,7 +274,7 @@ public class ClientRedirectUriListTests
         // Arrange
         var client = CreateTestClient();
 
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -307,7 +307,7 @@ public class ClientRedirectUriListTests
         });
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -333,7 +333,7 @@ public class ClientRedirectUriListTests
         });
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -359,7 +359,7 @@ public class ClientRedirectUriListTests
         });
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -385,7 +385,7 @@ public class ClientRedirectUriListTests
         });
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -417,7 +417,7 @@ public class ClientRedirectUriListTests
         });
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -443,7 +443,7 @@ public class ClientRedirectUriListTests
         });
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -462,7 +462,7 @@ public class ClientRedirectUriListTests
         var client = CreateTestClient();
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -496,7 +496,7 @@ public class ClientRedirectUriListTests
             Arg.Any<bool>())
             .Returns(Task.FromResult(false));
 
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -537,7 +537,7 @@ public class ClientRedirectUriListTests
         _mockHandler.SetResponse(System.Net.HttpStatusCode.OK, "1");
 
         var updateCallbackInvoked = false;
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -576,7 +576,7 @@ public class ClientRedirectUriListTests
             Arg.Any<bool>())
             .Returns(Task.FromResult(false));
 
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -619,3 +619,4 @@ public class ClientRedirectUriListTests
         };
     }
 }
+

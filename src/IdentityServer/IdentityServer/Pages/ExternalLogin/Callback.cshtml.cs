@@ -35,6 +35,8 @@ public class Callback : PageModel
 
     public async Task<IActionResult> OnGet()
     {
+        var ct = HttpContext.RequestAborted;
+
         // read external identity from the temporary cookie
         bool hasExternalCookie = HttpContext.Request.Cookies.ContainsKey(IdentityServerConstants.ExternalCookieAuthenticationScheme);
         if (!hasExternalCookie)
@@ -100,8 +102,8 @@ public class Callback : PageModel
         var returnUrl = result.Properties.Items["returnUrl"] ?? "~/";
 
         // check if external login is in the context of an OIDC request
-        var context = await _interaction.GetAuthorizationContextAsync(returnUrl);
-        await _events.RaiseAsync(new UserLoginSuccessEvent(provider, providerUserId, userIdClaim.Value, username, true, context?.Client.ClientId));
+        var context = await _interaction.GetAuthorizationContextAsync(returnUrl, ct);
+        await _events.RaiseAsync(new UserLoginSuccessEvent(provider, providerUserId, userIdClaim.Value, username, true, context?.Client.ClientId), ct);
         Telemetry.Metrics.TrackUserLogin(context?.Client.ClientId, provider!);
 
         if (context != null && context.IsNativeClient())

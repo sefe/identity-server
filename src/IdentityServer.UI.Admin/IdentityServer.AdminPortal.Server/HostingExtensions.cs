@@ -7,7 +7,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using IdentityServer.Abstraction;
 using IdentityServer.Abstraction.Configs;
 using IdentityServer.Abstraction.Contracts;
@@ -188,13 +188,10 @@ public static class HostingExtensions
                 Type = SecuritySchemeType.OAuth2
             };
             options.AddSecurityDefinition("OAuth", scheme);
-            options.AddSecurityRequirement(new OpenApiSecurityRequirement
+            options.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
             {
                 {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference { Id = "OAuth", Type = ReferenceType.SecurityScheme }
-                    },
+                    new OpenApiSecuritySchemeReference("OAuth"),
                     new List<string>()
                 }
             });

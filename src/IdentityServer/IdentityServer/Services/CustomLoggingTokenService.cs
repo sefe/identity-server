@@ -19,7 +19,7 @@ public class CustomLoggingTokenService : DefaultTokenService
     private readonly CustomTokenLoggingSettings _loggingSettings;
 
     public CustomLoggingTokenService(
-        IClock clock,
+        TimeProvider timeProvider,
         IKeyMaterialService keys,
         IClaimsService claimsProvider,
         IReferenceTokenStore referenceTokenStore,
@@ -27,15 +27,15 @@ public class CustomLoggingTokenService : DefaultTokenService
         ILogger<CustomLoggingTokenService> logger,
         IOptions<IdentityServerOptions> options,
         IOptions<CustomTokenLoggingSettings> loggingSettings)
-        : base(claimsProvider, referenceTokenStore, creationService, clock, keys, options.Value, logger)
+        : base(claimsProvider, referenceTokenStore, creationService, timeProvider, keys, options.Value, logger)
     {
         _logger = logger;
         _loggingSettings = loggingSettings.Value;
     }
 
-    public override async Task<string> CreateSecurityTokenAsync(Token token)
+    public override async Task<string> CreateSecurityTokenAsync(Token token, CancellationToken cancellationToken = default)
     {
-        var rawToken = await base.CreateSecurityTokenAsync(token);
+        var rawToken = await base.CreateSecurityTokenAsync(token, cancellationToken);
 
         // Extract and log relevant information
         // Consider logging claims if necessary. Skipping them now to avoid excessive logging. 

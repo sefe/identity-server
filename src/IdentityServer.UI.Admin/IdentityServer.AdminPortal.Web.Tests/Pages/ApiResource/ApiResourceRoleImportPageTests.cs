@@ -57,7 +57,7 @@ public class ApiResourceRoleImportPageTests
         // Don't setup any HTTP response, which will cause ApiResource to remain null
 
         // Act
-        var cut = _ctx.RenderComponent<ApiResourceRoleImportPage>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleImportPage>(parameters => parameters
             .Add(p => p.ApiResourceId, 1));
 
         // Assert
@@ -72,7 +72,7 @@ public class ApiResourceRoleImportPageTests
         SetupGetApiResourceResponse(HttpStatusCode.OK, testApiResource);
 
         // Act
-        var cut = _ctx.RenderComponent<ApiResourceRoleImportPage>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleImportPage>(parameters => parameters
             .Add(p => p.ApiResourceId, testApiResource.Id));
 
         // Assert
@@ -94,7 +94,7 @@ public class ApiResourceRoleImportPageTests
 
         SetupMultipleHttpResponses(testApiResource, successOperationStatus);
 
-        var cut = _ctx.RenderComponent<ApiResourceRoleImportPage>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleImportPage>(parameters => parameters
             .Add(p => p.ApiResourceId, testApiResource.Id));
 
         // Wait for the component to load the API resource
@@ -127,7 +127,7 @@ public class ApiResourceRoleImportPageTests
 
         SetupMultipleHttpResponses(testApiResource, errorOperationStatus);
 
-        var cut = _ctx.RenderComponent<ApiResourceRoleImportPage>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleImportPage>(parameters => parameters
             .Add(p => p.ApiResourceId, testApiResource.Id));
 
         // Wait for the component to load the API resource
@@ -171,7 +171,7 @@ public class ApiResourceRoleImportPageTests
 
         SetupMultipleHttpResponses(testApiResource, errorOperationStatus, HttpStatusCode.BadRequest);
 
-        var cut = _ctx.RenderComponent<ApiResourceRoleImportPage>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleImportPage>(parameters => parameters
             .Add(p => p.ApiResourceId, testApiResource.Id));
 
         // Wait for the component to load the API resource
@@ -213,7 +213,7 @@ public class ApiResourceRoleImportPageTests
 
         SetupMultipleHttpResponses(testApiResource, errorOperationStatus, HttpStatusCode.BadRequest);
 
-        var cut = _ctx.RenderComponent<ApiResourceRoleImportPage>(parameters => parameters
+        var cut = _ctx.Render<ApiResourceRoleImportPage>(parameters => parameters
             .Add(p => p.ApiResourceId, testApiResource.Id));
 
         // Wait for the component to load the API resource
@@ -364,3 +364,4 @@ public class ApiResourceRoleImportPageTests
         };
     }
 }
+

@@ -34,7 +34,7 @@ public class CustomProfileService : IProfileService
     }
 
     /// <inheritdoc/>
-    public async Task GetProfileDataAsync(ProfileDataRequestContext context)
+    public async Task GetProfileDataAsync(ProfileDataRequestContext context, CancellationToken cancellationToken)
     {
         try
         {
@@ -66,7 +66,7 @@ public class CustomProfileService : IProfileService
     }
 
     /// <inheritdoc/>
-    public async Task IsActiveAsync(IsActiveContext context)
+    public async Task IsActiveAsync(IsActiveContext context, CancellationToken cancellationToken)
     {
         try
         {
@@ -193,8 +193,15 @@ public class CustomProfileService : IProfileService
             return;
         }
 
+        var clientId = context.Subject?.FindFirst(JwtClaimTypes.ClientId)?.Value;
+        if (string.IsNullOrEmpty(clientId))
+        {
+            _logger.LogWarning("Unable to load client role claims because client_id claim is missing");
+            return;
+        }
+
         var roleClaims = await _clientRoleClaimMapper.ProcessClientRoleMappingsForUserAsync(
-            context.Client.ClientId, userObjectId.Value).ToListAsync();
+            clientId, userObjectId.Value).ToListAsync();
         context.IssuedClaims.AddRange(roleClaims);
     }
 }

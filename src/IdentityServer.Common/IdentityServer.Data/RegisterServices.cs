@@ -7,6 +7,7 @@ using Duende.IdentityServer.EntityFramework.DbContexts;
 using Duende.IdentityServer.EntityFramework.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using IdentityServer.Abstraction.Contracts;
 using IdentityServer.Abstraction.Contracts.MicrosoftGraph;
 using IdentityServer.Abstraction.DTO.ApiResources;
@@ -60,7 +61,7 @@ public static class RegisterServices
     {
         services.AddSingleton(_ =>
         {
-            var config = new MapperConfiguration(cfg => { cfg.AddProfile<IdentityServerApiConfigurationMapProfile>(); });
+            var config = new MapperConfiguration(cfg => { cfg.AddProfile<IdentityServerApiConfigurationMapProfile>(); }, NullLoggerFactory.Instance);
             return config.CreateMapper();
         });
 
@@ -74,7 +75,7 @@ public static class RegisterServices
         services.AddSingleton<ISecretGeneratorService, SecretGeneratorService>();
         services.AddSingleton(_ =>
         {
-            var config = new MapperConfiguration(cfg => { cfg.AddProfile<AdminUiConfigurationMapProfile>(); });
+            var config = new MapperConfiguration(cfg => { cfg.AddProfile<AdminUiConfigurationMapProfile>(); }, NullLoggerFactory.Instance);
             return config.CreateMapper();
         });
 

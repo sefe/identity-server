@@ -4,6 +4,7 @@
 using Duende.IdentityServer.EntityFramework.Services;
 using Duende.IdentityServer.EntityFramework.Stores;
 using Duende.IdentityServer.Services;
+using IdentityServer.Abstraction.Contracts;
 using System.Diagnostics.CodeAnalysis;
 
 namespace IdentityServer.Extensions;

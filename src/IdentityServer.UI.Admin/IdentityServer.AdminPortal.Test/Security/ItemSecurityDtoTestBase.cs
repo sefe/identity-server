@@ -68,8 +68,8 @@ public abstract class ItemSecurityDtoTestBase<TController, TItem, TCreateItem, T
         // do not assign any permissions
 
         // Act
-        Assert.ThrowsAsync<EntityAccessException>(() => GetFunc(_controller, item1.Id, Reader));
-        Assert.ThrowsAsync<EntityAccessException>(() => GetFunc(_controller, item2.Id, Reader));
+        await Assert.ThrowsAsync<EntityAccessException>(() => GetFunc(_controller, item1.Id, Reader));
+        await Assert.ThrowsAsync<EntityAccessException>(() => GetFunc(_controller, item2.Id, Reader));
     }
 
     [Test]
@@ -82,7 +82,7 @@ public abstract class ItemSecurityDtoTestBase<TController, TItem, TCreateItem, T
 
         // Act
         var result1 = await GetFunc(_controller, item1.Id, Reader);
-        Assert.ThrowsAsync<EntityAccessException>(() => GetFunc(_controller, item2.Id, Reader));
+        await Assert.ThrowsAsync<EntityAccessException>(() => GetFunc(_controller, item2.Id, Reader));
 
         // Assert
         Assert.That(result1, Is.Not.Null);
@@ -99,7 +99,7 @@ public abstract class ItemSecurityDtoTestBase<TController, TItem, TCreateItem, T
         _permission1 = await AssignPermissionToUser(Reader, _permission1, _permission1.Environments[0].Environment, SystemPermissionRoleType.Reader);
 
         // Act
-        Assert.ThrowsAsync<EntityAccessException>(() => CreateFunc(_controller, newItem, Reader));
+        await Assert.ThrowsAsync<EntityAccessException>(() => CreateFunc(_controller, newItem, Reader));
     }
 
     [Test]
@@ -111,7 +111,7 @@ public abstract class ItemSecurityDtoTestBase<TController, TItem, TCreateItem, T
         _permission1 = await AssignPermissionToUser(Reader, _permission1, _permission1.Environments[0].Environment, SystemPermissionRoleType.Reader);
 
         // Act
-        Assert.ThrowsAsync<EntityAccessException>(() => UpdateFunc(_controller, item1.Id, Reader));
+        await Assert.ThrowsAsync<EntityAccessException>(() => UpdateFunc(_controller, item1.Id, Reader));
     }
 
     [Test]
@@ -123,7 +123,7 @@ public abstract class ItemSecurityDtoTestBase<TController, TItem, TCreateItem, T
         _permission1 = await AssignPermissionToUser(Reader, _permission1, _permission1.Environments[0].Environment, SystemPermissionRoleType.Reader);
 
         // Act
-        Assert.ThrowsAsync<EntityAccessException>(() => DeleteFunc(_controller, item1.Id, Reader));
+        await Assert.ThrowsAsync<EntityAccessException>(() => DeleteFunc(_controller, item1.Id, Reader));
     }
 
     [Test]
@@ -229,7 +229,7 @@ public abstract class ItemSecurityDtoTestBase<TController, TItem, TCreateItem, T
         _permission1 = await AssignPermissionToUser(Contributor, _permission1, _permission1.Environments[0].Environment, SystemPermissionRoleType.Reader);
 
         // Act
-        Assert.ThrowsAsync<EntityAccessException>(() => CreateFunc(_controller, newItem, Contributor));
+        await Assert.ThrowsAsync<EntityAccessException>(() => CreateFunc(_controller, newItem, Contributor));
     }
 
     [Test]
@@ -258,7 +258,7 @@ public abstract class ItemSecurityDtoTestBase<TController, TItem, TCreateItem, T
         _permission1 = await AssignPermissionToUser(Contributor, _permission1, _permission1.Environments[0].Environment, SystemPermissionRoleType.Reader);
 
         // Act
-        Assert.ThrowsAsync<EntityAccessException>(() => UpdateFunc(_controller, item1.Id, Contributor));
+        await Assert.ThrowsAsync<EntityAccessException>(() => UpdateFunc(_controller, item1.Id, Contributor));
     }
 
     [Test]
@@ -285,7 +285,7 @@ public abstract class ItemSecurityDtoTestBase<TController, TItem, TCreateItem, T
         _permission1 = await AssignPermissionToUser(Contributor, _permission1, _permission1.Environments[0].Environment, SystemPermissionRoleType.Reader);
 
         // Act
-        Assert.ThrowsAsync<EntityAccessException>(() => DeleteFunc(_controller, item1.Id, Contributor));
+        await Assert.ThrowsAsync<EntityAccessException>(() => DeleteFunc(_controller, item1.Id, Contributor));
     }
 
     [Test]
@@ -375,7 +375,7 @@ public abstract class ItemSecurityDtoTestBase<TController, TItem, TCreateItem, T
         // assign no reader permissions
 
         // Act
-        Assert.ThrowsAsync<EntityAccessException>(() => CloneFunc(_controller, item1.Id, _permission1.Environments[1].Id, Contributor));
+        await Assert.ThrowsAsync<EntityAccessException>(() => CloneFunc(_controller, item1.Id, _permission1.Environments[1].Id, Contributor));
     }
 
     [Test]
@@ -389,7 +389,7 @@ public abstract class ItemSecurityDtoTestBase<TController, TItem, TCreateItem, T
         // assign no writer permissions
 
         // Act
-        Assert.ThrowsAsync<EntityAccessException>(() => CloneFunc(_controller, item1.Id, _permission1.Environments[1].Id, Contributor));
+        await Assert.ThrowsAsync<EntityAccessException>(() => CloneFunc(_controller, item1.Id, _permission1.Environments[1].Id, Contributor));
     }
 
     [Test]

@@ -47,10 +47,10 @@ public class ClientImportControllerTests : ControllerTestBase
     }
 
     [Test]
-    public void ImportClientRoles_WithInvalidClientId_Fails()
+    public async Task ImportClientRoles_WithInvalidClientId_Fails()
     {
         // Act & Assert
-        Assert.ThrowsAsync<EntityNotFoundException>(() => _importController.Call_ImportClientRolesAsync(9999, new ClientRoleImportDto { Roles = [] }, Admin));
+        await Assert.ThrowsAsync<EntityNotFoundException>(() => _importController.Call_ImportClientRolesAsync(9999, new ClientRoleImportDto { Roles = [] }, Admin));
     }
 
     [Test]
@@ -71,7 +71,7 @@ public class ClientImportControllerTests : ControllerTestBase
         // Act & Assert
         using (Assert.EnterMultipleScope())
         {
-            var ex = Assert.ThrowsAsync<ImportValidationException>(() => _importController.Call_ImportClientRolesAsync(client.Id, importDto, Admin));
+            var ex = await Assert.ThrowsAsync<ImportValidationException>(() => _importController.Call_ImportClientRolesAsync(client.Id, importDto, Admin));
             Assert.That(ex!.ValidationSummary.Errors, Has.Some.Contains("Duplicate role names"));
             await _roleMappingValidationService.Received(1).ValidateImportRoleMappingsAsync(Arg.Any<List<RoleMappingValueObject>>(), Arg.Any<OperationStatus>());
         }
@@ -92,7 +92,7 @@ public class ClientImportControllerTests : ControllerTestBase
         };
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<ImportValidationException>(() => _importController.Call_ImportClientRolesAsync(client.Id, importDto, Admin));
+        var ex = await Assert.ThrowsAsync<ImportValidationException>(() => _importController.Call_ImportClientRolesAsync(client.Id, importDto, Admin));
         Assert.That(ex, Is.Not.Null);
         using (Assert.EnterMultipleScope())
         {
@@ -216,10 +216,10 @@ public class ClientImportControllerTests : ControllerTestBase
     }
 
     [Test]
-    public void ValidateImportClientRoles_WithInvalidClientId_Fails()
+    public async Task ValidateImportClientRoles_WithInvalidClientId_Fails()
     {
         // Act & Assert
-        Assert.ThrowsAsync<EntityNotFoundException>(() => _importController.Call_ValidateImportClientRolesAsync(9999, new ClientRoleImportDto { Roles = [] }, Admin));
+        await Assert.ThrowsAsync<EntityNotFoundException>(() => _importController.Call_ValidateImportClientRolesAsync(9999, new ClientRoleImportDto { Roles = [] }, Admin));
     }
 
     [Test]

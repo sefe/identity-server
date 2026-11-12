@@ -69,7 +69,7 @@ public class ApiResourceSecretControllerSecurityTests : ControllerTestBase
         var apiResourceSecret = new ApiResourcePropertySecretDtoCreate { ApiResourceId = apiResource.Id, Description = "secret1", ValidityPeriodYears = 2 };
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAccessException>(() => _apiResourceSecretController.Call_CreateSecretAsync(apiResourceSecret, Contributor));
+        await Assert.ThrowsAsync<EntityAccessException>(() => _apiResourceSecretController.Call_CreateSecretAsync(apiResourceSecret, Contributor));
     }
 
     [Test]
@@ -82,7 +82,7 @@ public class ApiResourceSecretControllerSecurityTests : ControllerTestBase
         var apiResourceSecret = new ApiResourcePropertySecretDtoCreate { ApiResourceId = apiResource.Id, Description = "secret1", ValidityPeriodYears = 2 };
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAccessException>(() => _apiResourceSecretController.Call_CreateSecretAsync(apiResourceSecret, Contributor));
+        await Assert.ThrowsAsync<EntityAccessException>(() => _apiResourceSecretController.Call_CreateSecretAsync(apiResourceSecret, Contributor));
     }
 
     [Test]
@@ -113,7 +113,7 @@ public class ApiResourceSecretControllerSecurityTests : ControllerTestBase
         _ = await _permissionUtil.AssignPermissionToUser(Contributor, permission, SystemPermissionEnvironmentNames.Development, SystemPermissionRoleType.Reader);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAccessException>(() => _apiResourceSecretController.Call_DeleteSecretAsync(createdSecret.Id, Contributor));
+        await Assert.ThrowsAsync<EntityAccessException>(() => _apiResourceSecretController.Call_DeleteSecretAsync(createdSecret.Id, Contributor));
     }
 
     [Test]
@@ -126,7 +126,7 @@ public class ApiResourceSecretControllerSecurityTests : ControllerTestBase
         var createdSecret = await _apiResourceSecretController.Call_CreateSecretAsync(apiResourceSecret, Admin);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAccessException>(() => _apiResourceSecretController.Call_DeleteSecretAsync(createdSecret.Id, Contributor));
+        await Assert.ThrowsAsync<EntityAccessException>(() => _apiResourceSecretController.Call_DeleteSecretAsync(createdSecret.Id, Contributor));
     }
 
     private async Task<(SystemPermission permission, ApiResourceDtoRead apiResource)> SetupTestDataAsync()

@@ -22,7 +22,7 @@ public class ClientGrantEditorStringTests : Bunit.TestContext
         var grants = CreateGrants(_grantType1, _grantType2);
 
         // Act
-        var cut = RenderComponent<ClientGrantEditorString>(parameters => parameters
+        var cut = Render<ClientGrantEditorString>(parameters => parameters
             .Add(p => p.Value, grants)
             .Add(p => p.ValueChanged, EventCallback.Factory.Create<HashSet<string>>(this, _ => { }))
         );
@@ -38,7 +38,7 @@ public class ClientGrantEditorStringTests : Bunit.TestContext
         // Arrange
         var grants = CreateGrants();
         var valueChangedCalled = false;
-        var cut = RenderComponent<ClientGrantEditorString>(parameters => parameters
+        var cut = Render<ClientGrantEditorString>(parameters => parameters
             .Add(p => p.Value, grants)
             .Add(p => p.ValueChanged, EventCallback.Factory.Create<HashSet<string>>(this, _ => valueChangedCalled = true))
         );
@@ -62,7 +62,7 @@ public class ClientGrantEditorStringTests : Bunit.TestContext
         // Arrange
         var grants = CreateGrants(_grantType1);
         var valueChangedCalled = false;
-        var cut = RenderComponent<ClientGrantEditorString>(parameters => parameters
+        var cut = Render<ClientGrantEditorString>(parameters => parameters
             .Add(p => p.Value, grants)
             .Add(p => p.ValueChanged, EventCallback.Factory.Create<HashSet<string>>(this, _ => valueChangedCalled = true))
         );
@@ -85,7 +85,7 @@ public class ClientGrantEditorStringTests : Bunit.TestContext
         // Arrange
         var grants = CreateGrants(_grantType1);
         var valueChangedCalled = false;
-        var cut = RenderComponent<ClientGrantEditorString>(parameters => parameters
+        var cut = Render<ClientGrantEditorString>(parameters => parameters
             .Add(p => p.Value, grants)
             .Add(p => p.ValueChanged, EventCallback.Factory.Create<HashSet<string>>(this, _ => valueChangedCalled = true))
         );
@@ -107,7 +107,7 @@ public class ClientGrantEditorStringTests : Bunit.TestContext
     {
         // Arrange
         var grants = CreateGrants(_grantType1);
-        var cut = RenderComponent<ClientGrantEditorString>(parameters => parameters
+        var cut = Render<ClientGrantEditorString>(parameters => parameters
             .Add(p => p.Value, grants)
             .Add(p => p.ValueChanged, EventCallback.Factory.Create<HashSet<string>>(this, _ => { }))
         );
@@ -124,7 +124,7 @@ public class ClientGrantEditorStringTests : Bunit.TestContext
     {
         // Arrange
         var grants = CreateGrants(_grantType1);
-        var cut = RenderComponent<ClientGrantEditorString>(parameters => parameters
+        var cut = Render<ClientGrantEditorString>(parameters => parameters
             .Add(p => p.Value, grants)
             .Add(p => p.ValueChanged, EventCallback.Factory.Create<HashSet<string>>(this, _ => { }))
         );
@@ -144,7 +144,7 @@ public class ClientGrantEditorStringTests : Bunit.TestContext
         var grants = CreateGrants(unknownGrant);
 
         // Act
-        var cut = RenderComponent<ClientGrantEditorString>(parameters => parameters
+        var cut = Render<ClientGrantEditorString>(parameters => parameters
             .Add(p => p.Value, grants)
             .Add(p => p.ValueChanged, EventCallback.Factory.Create<HashSet<string>>(this, _ => { }))
         );
@@ -161,7 +161,7 @@ public class ClientGrantEditorStringTests : Bunit.TestContext
         var grants = CreateGrants(_grantType1, unknownGrant);
 
         // Act
-        var cut = RenderComponent<ClientGrantEditorString>(parameters => parameters
+        var cut = Render<ClientGrantEditorString>(parameters => parameters
             .Add(p => p.Value, grants)
             .Add(p => p.ValueChanged, EventCallback.Factory.Create<HashSet<string>>(this, _ => { }))
         );
@@ -181,7 +181,7 @@ public class ClientGrantEditorStringTests : Bunit.TestContext
         var grants = CreateGrants(_grantType1);
 
         // Act
-        var cut = RenderComponent<ClientGrantEditorString>(parameters => parameters
+        var cut = Render<ClientGrantEditorString>(parameters => parameters
             .Add(p => p.Value, grants)
             .Add(p => p.ValueChanged, EventCallback.Factory.Create<HashSet<string>>(this, _ => { }))
         );
@@ -190,3 +190,4 @@ public class ClientGrantEditorStringTests : Bunit.TestContext
         Assert.That(cut.Markup, Does.Contain(ClientGrantTypeNames.AllGrantTypes[_grantType1]));
     }
 }
+

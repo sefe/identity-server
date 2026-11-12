@@ -43,10 +43,10 @@ public class CustomIntrospectionRequestValidatorTests
             Parameters = new NameValueCollection { { "token", value } }
         };
         var expectedResult = new IntrospectionRequestValidationResult();
-        _defaultValidator.ValidateAsync(context).Returns(Task.FromResult(expectedResult));
+        _defaultValidator.ValidateAsync(context, Arg.Any<CancellationToken>()).Returns(Task.FromResult(expectedResult));
 
         // Act
-        _ = await _sut.ValidateAsync(context);
+        _ = await _sut.ValidateAsync(context, CancellationToken.None);
 
         // Assert
         using (Assert.EnterMultipleScope())
@@ -67,10 +67,10 @@ public class CustomIntrospectionRequestValidatorTests
             Parameters = new NameValueCollection { { "token", value } }
         };
         var expectedResult = new IntrospectionRequestValidationResult();
-        _defaultValidator.ValidateAsync(context).Returns(Task.FromResult(expectedResult));
+        _defaultValidator.ValidateAsync(context, Arg.Any<CancellationToken>()).Returns(Task.FromResult(expectedResult));
 
         // Act
-        _ = await _sut.ValidateAsync(context);
+        _ = await _sut.ValidateAsync(context, CancellationToken.None);
 
         // Assert
         using (Assert.EnterMultipleScope())
@@ -90,10 +90,10 @@ public class CustomIntrospectionRequestValidatorTests
             Parameters = new NameValueCollection { { "token", value } }
         };
         var expectedResult = new IntrospectionRequestValidationResult();
-        _defaultValidator.ValidateAsync(context).Returns(Task.FromResult(expectedResult));
+        _defaultValidator.ValidateAsync(context, Arg.Any<CancellationToken>()).Returns(Task.FromResult(expectedResult));
 
         // Act
-        var result = await _sut.ValidateAsync(context);
+        var result = await _sut.ValidateAsync(context, CancellationToken.None);
 
         // Assert
         using (Assert.EnterMultipleScope())
@@ -114,10 +114,10 @@ public class CustomIntrospectionRequestValidatorTests
             Parameters = new NameValueCollection { { "token", value } }
         };
         var expectedResult = new IntrospectionRequestValidationResult();
-        _defaultValidator.ValidateAsync(context).Returns(Task.FromResult(expectedResult));
+        _defaultValidator.ValidateAsync(context, Arg.Any<CancellationToken>()).Returns(Task.FromResult(expectedResult));
 
         // Act
-        var result = await _sut.ValidateAsync(context);
+        var result = await _sut.ValidateAsync(context, CancellationToken.None);
 
         // Assert
         using (Assert.EnterMultipleScope())
@@ -138,10 +138,10 @@ public class CustomIntrospectionRequestValidatorTests
             Parameters = new NameValueCollection { { "token", token } }
         };
         var expectedResult = new IntrospectionRequestValidationResult();
-        _defaultValidator.ValidateAsync(context).Returns(Task.FromResult(expectedResult));
+        _defaultValidator.ValidateAsync(context, Arg.Any<CancellationToken>()).Returns(Task.FromResult(expectedResult));
 
         // Act
-        var result = await _sut.ValidateAsync(context);
+        var result = await _sut.ValidateAsync(context, CancellationToken.None);
 
         // Assert
         using (Assert.EnterMultipleScope())
@@ -161,10 +161,10 @@ public class CustomIntrospectionRequestValidatorTests
             Parameters = new NameValueCollection { }
         };
         var expectedResult = new IntrospectionRequestValidationResult();
-        _defaultValidator.ValidateAsync(context).Returns(Task.FromResult(expectedResult));
+        _defaultValidator.ValidateAsync(context, Arg.Any<CancellationToken>()).Returns(Task.FromResult(expectedResult));
 
         // Act
-        var result = await _sut.ValidateAsync(context);
+        var result = await _sut.ValidateAsync(context, CancellationToken.None);
 
         // Assert
         using (Assert.EnterMultipleScope())
