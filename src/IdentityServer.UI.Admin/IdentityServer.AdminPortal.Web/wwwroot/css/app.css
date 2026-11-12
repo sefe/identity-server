@@ -113,43 +113,55 @@ code {
 }
 
 /* START: Show text on Telerik Switch in Bootstrap-compatible Kendo theme */
-.k-switch-md {
-    width: 56px;
-    height: 30px;
-    font-size: unset
+.k-switch.k-switch-md {
+    min-width: 72px;
+    height: 30px !important;
+    font-size: .75rem;
 }
 
-    .k-switch-md .k-switch-track {
-        width: 56px;
-        height: 30px
+    .k-switch.k-switch-md .k-switch-track {
+        width: 100% !important;
+        min-width: 72px;
+        height: 30px !important;
     }
 
-    .k-switch-md .k-switch-thumb {
-        width: 24px;
-        height: 24px
+    .k-switch.k-switch-md .k-switch-thumb {
+        width: 24px !important;
+        height: 24px !important;
     }
 
-    .k-switch-md.k-switch-on .k-switch-thumb-wrap {
-        inset-inline-start: calc(100% - 15px) /* half of k-switch-md height */
+    .k-switch.k-switch-md.k-switch-on .k-switch-thumb-wrap {
+        inset-inline-start: calc(100% - 15px) !important; /* half of k-switch-md height */
     }
 
-    .k-switch-md.k-switch-off .k-switch-thumb-wrap {
-        inset-inline-start: 15px /* half of k-switch-md height */
+    .k-switch.k-switch-md.k-switch-off .k-switch-thumb-wrap {
+        inset-inline-start: 15px !important; /* half of k-switch-md height */
     }
 
-.k-switch-label-on, .k-switch-label-off {
-    display: inline;
-}
-
-.k-switch-label-on {
-    left: 7px;
+.k-switch .k-switch-label-on, .k-switch .k-switch-label-off {
+    display: inline !important;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
     text-transform: uppercase;
-    color: var(--kendo-color-light)
+    white-space: nowrap;
+    line-height: 1;
 }
 
-.k-switch-label-off {
-    right: 5px;
-    text-transform: uppercase;
+.k-switch .k-switch-label-on {
+    left: 9px;
+    right: auto;
+    color: var(--kendo-color-light, #fff);
+}
+
+.k-switch .k-switch-label-off {
+    right: 8px;
+    left: auto;
+}
+
+.k-switch.k-switch-on .k-switch-label-off,
+.k-switch.k-switch-off .k-switch-label-on {
+    display: none !important;
 }
 /* END */
 
