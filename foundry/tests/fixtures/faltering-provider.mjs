@@ -2,20 +2,25 @@
 // eleven: one call came back 400 while the same profile answered eight other
 // calls in the same run. The first invocation fails the way the Copilot CLI
 // failed; the second answers normally, which is what the endpoint did moments
-// later. The counter lives beside the request file so the two invocations of
+// later. The marker lives beside the request file so the two invocations of
 // this process can tell each other apart.
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { openSync, closeSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 const requestPath = process.argv[process.argv.length - 1];
 const counterPath = join(dirname(requestPath), "faltering-provider.count");
-const previous = existsSync(counterPath)
-  ? Number.parseInt(readFileSync(counterPath, "utf8"), 10) || 0
-  : 0;
-const attempt = previous + 1;
-writeFileSync(counterPath, String(attempt));
+let firstAttempt = false;
+try {
+  // Exclusive creation elects exactly one failing call, without a check/write
+  // race or truncating an existing file (including a symlink target).
+  const fd = openSync(counterPath, 'wx');
+  closeSync(fd);
+  firstAttempt = true;
+} catch (error) {
+  if (error.code !== 'EEXIST') throw error;
+}
 
-if (attempt === 1) {
+if (firstAttempt) {
   process.stderr.write(
     "Execution failed: 400 The resource you requested was not found. " +
       "(Request ID: 9083:3F6DE9:1F48D55:238D784:6A968E9A)"

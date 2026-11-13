@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
+import { parseFragment } from 'parse5';
+import { readRegularFile } from './read-regular-file.mjs';
 const sha = value => createHash('sha256').update(value).digest('hex');
 export function parseLinks(value = '') {
   if (!value.trim() || value.trim() === 'none') return [];
@@ -132,11 +134,20 @@ export function extractDownloaded(downloaded, source) {
   if (type === 'text/html') {
     const html = bytes.toString('utf8');
     if (/<input[^>]*type\s*=\s*["']?password|name=["']loginfmt|Sign in to your account/i.test(html)) throw Error('The source returned a sign-in page, not documentation.');
-    const text = html.replace(/<(script|style|noscript)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
-      .replace(/<(?:br|\/p|\/div|\/h[1-6]|\/li|\/tr)[^>]*>/gi, '\n').replace(/<[^>]+>/g, ' ')
-      .replace(/&#(x[\da-f]+|\d+);/gi, (_, n) => { const code = n[0].toLowerCase() === 'x' ? parseInt(n.slice(1), 16) : Number(n); return code <= 0x10ffff ? String.fromCodePoint(code) : ' '; })
-      .replace(/&(amp|lt|gt|quot|apos|nbsp);/g, (_, n) => ({ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' }[n]))
-      .replace(/[ \t]+/g, ' ').replace(/\n\s*\n/g, '\n').trim();
+    // Extract text nodes, not sanitized HTML. Literal markup in documentation
+    // stays text; any UI displaying it must use textContent / output escaping.
+    const pieces = [], stack = [parseFragment(html)];
+    const excluded = new Set(['script', 'style', 'noscript', 'template']);
+    const blocks = new Set(['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'tr', 'br']);
+    while (stack.length) {
+      const node = stack.pop();
+      if (typeof node === 'string') { pieces.push(node); continue; }
+      if (excluded.has(node.tagName)) continue;
+      if (node.nodeName === '#text') { pieces.push(node.value); continue; }
+      if (blocks.has(node.tagName)) { pieces.push('\n'); stack.push('\n'); }
+      for (let i = (node.childNodes?.length ?? 0) - 1; i >= 0; i--) stack.push(node.childNodes[i]);
+    }
+    const text = pieces.join('').replace(/[ \t]+/g, ' ').replace(/\n\s*\n/g, '\n').trim();
     if (text.length < 80) throw Error('No substantive page text. Supply an export or direct file link for client-rendered pages.');
     return { bytes: Buffer.from(text), extension: '.txt' };
   }
@@ -180,7 +191,11 @@ export async function collectSources({ links, directory, auth = {}, resume = fal
     if (links.length && JSON.stringify(previous.identities) !== JSON.stringify(links.map(sha))) throw Error('Documentation links changed. Restart from discovery to collect a new snapshot.');
     for (const source of previous.sources) if (source.file) {
       const file = path.join(directory, source.file);
-      if (!/^[a-f0-9]{64}\.[a-z0-9]+$/.test(source.file) || fs.lstatSync(file).isSymbolicLink() || sha(fs.readFileSync(file)) !== source.sha256) throw Error('The saved documentation snapshot has changed or is incomplete.');
+      try {
+        if (!/^[a-f0-9]{64}\.[a-z0-9]+$/.test(source.file) || sha(readRegularFile(file, { root: directory })) !== source.sha256) throw Error('Snapshot mismatch.');
+      } catch {
+        throw Error('The saved documentation snapshot has changed or is incomplete.');
+      }
     }
     return previous;
   }

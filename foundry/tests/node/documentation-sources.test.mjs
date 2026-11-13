@@ -59,6 +59,20 @@ test('sign-in pages and empty API content are not reported as usable documentati
   assert.throws(() => extractDownloaded({ bytes: Buffer.from('<input type="password">'), type: 'text/html' }, { format: 'auto' }), /sign-in/);
   assert.throws(() => extractDownloaded({ bytes: Buffer.from('{}'), type: 'application/json' }, { format: 'confluence' }), /no page content/);
 });
+
+test('HTML extraction uses text nodes, excludes executable blocks and decodes entities once', () => {
+  const html = '<p title="a > b">' + 'Visible requirements. '.repeat(5) + '</p>' +
+    '<script>hidden script</script ><style>hidden style</style><noscript>hidden fallback</noscript>' +
+    '<template>hidden template</template><!-- hidden comment -->' +
+    '<div>A&amp;B &copy; &#x1F600; <code>&lt;script&gt;</code> &amp;lt;</div>' +
+    '<script>unclosed script is not documentation';
+  const extracted = extractDownloaded({ bytes: Buffer.from(html), type: 'text/html' }, { format: 'auto' });
+  assert.equal(extracted.extension, '.txt');
+  const text = extracted.bytes.toString();
+  assert.match(text, /Visible requirements/);
+  assert.match(text, /A&B © 😀 <script> &lt;/);
+  assert.doesNotMatch(text, /hidden|unclosed|title|a > b/);
+});
 test('snapshots survive relay resumes without network calls, and reject changed or missing contents', async t => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'foundry-docs-'));
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
@@ -70,6 +84,8 @@ test('snapshots survive relay resumes without network calls, and reject changed 
   await assert.rejects(collectSources({ links: ['https://different.test/doc.md'], directory, resume: true, fetcher }), /links changed/);
   fs.writeFileSync(path.join(directory, first.sources[0].file), 'altered');
   await assert.rejects(collectSources({ links, directory, resume: true, fetcher }), /changed/);
+  fs.unlinkSync(path.join(directory, first.sources[0].file));
+  await assert.rejects(collectSources({ links, directory, resume: true, fetcher }), /changed or is incomplete/);
 });
 test('unavailable sources retain explicit failure evidence instead of failing the whole collection', async t => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'foundry-docs-'));

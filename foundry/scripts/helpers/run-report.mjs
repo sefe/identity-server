@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { estimateEconomics } from './report-economics.mjs';
+import { readRegularFile } from './read-regular-file.mjs';
 
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const read = file => JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
@@ -77,8 +78,7 @@ export function repositoryMetrics(repositoryRoot, frameworkRoot) {
       if (manifest.test(normalized)) result.projects.push({ path: normalized, category: /test|spec/i.test(normalized) ? 'Existing tests' : 'Product / build project' });
       const language = languages[path.extname(file).toLowerCase()];
       if (!language) continue;
-      if (fs.statSync(file).size > 8 * 1024 * 1024) { result.omittedFiles++; continue; }
-      const content = fs.readFileSync(file, 'utf8');
+      const content = readRegularFile(file, { root: repositoryRoot, maxBytes: 8 * 1024 * 1024 }).toString('utf8');
       if (content.includes('\0')) { result.omittedFiles++; continue; }
       const lines = content ? content.split(/\r\n|\n|\r/) : [];
       if (lines.at(-1) === '') lines.pop();
@@ -87,7 +87,10 @@ export function repositoryMetrics(repositoryRoot, frameworkRoot) {
       if (testFile.test(normalized)) result.existingTestFiles++;
       if (!byLanguage.has(language)) byLanguage.set(language, { name: language, files: 0, physicalLines: 0, nonBlankLines: 0 });
       const item = byLanguage.get(language); item.files++; item.physicalLines += lines.length; item.nonBlankLines += nonBlank;
-    } catch { result.unreadableFiles++; }
+    } catch (error) {
+      if (['EFILEUNSAFE', 'EFILETOOLARGE', 'ELOOP'].includes(error.code)) result.omittedFiles++;
+      else result.unreadableFiles++;
+    }
   }
   result.languages = [...byLanguage.values()].sort((a, b) => b.physicalLines - a.physicalLines);
   return result;
