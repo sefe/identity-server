@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cross-run idempotency registry",
+  "type": "object",
+  "required": ["schemaVersion", "updatedAt", "records"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "actionType",
+          "sourceRef",
+          "status",
+          "runId",
+          "externalId",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "key": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "actionType": { "type": "string", "minLength": 1 },
+          "sourceRef": { "type": "string", "minLength": 1 },
+          "status": {
+            "type": "string",
+            "enum": ["planned", "executed", "dry_run", "declined", "failed"]
+          },
+          "runId": { "type": "string", "minLength": 1 },
+          "externalId": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

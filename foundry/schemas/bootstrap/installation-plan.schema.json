@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SDLC Foundry installation plan",
+  "type": "object",
+  "required": [
+    "schemaVersion", "installationId", "createdAt", "targetBranch",
+    "configurationHash", "analysisRunId", "managedFiles", "pipelines"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "installationId": { "type": "string", "minLength": 1 },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "targetBranch": { "type": "string", "minLength": 1 },
+    "configurationHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "analysisRunId": { "type": "string" },
+    "managedFiles": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "pipelines": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["key", "name", "folder", "yamlPath", "enabled", "smoke"],
+        "properties": {
+          "key": { "type": "string", "minLength": 1 },
+          "name": { "type": "string", "minLength": 1 },
+          "folder": { "type": "string", "minLength": 1 },
+          "yamlPath": { "type": "string", "minLength": 1 },
+          "enabled": { "type": "boolean" },
+          "smoke": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

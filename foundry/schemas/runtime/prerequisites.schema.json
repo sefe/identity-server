@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["status", "checkedAt", "checks"],
+  "properties": {
+    "status": { "enum": ["completed", "blocked"] },
+    "checkedAt": { "type": "string", "format": "date-time" },
+    "checks": { "type": "array", "items": {
+      "type": "object", "required": ["name", "detail"],
+      "properties": { "name": { "type": "string" }, "detail": { "type": "string" } },
+      "additionalProperties": false
+    } }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Synthesised and verified failed-build analysis",
+  "allOf": [
+    { "$ref": "../common/agent-result.schema.json" },
+    {
+      "type": "object",
+      "required": ["outcome", "verifiedFindings"],
+      "properties": {
+        "agentId": { "const": "failure-analysis-synthesis" },
+        "stageId": { "const": "failure-investigation" },
+        "outcome": {
+          "type": "string",
+          "enum": ["actionable", "no_action_needed", "insufficient_evidence"]
+        },
+        "verifiedFindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "sourceRef",
+              "signature",
+              "affectedCount",
+              "verdict",
+              "classification",
+              "rootCause",
+              "evidence",
+              "confidence",
+              "recommendedAction",
+              "actionable"
+            ],
+            "properties": {
+              "sourceRef": { "type": "string", "minLength": 1 },
+              "signature": { "type": "string", "minLength": 1 },
+              "affectedCount": { "type": "integer", "minimum": 1 },
+              "verdict": {
+                "type": "string",
+                "enum": ["confirmed", "corrected", "refuted", "unconfirmed"]
+              },
+              "classification": {
+                "type": "string",
+                "enum": [
+                  "product_defect",
+                  "test_defect",
+                  "framework_defect",
+                  "infrastructure",
+                  "flaky",
+                  "requirement_mismatch",
+                  "false_positive",
+                  "unknown"
+                ]
+              },
+              "rootCause": { "type": "string", "minLength": 1 },
+              "evidence": { "type": "array", "items": { "type": "string" } },
+              "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+              "recommendedAction": { "type": "string" },
+              "actionable": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  ]
+}

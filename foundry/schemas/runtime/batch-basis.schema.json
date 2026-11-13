@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Batch basis",
+  "$comment": "The identity of the approved inventory a change set split was built from. A later iteration carries files forward from a rejected plan only when the inventory it is batching hashes to exactly this, because an inventory that changed in between makes every carried file a file nobody approved.",
+  "type": "object",
+  "required": ["inventories"],
+  "properties": {
+    "inventories": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

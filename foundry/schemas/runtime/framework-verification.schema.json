@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Framework verification",
+  "$comment": "Proof that the technology the architect chose actually works, obtained by running it rather than by reading the design. A change set that installs, builds, discovers tests, runs a scenario and then fails when a scenario is deliberately broken has been verified. Anything less is a framework nobody has executed, and a framework nobody has executed is indistinguishable from one that always passes.",
+  "type": "object",
+  "required": ["runId", "stageId", "verifiedAt", "outcome", "isolation", "projects", "findings"],
+  "additionalProperties": false,
+  "properties": {
+    "runId": { "type": "string", "minLength": 1 },
+    "stageId": { "type": "string", "minLength": 1 },
+    "verifiedAt": { "type": "string", "minLength": 1 },
+    "isolation": {
+      "type": "object",
+      "required": ["mode", "detail", "limitations"],
+      "additionalProperties": false,
+      "$comment": "What keeping the generated code away from this run actually amounted to. Required rather than optional because the two modes prove different things: a child process with a built environment cannot reach a package manager's credential files, but it runs as the same operating system user and can read anything that user can. A reader of this evidence should not have to infer which of those happened from the absence of a field.",
+      "properties": {
+        "mode": { "type": "string", "enum": ["process", "container"] },
+        "detail": { "type": "string", "minLength": 1 },
+        "limitations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "$comment": "Stated in every mode, including the stronger one. A boundary described as complete is the one nobody checks."
+        }
+      }
+    },
+    "outcome": {
+      "type": "string",
+      "enum": ["verified", "toolchain_defect", "infrastructure_unavailable", "not_attempted"],
+      "$comment": "A defect in the chosen technology and an agent that could not reach a feed are different failures with different answers: the first sends the design back to be repaired, the second is nobody's design problem and repeating the same choice is correct. Reporting them as one status is how a run spends its repair budget re-deciding a stack that was never wrong."
+    },
+    "projects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "ecosystem",
+          "manifestPath",
+          "projectPath",
+          "outcome",
+          "steps",
+          "testsDiscovered",
+          "testsFailed",
+          "negativeProbe"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "toolchainId": { "type": "string", "minLength": 1 },
+          "ecosystem": { "type": "string", "minLength": 1 },
+          "manifestPath": { "type": "string", "minLength": 1 },
+          "projectPath": { "type": "string", "minLength": 1 },
+          "outcome": {
+            "type": "string",
+            "enum": ["verified", "toolchain_defect", "infrastructure_unavailable"]
+          },
+          "steps": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["name", "status", "exitCode", "detail"],
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "enum": ["runtime", "install", "install_lock", "build", "test", "negative_probe"],
+                  "$comment": "install_lock appears only for an ecosystem whose installer does not read the lock itself. Maven resolves from the POM, so the artefacts it fetched are compared with the approved lock afterwards; npm ci, dotnet restore --locked-mode, pip --require-hashes and bundle --frozen refuse on their own and produce no such step."
+                },
+                "status": { "type": "string", "enum": ["passed", "failed", "skipped"] },
+                "exitCode": { "type": "integer" },
+                "durationMs": { "type": "integer", "minimum": 0 },
+                "command": { "type": "string" },
+                "detail": { "type": "string" }
+              }
+            }
+          },
+          "testsDiscovered": {
+            "type": "integer",
+            "minimum": 0,
+            "$comment": "Read out of the runner's own summary, never inferred from an exit code: a runner exits zero for 'everything passed' and for 'there was nothing to run' alike, and the second of those has verified nothing."
+          },
+          "testsFailed": { "type": "integer", "minimum": 0 },
+          "negativeProbe": {
+            "type": "object",
+            "required": ["attempted", "failedAsExpected", "detail"],
+            "additionalProperties": false,
+            "properties": {
+              "attempted": { "type": "boolean" },
+              "failedAsExpected": {
+                "type": "boolean",
+                "$comment": "A suite that cannot fail cannot report a defect either. The framework is asked to fail on purpose exactly once, and a green run against a deliberately broken expectation is a worse result than a red one."
+              },
+              "detail": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "message"],
+        "additionalProperties": false,
+        "properties": {
+          "severity": { "type": "string", "enum": ["info", "warning", "error"] },
+          "message": { "type": "string", "minLength": 1 },
+          "projectPath": { "type": "string" }
+        }
+      }
+    }
+  }
+}

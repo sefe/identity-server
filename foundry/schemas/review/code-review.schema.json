@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Code review",
+  "allOf": [
+    { "$ref": "../common/review-decision.schema.json" },
+    {
+      "properties": {
+        "agentId": { "const": "code-review" },
+        "stageId": { "const": "review" }
+      }
+    }
+  ]
+}
+

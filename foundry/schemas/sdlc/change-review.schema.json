@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Review of a generated change set",
+  "description": "A review whose rejection is acted on file by file. Build 496 regenerated all eight batches, 49 minutes of model time, because three of the forty-seven files were wrong and nothing in the decision said which. A reviewer here therefore states the scope of the repair it is asking for, and a targeted repair names the files that have to be rewritten.",
+  "allOf": [
+    { "$ref": "../common/review-decision.schema.json" },
+    {
+      "if": {
+        "type": "object",
+        "required": ["decision"],
+        "properties": { "decision": { "const": "revision_required" } }
+      },
+      "then": {
+        "type": "object",
+        "required": ["repairScope"]
+      }
+    },
+    {
+      "if": {
+        "type": "object",
+        "required": ["repairScope"],
+        "properties": { "repairScope": { "const": "targeted" } }
+      },
+      "then": {
+        "type": "object",
+        "required": ["repairTargets"],
+        "properties": { "repairTargets": { "minItems": 1 } }
+      }
+    }
+  ]
+}

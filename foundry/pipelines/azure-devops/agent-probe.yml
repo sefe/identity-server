@@ -1,0 +1,65 @@
+# A throwaway probe: does a self-hosted agent have what a relay leg needs, and
+# can it reach the registries and the Copilot endpoint the leg depends on?
+trigger: none
+pr: none
+
+parameters:
+  - name: agentPool
+    displayName: Pool to probe
+    type: string
+    default: TRADING-LINUX-PY-01
+  - name: agentName
+    displayName: One machine of that pool, or any for whichever is free
+    type: string
+    default: any
+
+jobs:
+  - job: probe
+    displayName: Probe ${{ parameters.agentPool }}
+    timeoutInMinutes: 10
+    pool:
+      name: ${{ parameters.agentPool }}
+      ${{ if ne(parameters.agentName, 'any') }}:
+        demands:
+          - Agent.Name -equals ${{ parameters.agentName }}
+    steps:
+      - checkout: none
+      - bash: |
+          echo "== identity"
+          uname -a || true
+          whoami || true
+          echo "agent: ${AGENT_NAME:-unknown}"
+          echo "== tools"
+          for tool in pwsh node npm dotnet docker git curl python3; do
+            if command -v "$tool" >/dev/null 2>&1; then
+              echo "$tool: $(command -v $tool)"
+            else
+              echo "$tool: MISSING"
+            fi
+          done
+          echo "== sudo"
+          if sudo -n true 2>/dev/null; then echo "sudo: passwordless"; else echo "sudo: no"; fi
+          echo "== network"
+          for url in \
+            https://registry.npmjs.org/ \
+            https://nodejs.org/dist/index.json \
+            https://api.githubcopilot.com/ \
+            https://mcr.microsoft.com/v2/ \
+            https://api.github.com/ \
+            https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json \
+            https://dotnetcli.azureedge.net/dotnet/release-metadata/releases-index.json \
+            https://dot.net/v1/dotnet-install.sh \
+            https://github.com/PowerShell/PowerShell/releases/latest ; do
+            code=$(curl -sS -o /dev/null -m 20 -w '%{http_code}' "$url" 2>/dev/null || echo "failed")
+            echo "$url -> $code"
+          done
+          echo "== dotnet already on disk"
+          ls -d /usr/share/dotnet /usr/lib64/dotnet "$HOME/.dotnet" 2>/dev/null || echo "none"
+          echo "== powershell tarball"
+          PS_URL="https://github.com/PowerShell/PowerShell/releases/download/v7.4.6/powershell-7.4.6-linux-x64.tar.gz"
+          code=$(curl -fsSL -r 0-1023 -o /tmp/pwsh-probe.bin -m 60 -w '%{http_code}' "$PS_URL" 2>/dev/null || echo "failed")
+          echo "$PS_URL -> $code ($(wc -c < /tmp/pwsh-probe.bin 2>/dev/null || echo 0) bytes read)"
+          rm -f /tmp/pwsh-probe.bin
+          echo "== done"
+        displayName: Report what this agent has and can reach
+        continueOnError: true

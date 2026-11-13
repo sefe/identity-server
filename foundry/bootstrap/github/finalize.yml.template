@@ -1,0 +1,35 @@
+name: Foundry Finalize
+on:
+  push:
+    branches: ['{{TARGET_BRANCH}}']
+    paths: ['.foundry/**', '.github/workflows/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: '{{TARGET_BRANCH}}'
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Restore the embedded Foundry version used by bootstrap
+        shell: pwsh
+        run: |
+          git restore --source '{{RUNTIME_REF}}' --worktree -- foundry
+          if ($LASTEXITCODE) { throw 'Cannot restore pinned embedded Foundry.' }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --prefix foundry
+      - name: Verify merged installation
+        shell: pwsh
+        run: ./foundry/scripts/Start-FoundryBootstrap.ps1 -ConfigPath .foundry/bootstrap.json -Phase Finalize
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: foundry-installation
+          path: .qa-foundry-artifacts/
+          include-hidden-files: true

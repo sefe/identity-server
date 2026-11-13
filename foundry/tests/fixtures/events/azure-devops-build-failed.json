@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "runId": "external-event",
+  "eventId": "azure-devops:ci.build.failed:12345",
+  "type": "ci.build.failed",
+  "source": "azure-devops",
+  "occurredAt": "2026-08-03T10:00:00Z",
+  "repository": {
+    "provider": "azure-repos",
+    "name": "customer-project",
+    "url": "https://dev.azure.com/example/product/_git/customer-project",
+    "ref": "refs/heads/main",
+    "commitSha": "0123456789abcdef0123456789abcdef01234567"
+  },
+  "correlation": {
+    "ciRunId": "12345",
+    "buildId": "12345",
+    "pipelineId": "42",
+    "pipelineName": "product-ci",
+    "pullRequestId": "",
+    "workItemId": ""
+  },
+  "change": {
+    "baseCommitSha": "89abcdef0123456789abcdef0123456789abcdef",
+    "headCommitSha": "0123456789abcdef0123456789abcdef01234567",
+    "basis": "parent",
+    "available": true,
+    "reason": "",
+    "fileCount": 2,
+    "truncated": false,
+    "files": [
+      { "path": "src/Pricing/QuoteService.cs", "status": "modified", "insertions": 18, "deletions": 4 },
+      { "path": "tests/Pricing/QuoteServiceTests.cs", "status": "added", "insertions": 61, "deletions": 0 }
+    ]
+  },
+  "metadata": {
+    "organizationUrl": "https://dev.azure.com/example",
+    "project": "product",
+    "actor": "CI Service"
+  }
+}

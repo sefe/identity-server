@@ -1,0 +1,69 @@
+name: implement-work-item
+version: 1
+settings: { max_stage_iterations: 3, fail_on_schema_error: true, preserve_all_artifacts: true }
+stages:
+  - id: implementation-analysis
+    risk: critical
+    type: parallel_with_synthesis
+    depends_on: []
+    agents:
+      - { id: implementation-architecture-analyst, prompt: prompts/sdlc/implementation-architecture.md, schema: schemas/sdlc/analysis.schema.json, output: architecture-analysis.json }
+      - { id: implementation-engineering-analyst, prompt: prompts/sdlc/implementation-engineering.md, schema: schemas/sdlc/analysis.schema.json, output: engineering-analysis.json }
+      - { id: implementation-quality-analyst, prompt: prompts/sdlc/implementation-quality.md, schema: schemas/sdlc/analysis.schema.json, output: quality-analysis.json }
+    synthesis: { agent: implementation-synthesis, prompt: prompts/sdlc/synthesis.md, schema: schemas/sdlc/synthesis.schema.json, output: implementation-synthesis.json }
+  - id: change-generation
+    risk: critical
+    type: sequential
+    depends_on: [implementation-analysis]
+    agents:
+      - { id: implementation-change-generator, prompt: prompts/sdlc/change-generator.md, schema: schemas/actions/change-set.schema.json, output: change-set.json }
+    assurance: { reviewed_by: change-review, deterministic_evidence: true }
+  - id: change-review
+    risk: critical
+    type: parallel_review
+    depends_on: [change-generation]
+    agents:
+      - { id: change-correctness-reviewer, prompt: prompts/sdlc/review-correctness.md, schema: schemas/sdlc/review.schema.json, output: correctness-review.json }
+      - { id: change-quality-reviewer, prompt: prompts/sdlc/review-quality.md, schema: schemas/sdlc/review.schema.json, output: quality-review.json }
+      - { id: change-security-reviewer, prompt: prompts/sdlc/review-security.md, schema: schemas/sdlc/review.schema.json, output: security-review.json }
+    approval: { strategy: unanimous, on_reject: { return_to: change-generation }, max_iterations: 3 }
+  - id: apply-approved-changes
+    risk: critical
+    type: deterministic_action
+    depends_on: [change-review]
+    action: { handler: apply_change_set, input: change-set.json, output: action-result.json }
+    assurance: { approved_by: change-review }
+  - id: quality-verification
+    risk: critical
+    type: deterministic_action
+    depends_on: [apply-approved-changes]
+    action: { handler: quality_suite, output: action-result.json }
+  - id: verification-review
+    risk: critical
+    type: parallel_review
+    depends_on: [quality-verification]
+    agents:
+      - { id: verification-correctness-reviewer, prompt: prompts/sdlc/review-correctness.md, schema: schemas/sdlc/review.schema.json, output: correctness-review.json }
+      - { id: verification-quality-reviewer, prompt: prompts/sdlc/review-quality.md, schema: schemas/sdlc/review.schema.json, output: quality-review.json }
+      - { id: verification-security-reviewer, prompt: prompts/sdlc/review-security.md, schema: schemas/sdlc/review.schema.json, output: security-review.json }
+    # No return_to on purpose. The files are already on disk by the time this
+    # review runs, and a second generation round cannot be applied over them:
+    # the idempotency registry reports the paths as already written and skips
+    # the revision, or the apply stage refuses them as dirty. A rejection here
+    # is therefore reported and the run stops, with the changes in the working
+    # tree and nothing published.
+    approval: { strategy: unanimous, max_iterations: 1 }
+  - id: publish-draft-change
+    risk: critical
+    type: deterministic_action
+    depends_on: [verification-review]
+    action:
+      handler: deliver_changes
+      # Named, not searched for: the reviewers approved this document, and a
+      # critic loop leaves earlier drafts of the same name behind it.
+      inputs:
+        changeSet:
+          stage: change-generation
+          artifact: change-set.json
+      output: action-result.json
+    assurance: { approved_by: verification-review }

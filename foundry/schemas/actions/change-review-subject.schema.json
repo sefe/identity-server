@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Change review subject",
+  "$comment": "What reviewers are actually judging. The plan is the work a person's agent proposed; the lock files are machine output that a deterministic stage has already checked against the approved profile. Carrying the lock by reference keeps three review requests from each containing tens of thousands of lines nobody wrote, and the hashes here tie an approval to exact bytes rather than to a description of them.",
+  "type": "object",
+  "required": [
+    "runId",
+    "stageId",
+    "planPath",
+    "planSha256",
+    "blueprintSha256",
+    "finalChangeSetPath",
+    "finalChangeSetSha256",
+    "resolverEvidencePath",
+    "resolverEvidenceSha256",
+    "authoredChangeCount",
+    "materialisations"
+  ],
+  "properties": {
+    "runId": { "type": "string", "minLength": 1 },
+    "stageId": { "type": "string", "minLength": 1 },
+    "planPath": { "type": "string", "minLength": 1 },
+    "planSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "blueprintSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "finalChangeSetPath": { "type": "string", "minLength": 1 },
+    "finalChangeSetSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "resolverEvidencePath": { "type": "string", "minLength": 1 },
+    "resolverEvidenceSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "authoredChangeCount": { "type": "integer", "minimum": 0 },
+    "materialisations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "lockPath",
+          "manifestPath",
+          "toolchainId",
+          "ecosystem",
+          "registry",
+          "projectPaths",
+          "lockSha256",
+          "packageCount"
+        ],
+        "properties": {
+          "lockPath": { "type": "string", "minLength": 1 },
+          "manifestPath": { "type": "string", "minLength": 1 },
+          "toolchainId": { "type": "string", "minLength": 1 },
+          "ecosystem": { "type": "string", "minLength": 1 },
+          "registry": { "type": "string", "minLength": 1 },
+          "projectPaths": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "lockSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "packageCount": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

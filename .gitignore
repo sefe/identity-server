@@ -426,3 +426,8 @@ FodyWeavers.xsd
 
 # Official VS Code C# Dev Kit Extension exclusion
 #*.lscache
+
+# Local Foundry run state; generated automation and .foundry/ are deliverables.
+/.qa-foundry-artifacts/
+/.sdlc-foundry/
+/.foundry-target/

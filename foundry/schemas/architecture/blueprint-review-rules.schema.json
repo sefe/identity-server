@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Blueprint review resolution rules",
+  "description": "A critic reviewing a blueprint must say, for every finding, whether the producer can settle it inside the blueprint or whether it waits on a fact nobody in the run can supply. Without that distinction a critic can demand an unavailable endpoint or credential for every remaining iteration, and the producer can never satisfy it.",
+  "type": "object",
+  "properties": {
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["resolutionScope"]
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "type": "object",
+        "required": ["decision"],
+        "properties": {
+          "decision": { "const": "revision_required" }
+        }
+      },
+      "then": {
+        "type": "object",
+        "required": ["findings"],
+        "properties": {
+          "findings": {
+            "type": "array",
+            "contains": {
+              "type": "object",
+              "required": ["severity", "resolutionScope"],
+              "properties": {
+                "severity": { "enum": ["error", "critical"] },
+                "resolutionScope": { "const": "blueprint_revision" }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "type": "object",
+        "required": ["decision"],
+        "properties": {
+          "decision": { "const": "approved" }
+        }
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "findings": {
+            "type": "array",
+            "not": {
+              "contains": {
+                "type": "object",
+                "required": ["severity"],
+                "properties": {
+                  "severity": { "enum": ["error", "critical"] }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

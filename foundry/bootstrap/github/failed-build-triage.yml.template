@@ -1,0 +1,47 @@
+name: Foundry Failure Triage
+on:
+  workflow_run:
+    workflows: [{{AUTOMATION_WORKFLOW_NAMES}}]
+    types: [completed]
+    branches: ['{{TARGET_BRANCH}}']
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: foundry-triage-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+jobs:
+  triage:
+    if: github.event.workflow_run.conclusion == 'failure' && (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch') && github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: '{{TARGET_BRANCH}}'
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Restore the embedded Foundry version used by bootstrap
+        shell: pwsh
+        run: |
+          git restore --source '{{RUNTIME_REF}}' --worktree -- foundry
+          if ($LASTEXITCODE) { throw 'Cannot restore pinned embedded Foundry.' }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --prefix foundry
+      - run: npm install -g @github/copilot
+      - name: Analyze trusted default-branch failure
+        shell: pwsh
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          FOUNDRY_GITHUB_TOKEN: ${{ github.token }}
+          QA_FOUNDRY_ADDITIONAL_USD_LIMIT: ''
+          FAILED_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: ./foundry/scripts/github/Invoke-GitHubLifecycle.ps1 -EventType ci.build.failed -CiRunId $env:FAILED_RUN_ID
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: foundry-triage-evidence
+          path: .qa-foundry-artifacts/
+          include-hidden-files: true

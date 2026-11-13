@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Toolchain resolution evidence",
+  "$comment": "What the resolver did with the architect's proposal, kept whether it succeeded or not. A refusal here is the useful case: it records which package did not exist, or which range nothing satisfied, so the next attempt fixes the actual problem instead of guessing at one.",
+  "type": "object",
+  "required": ["runId", "stageId", "status", "blueprintSha256", "toolchains", "checks", "findings"],
+  "additionalProperties": false,
+  "properties": {
+    "runId": { "type": "string", "minLength": 1 },
+    "stageId": { "type": "string", "minLength": 1 },
+    "status": { "type": "string", "enum": ["completed", "blocked", "failed", "revision_required"] },
+    "cause": {
+      "$comment": "Which kind of refusal this was, in a word the workflow can act on. A range written in another ecosystem's notation and a feed that did not answer both used to read as 'nothing satisfies this', which sent everyone to look at a registry holding the package all along.",
+      "type": "string",
+      "enum": [
+        "",
+        "invalid_range",
+        "no_matching_version",
+        "package_not_found",
+        "denied_package",
+        "registry_unreachable"
+      ]
+    },
+    "blueprintSha256": { "type": "string", "pattern": "^$|^[a-f0-9]{64}$" },
+    "toolchains": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "ecosystem", "registry", "sha256", "packageCount", "projectPaths"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "ecosystem": { "type": "string", "minLength": 1 },
+          "registry": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "packageCount": { "type": "integer", "minimum": 0 },
+          "projectPaths": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "outcome", "detail"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "outcome": { "type": "string", "enum": ["passed", "failed", "skipped"] },
+          "detail": { "type": "string" }
+        }
+      }
+    },
+    "findings": { "type": "array", "items": { "type": "string" } }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cross-functional SDLC synthesis",
+  "allOf": [
+    { "$ref": "../common/agent-result.schema.json" },
+    {
+      "type": "object",
+      "required": ["outcome", "findings"],
+      "properties": {
+        "outcome": { "type": "string", "enum": ["action_required", "no_action_needed", "blocked"] },
+        "findings": { "type": "array", "items": { "type": "object" } }
+      }
+    }
+  ]
+}

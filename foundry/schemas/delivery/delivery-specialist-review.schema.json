@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Delivery specialist review",
+  "allOf": [
+    { "$ref": "../common/review-decision.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "agentId": { "enum": ["delivery-security-review", "release-risk-review"] },
+        "stageId": { "const": "delivery-review" }
+      }
+    }
+  ]
+}

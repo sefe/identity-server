@@ -1,0 +1,604 @@
+{
+  "agentId": "automation-architect",
+  "stageId": "architecture",
+  "runId": "run-20260826T093857927Z-011bdb67",
+  "status": "completed",
+  "summary": "Blueprint for a new, self-contained end-to-end/API automation suite at tests/automation, built on TypeScript 5.9 + Playwright Test on Node 22 and npm, isolated from the .NET solution and from the Angular application workspace. The suite closes the discovery-confirmed gap that no integration, contract, end-to-end or WebSocket test exists anywhere in the repository (discovery-result.json verificationSurface.coverageGaps), while leaving the existing MSTest and vitest unit suites untouched as the unit-level surface. All Playwright, HTTP, WebSocket, browser, clock, configuration, secret and reporting concerns live behind a thin platform adapter layer (src/platform/**), so scenario code is expressed purely in domain terms (quote/curve requests, statuses, pages, frames) and the runner technology can be replaced without rewriting scenarios. Requirements are traced by REQ/AC identifier from requirements-discovery; the four behaviour-affecting documentation contradictions (CON-01, CON-02, CON-06, CON-07) are represented as quarantined, tagged specifications that record both documented outcomes and refuse to assert a guessed one until a human owner resolves them. Nothing in this blueprint has been executed: ci-evidence.json for build 447 is 'unavailable' and no deterministic command-runner artifact exists for this run, so every command listed here is a proposal, and the internal NuGet feed and public npm registry reachability from the runner remain unproven.",
+  "evidence": [
+    {
+      "source": "/home/vsts/work/1/s/.qa-foundry-artifacts/run-20260826T093857927Z-011bdb67/discovery/discovery-result.json",
+      "description": "Approved discovery synthesis: .NET 10 solution of 20 projects, six deployable services plus an Angular 21 SPA, declared-only verification surface with candidateCommands dotnet restore/build/test and npm ci/build/test all verified=false, coverageGaps stating no integration/contract/end-to-end/performance suite exists, and RISK-01..RISK-08. This is the authoritative baseline for every decision below."
+    },
+    {
+      "source": "/home/vsts/work/1/s/.qa-foundry-artifacts/run-20260826T093857927Z-011bdb67/discovery/repository-discovery.json",
+      "description": "Stack and structure inputs: pricing-service-ui pins npm@10.9.4 and typescript ~5.9.2 with vitest 4 via @angular/build:unit-test; CommodityPricingService.slnx excludes RabbitMqKafkaBridgeWorker(.Tests) from Debug builds; NuGet.Config clears sources and leaves only proget.sefe.eu; seven Dockerfiles; apiDefinitions list a stale 4-operation OpenAPI file plus schemas/{quote,curve}-{request,response}.schema.json; uiEntryPoints list SPA routes, features and the untested web-socket.service.ts."
+    },
+    {
+      "source": "/home/vsts/work/1/s/.qa-foundry-artifacts/run-20260826T093857927Z-011bdb67/discovery/requirements-discovery.json",
+      "description": "Requirement corpus REQ-01..REQ-32, AC-01..AC-12, flows FLOW-01..FLOW-08, contradictions CON-01..CON-10 and gaps GAP-01..GAP-12 with their quantitative thresholds (5s window, UtcNow+20min SLA, 60 req/min/IP, pageSize cap 100, 50-character ExternalReference, ~30s ticket lifetime). Used to derive the test taxonomy, the traceability model and the quarantine policy."
+    },
+    {
+      "source": "/home/vsts/work/1/s/.qa-foundry-artifacts/run-20260826T093857927Z-011bdb67/discovery/delivery-environment-discovery.json",
+      "description": "Azure DevOps org sefe-dv, project 'AI Mission', pipeline 231 'start-pipeline', build 447, definitionFileFound false, evidenceStatus 'unavailable'; container images are the primary artifact; registry, environments, protected branches, required checks and approval gates all unknown. Drives the CI proposal being a repository-side template with delivery-side wiring left as an explicit unknown."
+    },
+    {
+      "source": "/home/vsts/work/1/s/.qa-foundry-artifacts/run-20260826T093857927Z-011bdb67/context/ci-evidence.json",
+      "description": "status 'unavailable', empty build object, zero jobs and zero test runs, collector warning about a missing 'result' property. Basis for the rule that this blueprint asserts no build, test or deployment outcome."
+    },
+    {
+      "source": "/home/vsts/work/1/s/.qa-foundry-artifacts/run-20260826T093857927Z-011bdb67/context/run-configuration.json",
+      "description": "Project commodity-pricing-service, workflow bootstrap-automation v1, assurance mode 'maximum' with deterministicEvidenceRequired true and unanimous reviews; secrets sourced from environment by name only (AZURE_DEVOPS_TOKEN, COPILOT_GITHUB_TOKEN, GH_TOKEN, GITHUB_TOKEN). Drives the evidence, secret-handling and reporting requirements of the suite."
+    },
+    {
+      "source": "/home/vsts/work/1/s/.qa-foundry-artifacts/run-20260826T093857927Z-011bdb67/context/sdlc-event.json",
+      "description": "Manual event azure-devops:manual:447 on azure-repos 'AI Mission', ref refs/heads/main, commit a0da6c0f228f43317c68688e26d78295ffce4891 — fixes the repository revision this blueprint targets."
+    },
+    {
+      "source": "/home/vsts/work/1/s/.qa-foundry-artifacts/run-20260826T093857927Z-011bdb67/context/repository.json",
+      "description": "Referenced but not read in this stage (654707 bytes, sha256 e681d315c558346ae25b407ef9efe90c8159be46eb6665a578138af66109039c); cited only as the upstream source of the repository inventory that repository-discovery and delivery-environment-discovery summarise."
+    }
+  ],
+  "assumptions": [
+    "The three discovery artifacts plus the approved discovery synthesis are authoritative and immutable; no repository source file was re-read in this stage, so every repository fact below is inherited from them.",
+    "Node.js 22 LTS with a global WebSocket implementation is available on the automation runner. It is not evidenced anywhere in the collected inventory, so the suite pins the version in package.json engines and the CI template installs it explicitly instead of relying on the agent image.",
+    "The public npm registry is reachable for the automation workspace. NuGet.Config restricts only .NET restore, and pricing-service-ui/package-lock.json implies npm installs already occur somewhere, but no executed evidence exists.",
+    "A deployed or locally composed environment (API base URL plus the five workers, Kafka, RabbitMQ and a CosmosDB emulator) can be supplied to the suite by URL and credentials at run time. The suite never provisions infrastructure itself; if no target is configured it must skip, not fail silently.",
+    "schemas/quote-request.schema.json, quote-response.schema.json, curve-request.schema.json and curve-response.schema.json are the least-stale machine-readable contract available and are used for structural assertions only; CommodityPricingService.Api/CommodityPricingService.openapi.yaml is treated as stale per RISK-06 and is never used as an oracle.",
+    "Adding a top-level tests/automation directory with its own package.json and lockfile does not affect dotnet restore/build/test, because CommodityPricingService.slnx enumerates projects explicitly and the directory contains no .csproj."
+  ],
+  "unknowns": [
+    "Whether any of the proposed commands succeed: no deterministic command-runner artifact exists for this run and ci-evidence.json for build 447 is 'unavailable'.",
+    "Reachability of https://proget.sefe.eu:8143 and of the public npm registry from the execution environment, which gates .NET and Node dependency installation respectively.",
+    "Whether Entra ID authentication is actually enforced by the API (CON-02). The auth strategy is therefore pluggable with an anonymous provider as an explicitly configured mode, and the auth test pack is gated on a configuration flag rather than assumed.",
+    "The authoritative priceGranularity value set (CON-01: 10m and 1Y contested), the QuotePricingDetail fee shape (CON-06) and the history de-duplication semantics (CON-07). Boundary specifications for these are authored but quarantined.",
+    "FeesController routes and the full WebSocket frame schema were never read; the fees and WS packs are specified at flow level and must be completed after those files are read.",
+    "Location and content of Azure DevOps pipeline 231 'start-pipeline'; no definition file was found in the inventory, so the proposed pipeline template cannot be reconciled with what CI actually runs today.",
+    "Container registry, image tags, deployment environments, protected branches, required checks and approval gates — owned by the delivery system and not evidenced.",
+    "Whether a dedicated, isolated test target environment exists. No API deletes quote or curve records, so run data accumulates and the suite must not be pointed at a shared or production store.",
+    "Existing coverage, lint, static-analysis, SBOM and dependency-scanning tooling for either stack — none was observed, so this blueprint adds only what the automation workspace itself needs."
+  ],
+  "warnings": [
+    "No claim in this blueprint is backed by execution. Every command, script and pipeline stage listed here is a proposal for the deterministic command runner; none has been run and none may be reported as passing.",
+    "Assurance mode is 'maximum' with deterministicEvidenceRequired true, so the implementation stage must obtain runner artifacts (command, exit code, output, duration, artifacts) before any downstream stage asserts suite health.",
+    "CON-01, CON-02, CON-06 and CON-07 sit exactly on the boundary values a test designer would pick. The quarantine policy below is mandatory: a quarantined specification records both documented outcomes and reports 'unresolved', it must never be turned into a passing assertion by guessing.",
+    "CommodityPricingService.RabbitMqKafkaBridgeWorker and its tests are excluded from the Debug solution build, so a default dotnet build/test silently skips them. The proposed CI template runs the .NET tests in Release and additionally targets the excluded test project by path; this is a build-configuration blind spot, not something the new suite can compensate for.",
+    "The suite creates real quote and curve records through the public API and no deletion endpoint is documented, so data accumulates in the target CosmosDB. It must run only against a disposable environment, and every record it creates must carry a run-scoped ExternalReference (within the 50-character limit) for identification.",
+    "Rate limiting is 60 requests per minute per client IP. Parallel workers share one source IP, so an unthrottled suite will produce spurious 429s; the concurrency and pacing rules below are a correctness requirement, not a tuning preference.",
+    "WebSocket tickets are short-lived HS256 tokens delivered in the query string. Traces, videos, HAR files and logs must be redacted before publication or the suite will leak credentials into CI artifacts.",
+    "ResponseValidationWorker is a documented pass-through and no dead-letter queue exists (GAP-01, GAP-02), so end-to-end assertions cannot rely on invalid responses being rejected downstream.",
+    "Playwright browser binaries are a large download that must succeed on the runner; only Chromium is installed to bound that risk, and a browser-install failure must fail the UI job loudly rather than skipping it."
+  ],
+  "details": {
+    "decision": {
+      "outcome": "proceed",
+      "scope": "Add a new automation workspace that provides API, WebSocket, contract and UI end-to-end coverage. Do not modify product code, the .slnx, the existing MSTest projects or the pricing-service-ui vitest suite.",
+      "rationale": "Discovery shows a strong unit-test surface (10 MSTest projects, 20 UI spec files) and a total absence of cross-service verification. The highest-value, lowest-risk addition is therefore a black-box suite that exercises the documented flows FLOW-01..FLOW-08 over the real HTTP/WebSocket surface plus the Angular SPA, without touching anything that already works."
+    },
+    "stack": {
+      "language": "TypeScript 5.9 (strict, ES2023 target, NodeNext modules)",
+      "runner": "@playwright/test",
+      "runtime": "Node.js 22 LTS, npm (matching the repository's existing npm@10.9.4 toolchain)",
+      "browser": "Chromium only",
+      "assertionSupport": "Playwright expect; Ajv 8 for JSON Schema validation against schemas/*.schema.json",
+      "dependencies": [
+        "@playwright/test (test runner, API request context, browser automation, tracing, reporters)",
+        "typescript + @types/node (compile-time contract enforcement)",
+        "ajv + ajv-formats (structural assertions against the repository JSON schemas)"
+      ],
+      "explicitlyRejected": [
+        "Adding a new .NET integration-test project: it would inherit the proget.sefe.eu restore dependency (RISK-02) and the .slnx Debug exclusion pitfall, and cannot drive the Angular SPA. The MSTest projects remain the right home for unit-level logic.",
+        "Cypress or WebdriverIO for UI: neither offers a first-class API request context, and Playwright covers REST, browser and trace capture in one runner with one report.",
+        "Extending the pricing-service-ui vitest workspace: vitest runs on jsdom against mocked services and is the unit surface for that app; overloading it with cross-service tests would couple UI unit CI to backend availability.",
+        "A dedicated HTTP/gRPC mocking layer or Kafka client in the suite: the tests are black-box over the public API by design, so no test-only coupling to Kafka topics or CosmosDB is introduced.",
+        "Adding dotenv, a logging framework or an HTTP client library: Node 22 provides fetch, WebSocket and structured console output, and Playwright provides the request context; fewer dependencies means a smaller supply-chain surface on an air-gapped-ish runner."
+      ],
+      "evidenceLink": "TypeScript and npm are already first-class in this repository (pricing-service-ui pins typescript ~5.9.2 and npm@10.9.4), the system under test exposes HTTP plus WebSocket plus a browser UI, and no existing framework covers any of those three at once."
+    },
+    "platformBoundary": {
+      "principle": "Scenario code must compile and read without any knowledge of Playwright, Node, environment variables or transport details. Exactly one layer imports @playwright/test outside of the spec entry points.",
+      "layers": [
+        {
+          "layer": "tests/**/*.spec.ts",
+          "responsibility": "Given/When/Then scenarios expressed in domain vocabulary, tagged with REQ/AC ids. May import fixtures and domain builders only."
+        },
+        {
+          "layer": "src/fixtures/",
+          "responsibility": "Playwright test.extend fixtures that hand scenarios ready-made clients (quoteApi, curveApi, feesApi, quoteStream, pricingUi), a run-scoped data namespace and a logger. The single sanctioned bridge between the runner and the domain."
+        },
+        {
+          "layer": "src/domain/",
+          "responsibility": "Request builders, response projections, status/granularity enums, page/frame models, polling predicates and the requirement-to-scenario trace map. Pure TypeScript, no I/O."
+        },
+        {
+          "layer": "src/clients/",
+          "responsibility": "Domain-shaped clients: QuoteApiClient, CurveApiClient, FeesApiClient, ProbeClient, QuoteStreamClient. They speak REQ vocabulary (submitQuote, awaitTerminalStatus, overrideLines, openStream) and delegate transport to the platform layer."
+        },
+        {
+          "layer": "src/platform/",
+          "responsibility": "The only technology-aware layer: HttpTransport (Playwright APIRequestContext), WsTransport (Node WebSocket), BrowserSession, ConfigProvider, SecretProvider, Clock, CorrelationIdFactory, StructuredLogger, Redactor, SchemaValidator, Reporter attachments."
+        }
+      ],
+      "enforcement": [
+        "TypeScript path aliases (@domain, @clients, @platform, @fixtures) plus a lint rule forbidding imports of @playwright/test, node:*, process.env or raw URLs outside src/platform and src/fixtures.",
+        "src/platform/index.ts exports interfaces; implementations are constructed once in the fixture layer and injected, so an alternative runner or transport is a single-file substitution.",
+        "No spec file may contain a literal URL, header name, port, credential name or JSON payload; all of those come from configuration or domain builders."
+      ]
+    },
+    "structure": {
+      "root": "tests/automation",
+      "isolation": "Own package.json, package-lock.json, tsconfig.json and playwright.config.ts. Not referenced by CommodityPricingService.slnx and not part of the pricing-service-ui Angular workspace, so neither dotnet nor ng builds change behaviour.",
+      "tree": [
+        "tests/automation/package.json — scripts: test, test:smoke, test:api, test:ws, test:contract, test:ui, test:quarantine, typecheck, lint, report",
+        "tests/automation/playwright.config.ts — projects: smoke, api, ws, contract, ui, quarantine; reporters, retries, timeouts, global setup",
+        "tests/automation/tsconfig.json — strict, NodeNext, path aliases",
+        "tests/automation/config/default.json + local.json + ci.json — non-secret settings only",
+        "tests/automation/src/platform/{http,ws,browser,config,secrets,clock,logging,redaction,schema,reporting}.ts",
+        "tests/automation/src/clients/{quote-api,curve-api,fees-api,probes,quote-stream,curve-stream}.client.ts",
+        "tests/automation/src/domain/{quote,curve,fee,status,granularity,paging,trace-map}.ts",
+        "tests/automation/src/domain/builders/{quote-request,curve-request,price-override,fee-configuration}.builder.ts",
+        "tests/automation/src/fixtures/{api,stream,ui,data,logging}.fixture.ts",
+        "tests/automation/src/ui/pages/{login,requests,manual-price,live-curves,fee-configurations,user-preferences}.page.ts",
+        "tests/automation/tests/smoke/*.spec.ts",
+        "tests/automation/tests/api/{quote,curve,override,lifecycle,paging,fees,rate-limit,auth,errors}/*.spec.ts",
+        "tests/automation/tests/ws/*.spec.ts",
+        "tests/automation/tests/contract/*.spec.ts",
+        "tests/automation/tests/ui/*.spec.ts",
+        "tests/automation/tests/quarantine/*.spec.ts",
+        "tests/automation/global-setup.ts — environment preflight and fingerprint artifact",
+        "tests/automation/README.md — how to configure, run and read the report; explicitly states no result is implied until executed"
+      ],
+      "namingConvention": "Spec files are named after the flow or requirement group; every test title starts with its trace ids, e.g. 'REQ-02/AC-02 returns InProgress with a 20-minute SLA after the 5s window'."
+    },
+    "testTaxonomy": {
+      "layersOwnedElsewhere": "Unit behaviour stays in the MSTest projects and the pricing-service-ui vitest specs. This suite adds nothing at unit level and duplicates no existing assertion.",
+      "packs": [
+        {
+          "id": "smoke",
+          "scope": "Probe reachability for every configured service (GET /probes/live, GET /probes/ready), one POST /quote round trip, one WebSocket handshake and one SPA page load.",
+          "traces": [
+            "REQ-24",
+            "REQ-01"
+          ],
+          "budget": "under 2 minutes",
+          "gate": "runs first; if it fails the remaining packs are skipped with a clear blocked reason rather than producing noise"
+        },
+        {
+          "id": "api",
+          "scope": "FLOW-01..FLOW-05 and FLOW-07 over REST: synchronous window and InProgress handoff, duplicate id rejection, validation declines, overrides, cancel/decline idempotency, include shaping, paging and filtering, fee application, rate limiting, error payload shape.",
+          "traces": [
+            "REQ-01..REQ-03",
+            "REQ-07..REQ-09",
+            "REQ-12..REQ-14",
+            "REQ-16..REQ-19",
+            "REQ-23",
+            "REQ-25",
+            "REQ-28",
+            "REQ-32",
+            "AC-02",
+            "AC-03",
+            "AC-04",
+            "AC-06",
+            "AC-08",
+            "AC-09"
+          ]
+        },
+        {
+          "id": "ws",
+          "scope": "FLOW-06: ticket issuance, handshake with the ticket, full page frame on connect, coalesced frames on change bursts, pageSize clamping to [1,100], enum-name and EnumMember status acceptance, read-only behaviour for inbound frames, ticket expiry and audience scoping.",
+          "traces": [
+            "REQ-29",
+            "REQ-26",
+            "AC-12",
+            "AC-10"
+          ],
+          "note": "Closes the discovery-flagged blind spot that neither the API WebSocket handler nor the UI web-socket.service.ts has direct coverage."
+        },
+        {
+          "id": "contract",
+          "scope": "Every response captured by the api and ws packs is validated against schemas/{quote,curve}-{request,response}.schema.json, plus camelCase, null-omission, string-enum and second-precision ISO 8601 serialisation rules. Divergences are reported as contract findings naming the schema file.",
+          "traces": [
+            "REQ-23",
+            "REQ-12"
+          ],
+          "note": "The stale OpenAPI file is deliberately not used as an oracle (RISK-06); a separate informational check reports its drift instead of failing on it."
+        },
+        {
+          "id": "ui",
+          "scope": "FLOW-01/FLOW-04/FLOW-06 through the SPA: submit a request from manual-price, see it in requests, apply a manual price override, observe a live-curves update over the WebSocket, and edit a fee configuration.",
+          "traces": [
+            "REQ-16",
+            "REQ-29",
+            "REQ-13"
+          ],
+          "note": "Prioritises exactly the SPA areas discovery lists as untested (live-curves, web-socket.service.ts, settings)."
+        },
+        {
+          "id": "quarantine",
+          "scope": "Boundary specifications for CON-01 (priceGranularity 10m and 1Y), CON-02 (auth enforced vs deferred), CON-06 (FeeTotal/QuoteFeeDetail presence) and CON-07 (history growth on identical republish). Each records the observed behaviour and both documented expectations and reports 'unresolved'.",
+          "traces": [
+            "CON-01",
+            "CON-02",
+            "CON-06",
+            "CON-07",
+            "AC-01",
+            "AC-05",
+            "AC-07"
+          ],
+          "policy": "Never contributes a pass or a fail to the gate; its output is a decision request for a human owner."
+        }
+      ],
+      "notCovered": [
+        "Performance, load and soak testing: no throughput, latency-percentile or availability requirement is documented (requirements-discovery unknowns), so any threshold would be invented.",
+        "Kafka topic-level and CosmosDB document-level assertions: they would couple the suite to internal topology and duplicate PersistenceWorker unit coverage; observable effects are asserted through the API instead.",
+        "RabbitMqKafkaBridgeWorker end-to-end behaviour (FLOW-08): no acceptance criteria are documented and the worker is excluded from Debug builds. Recorded as a deferred milestone item, not silently skipped."
+      ]
+    },
+    "apiStrategy": {
+      "transport": "Playwright APIRequestContext behind src/platform/http.ts; one context per worker with a base URL, default headers and a per-request correlation id.",
+      "clientShape": "Clients expose intent, not verbs: submitQuote(request), getQuote(id, includes), listQuotes(filter), overrideLines(id, overrides), cancel(id), decline(id, reason), submitCurve(request), listFees(contractType).",
+      "asynchrony": "The 5s synchronous window means a submit may return Completed, Declined or InProgress. awaitTerminalStatus(id) polls GET /quote/{id} with bounded backoff against a deadline derived from configuration (default 20 minutes matching the documented SLA, overridable downward for CI), and every scenario declares which outcomes it accepts. No test asserts that a specific request completes synchronously, because that is timing-dependent.",
+      "determinism": "Profile quotes are documented as deterministic from QuoteRequest.Id (REQ-15), so replay scenarios reuse a fixed id from a per-run namespace; every other scenario generates a fresh UUIDv7 (REQ-04) via src/platform/correlation.ts.",
+      "errorHandling": "4xx/5xx are first-class outcomes, never exceptions. Clients return a discriminated result so scenarios can assert status code, application/problem+json shape and absence of internal detail (REQ-28).",
+      "ratePacing": "A shared token-bucket limiter in src/platform/http.ts caps the whole suite well below 60 requests/minute/IP; the rate-limit scenario is the sole exception, runs serially in its own project, and is followed by a cool-down window so it cannot poison neighbouring tests (REQ-25/AC-09)."
+    },
+    "webSocketStrategy": {
+      "transport": "Node 22 global WebSocket behind src/platform/ws.ts; no extra dependency.",
+      "clientShape": "QuoteStreamClient.open({pageSize, status}) returns a frame stream with awaitFrame(predicate, timeout) and collect(duration); frames are parsed into the domain PagedResult model before scenarios see them.",
+      "ticketing": "The ticket is obtained through the auth provider immediately before the handshake, used once, and never logged; the redactor strips access_token from URLs in traces, logs and attachments.",
+      "coalescing": "Burst scenarios drive change signals through the REST API and assert frame counts within a settle window rather than exact-instant equality, because coalescing is explicitly documented as time-based (AC-12).",
+      "recording": "Every frame is written to a per-test NDJSON attachment (redacted) so a failure can be diagnosed without re-running."
+    },
+    "uiStrategy": {
+      "scope": "Thin end-to-end journeys only; component behaviour remains with vitest.",
+      "pageObjects": "One page object per SPA feature route, exposing user intent (submitManualPrice, openRequest, applyOverride, saveFee). Selectors resolve by role and accessible name first; where the SPA lacks stable hooks the blueprint proposes adding data-testid attributes as a reviewed product change rather than relying on CSS structure.",
+      "authentication": "The SPA uses MSAL. The suite does not automate the interactive Entra sign-in. It obtains a token through the configured auth provider and seeds the MSAL browser cache via a storage-state setup project, so UI tests start authenticated and deterministic. If the target environment is configured as unauthenticated, the setup project is skipped.",
+      "runtimeConfig": "The SPA reads public/config.json at runtime, so the UI pack asserts it is pointed at the same API base URL the api pack uses and fails preflight on mismatch.",
+      "stability": "No arbitrary sleeps; all waits are on observable state (network idle is avoided in favour of explicit element and frame conditions) because the app streams over WebSocket."
+    },
+    "configuration": {
+      "model": "Layered and validated: config/default.json (structure and safe defaults) < config/<environment>.json < CPS_AUTOMATION_* environment variables. ConfigProvider parses the merged object into a typed AutomationConfig at start-up and fails fast with a precise message listing missing keys.",
+      "keys": [
+        "api.baseUrl, api.timeoutMs, api.maxRequestsPerMinute",
+        "ws.quoteUrl, ws.curveUrl, ws.ticketPath, ws.handshakeTimeoutMs",
+        "ui.baseUrl, ui.enabled",
+        "probes.services[] (name + baseUrl) for the six services",
+        "auth.mode (entra | anonymous), auth.tenantId, auth.clientId, auth.scope, auth.roles",
+        "data.namespacePrefix, data.terminalPollTimeoutMs, data.pollIntervalMs",
+        "quarantine.enabled, contract.schemaDir, reporting.outputDir"
+      ],
+      "environments": "No deployment environment definition exists in the repository, so the suite ships local and ci profiles only and treats any other environment name as caller-supplied. It refuses to run when api.baseUrl resolves to a host not present in an explicit allowlist, so it cannot be aimed at production by accident.",
+      "noSecretsInFiles": "config/*.json contains no credential fields at all; secrets are read only through SecretProvider."
+    },
+    "authentication": {
+      "abstraction": "interface AuthProvider { getApiToken(role): Promise<Token>; getStreamTicket(kind): Promise<Ticket>; } resolved once per worker and injected into clients.",
+      "implementations": [
+        "EntraClientCredentialsProvider — OAuth2 client-credentials request using tenant id, client id, client secret and scope supplied purely by environment variable name; tokens cached in memory until 60s before expiry and never written to disk.",
+        "WsTicketProvider — exchanges an API token at POST /ws/{quote|curve}/ticket for the short-lived HS256 ticket, one per handshake, honouring the documented ~30s lifetime.",
+        "AnonymousProvider — used only when auth.mode=anonymous is explicitly configured, for environments where authentication is not enforced (CON-02 is unresolved, so this must be a deliberate choice, never a fallback on failure)."
+      ],
+      "rolesUnderTest": "Quote.Request, Quote.Read, Curve.Request, Curve.Read, Quote.Stream, Curve.Stream. Where distinct role principals are configured, negative authorisation scenarios assert 401/403; where they are not, those scenarios skip with a recorded reason instead of passing vacuously.",
+      "secretHandling": "SecretProvider reads process.env by explicit key name, never enumerates the environment, returns branded Secret values whose toString is masked, and registers each value with the Redactor so it cannot reach logs, traces, HAR files or reports. No credential is committed, defaulted or printed.",
+      "boundary": "The suite never issues, signs or forges tickets itself; it only exchanges credentials it was given through the product's own endpoints."
+    },
+    "dataStrategy": {
+      "isolation": "Every run allocates a namespace <prefix>-<runId-short>-<worker> used as the ExternalReference prefix, kept within the documented 50-character limit (REQ-07). GET /quote supports case-insensitive ExternalReference substring filtering (REQ-19), which is how a run finds and reports its own records.",
+      "creation": "Test data is created only through the public API by builders that default to documented-valid values (supported markets per REQ-32, UUIDv7 ids per REQ-04) and expose focused overrides for negative cases. No fixture file duplicates a domain model.",
+      "cleanup": "No deletion endpoint is documented, so the suite performs no destructive cleanup. It emits a run manifest of every id and ExternalReference it created so an operator can reconcile or purge the disposable environment. This limitation is stated in the README and in the run report.",
+      "sharedState": "None. Tests never depend on records created by another test; the only cross-test state is the immutable auth token cache and storage state.",
+      "referenceData": "Fee configurations required by fee scenarios are created through the fees API when the environment allows it, and the scenario skips with a recorded reason when it does not — fee lifecycle is undocumented (GAP-04), so nothing about activation or expiry is assumed."
+    },
+    "logging": {
+      "format": "Single-line JSON per event: timestamp, level, testId, traceIds (REQ/AC), correlationId (the request id shared across Kafka per REQ-22), component, message, durationMs.",
+      "correlation": "Every HTTP request and WebSocket handshake carries and logs the request id, so a suite failure can be joined to service logs and to the cps.api.response_latency metric without guesswork.",
+      "redaction": "All output passes through Redactor before emission; tokens, tickets, connection strings, Authorization headers and access_token query parameters are replaced with a fixed mask.",
+      "verbosity": "Quiet by default (assertions and failures), full request/response bodies captured in memory and attached only for failing tests."
+    },
+    "reporting": {
+      "reporters": [
+        "list — human-readable console output",
+        "junit — results.xml for Azure DevOps PublishTestResults",
+        "html — self-contained report published as a build artifact",
+        "json — machine-readable results consumed by later QA Foundry stages as deterministic evidence"
+      ],
+      "traceability": "A post-run step joins the JSON report with src/domain/trace-map.ts to emit requirement-coverage.json: for every REQ/AC id, the scenarios that exercise it and their outcome, plus the ids with no scenario at all. This is the artifact that shows coverage honestly instead of implying it.",
+      "quarantineReporting": "Quarantined specifications are reported in a separate section with both documented expectations and the observed behaviour, marked 'unresolved — requires an owner decision'. They never colour the overall result.",
+      "evidenceContract": "The suite writes results only; it makes no pass/fail claim outside its own artifacts. Downstream stages must cite the runner's command, exit code, output, duration and these artifacts."
+    },
+    "diagnostics": {
+      "preflight": "global-setup.ts probes every configured service (/probes/live then /probes/ready), resolves auth once, verifies the SPA config.json target matches api.baseUrl, and writes environment-fingerprint.json (base URLs, auth mode, schema directory, Node and Playwright versions, run id). If preflight fails the run stops with a blocked reason naming the unreachable component rather than producing dozens of misleading failures.",
+      "onFailure": "Trace, screenshot and video retained on first retry; request/response bodies, WebSocket frame log and the record's final GET projection attached automatically.",
+      "retries": "0 locally, 1 in CI, and 0 for the rate-limit and coalescing scenarios where a retry would mask a real timing defect. Flaky outcomes are reported as flaky, never silently re-passed.",
+      "timeouts": "Global 90s per test; the InProgress polling deadline is configuration-driven; explicit assertion timeouts everywhere so a hang reports its waiting condition.",
+      "parallelism": "Workers default to 4 with fullyParallel true for the api, contract and ui packs; the ws pack runs with reduced concurrency and the rate-limit scenario serially, bounded overall by the shared request limiter."
+    },
+    "ciIntegration": {
+      "status": "proposal only — no pipeline definition for Azure DevOps pipeline 231 'start-pipeline' exists in the collected inventory and CI evidence for build 447 is unavailable, so nothing here describes what CI currently does.",
+      "proposedFile": "azure-pipelines-automation.yml at the repository root (name and location to be confirmed with the delivery owner, since the existing definition was not found).",
+      "stages": [
+        "build-dotnet: dotnet restore CommodityPricingService.slnx, then dotnet build -c Release, then dotnet test -c Release --logger trx. Release is used deliberately because the Debug configuration excludes RabbitMqKafkaBridgeWorker and its tests; the excluded test project is additionally invoked by path so the blind spot is closed.",
+        "build-ui: npm ci, npm run test, npm run build in pricing-service-ui.",
+        "automation-verify: npm ci, npm run typecheck, npm run lint in tests/automation — runs on every pull request and requires no environment.",
+        "automation-smoke: npx playwright install --with-deps chromium, then npm run test:smoke against the deployed pull-request or integration environment; gates the pull request only once an environment is reliably available.",
+        "automation-full: scheduled nightly run of the api, ws, contract and ui packs plus the quarantine pack in report-only mode.",
+        "publish: PublishTestResults (JUnit) and PublishBuildArtifacts (HTML report, requirement-coverage.json, environment fingerprint, run manifest)."
+      ],
+      "gatingPolicy": "automation-verify is a required check from day one because it needs no infrastructure. automation-smoke becomes required only after a stable target environment is evidenced. The full pack never blocks a merge until its flake rate is measured over at least ten consecutive scheduled runs.",
+      "secrets": "Injected as pipeline variables or a variable group mapped to the environment names the suite expects; values are never echoed and the pipeline sets them as secret variables.",
+      "caching": "npm cache and the Playwright browser cache keyed on the automation lockfile hash, to bound the registry and browser-download risk on every run.",
+      "deliverySideUnknowns": "Branch policies on refs/heads/main, required checks, agent pool image contents, container registry and deployment environments are owned by Azure DevOps and are not evidenced; the pipeline template must be reviewed by the delivery owner before it is enabled."
+    },
+    "proposedCommands": [
+      {
+        "id": "automation-install",
+        "command": "npm ci",
+        "workingDirectory": "tests/automation",
+        "purpose": "Install the automation workspace dependencies",
+        "verified": false,
+        "risk": "requires public npm registry access"
+      },
+      {
+        "id": "automation-browsers",
+        "command": "npx playwright install --with-deps chromium",
+        "workingDirectory": "tests/automation",
+        "purpose": "Install the single required browser",
+        "verified": false,
+        "risk": "large download; needs OS package permissions on the agent"
+      },
+      {
+        "id": "automation-typecheck",
+        "command": "npm run typecheck",
+        "workingDirectory": "tests/automation",
+        "purpose": "Compile the suite without executing it — the earliest deterministic signal",
+        "verified": false
+      },
+      {
+        "id": "automation-smoke",
+        "command": "npm run test:smoke",
+        "workingDirectory": "tests/automation",
+        "purpose": "Probe and single round-trip verification",
+        "verified": false,
+        "risk": "requires a reachable target environment"
+      },
+      {
+        "id": "automation-full",
+        "command": "npm test",
+        "workingDirectory": "tests/automation",
+        "purpose": "Run the api, ws, contract and ui packs",
+        "verified": false,
+        "risk": "requires a disposable target environment; creates non-deletable records"
+      },
+      {
+        "id": "dotnet-test-release",
+        "command": "dotnet test CommodityPricingService.slnx -c Release",
+        "purpose": "Run the existing MSTest suites in a configuration that does not exclude the bridge worker",
+        "verified": false,
+        "risk": "requires proget.sefe.eu access (RISK-02)"
+      }
+    ],
+    "milestones": [
+      {
+        "id": "M1",
+        "name": "Executable skeleton",
+        "deliverables": [
+          "tests/automation workspace, tsconfig, playwright.config, config schema and ConfigProvider",
+          "platform layer with http, ws, config, secrets, logging, redaction and reporting",
+          "smoke pack: probes, one quote round trip, one WebSocket handshake",
+          "global-setup preflight and environment fingerprint"
+        ],
+        "exit": "npm run typecheck and npm run test:smoke both produce deterministic command-runner artifacts against a configured environment, or a recorded blocked reason if no environment exists.",
+        "risk": "npm registry and browser download reachability are unproven."
+      },
+      {
+        "id": "M2",
+        "name": "REST coverage of the documented flows",
+        "deliverables": [
+          "api pack for FLOW-01..FLOW-05 and FLOW-07",
+          "domain builders and polling helpers",
+          "contract pack wired to schemas/*.schema.json",
+          "requirement-coverage.json generation"
+        ],
+        "exit": "Every uncontested REQ/AC in the api scope is either covered by a scenario or explicitly listed as uncovered with a reason.",
+        "risk": "Rate limiting and the 5s window make timing-sensitive assertions the main source of flake; pacing and deadline rules must be validated here."
+      },
+      {
+        "id": "M3",
+        "name": "WebSocket and authorisation coverage",
+        "deliverables": [
+          "ws pack including ticket lifetime, audience scoping, clamping and coalescing",
+          "auth provider implementations and negative authorisation scenarios",
+          "frame recording attachments"
+        ],
+        "exit": "The discovery-identified WebSocket blind spot has scenarios, and the auth pack either runs or skips with a recorded reason tied to CON-02.",
+        "risk": "CON-02 is unresolved; the pack must be configuration-gated rather than assumed."
+      },
+      {
+        "id": "M4",
+        "name": "UI journeys",
+        "deliverables": [
+          "page objects for manual-price, requests, live-curves and fee-configurations",
+          "MSAL storage-state setup project",
+          "the five end-to-end journeys",
+          "proposed data-testid additions raised as a separate reviewed change"
+        ],
+        "exit": "UI journeys run headless in CI with traces on failure.",
+        "risk": "Selector stability without test hooks; live-curves has no existing coverage at all."
+      },
+      {
+        "id": "M5",
+        "name": "CI adoption and contradiction closure",
+        "deliverables": [
+          "azure-pipelines-automation.yml proposal reviewed by the delivery owner",
+          "JUnit/HTML/coverage publication",
+          "quarantine report driving owner decisions on CON-01, CON-02, CON-06 and CON-07",
+          "deferred backlog: FLOW-08 bridge coverage, fee lifecycle (GAP-04), quote expiry (GAP-11)"
+        ],
+        "exit": "automation-verify is a required check; smoke gating enabled once an environment is evidenced; each quarantined contradiction has an owner or an accepted decision.",
+        "risk": "Pipeline 231's definition was never located, so the template cannot yet be reconciled with existing CI."
+      }
+    ],
+    "decisionTradeoffs": [
+      {
+        "decision": "Playwright over a .NET integration-test project",
+        "for": "One runner covers REST, WebSocket and browser; no dependency on the internal NuGet feed; scenario code stays outside the .slnx and cannot be silently excluded by a build configuration.",
+        "against": "Introduces a second toolchain to maintain and a Node/npm/browser dependency on the agent.",
+        "verdict": "Accepted — the untested surface is precisely the cross-service and browser surface, which .NET unit tooling cannot reach."
+      },
+      {
+        "decision": "Separate workspace instead of extending pricing-service-ui",
+        "for": "Keeps UI unit CI fast and infrastructure-free; independent dependency and version lifecycle; no Angular builder constraints.",
+        "against": "A second lockfile and a small amount of duplicated tooling configuration.",
+        "verdict": "Accepted — coupling backend end-to-end tests to the SPA build would make UI unit tests fail for backend reasons."
+      },
+      {
+        "decision": "Black-box over the public API rather than Kafka/Cosmos assertions",
+        "for": "Tests survive internal refactoring, need no broker or database credentials, and assert what a consumer actually observes.",
+        "against": "Some pipeline-internal behaviour (persistence history, envelope acceptance) can only be inferred through API projections.",
+        "verdict": "Accepted — the internal behaviours already have MSTest coverage; duplicating them here would add coupling without adding signal."
+      },
+      {
+        "decision": "Quarantine contradicted expectations instead of choosing one document",
+        "for": "Preserves the discovery decision to leave CON-01/02/06/07 unresolved and turns each into an explicit owner decision with observed evidence attached.",
+        "against": "Those requirements remain formally uncovered until a human resolves them.",
+        "verdict": "Accepted — a guessed assertion would be worse than an honest unknown, and inventing a resolution is prohibited."
+      },
+      {
+        "decision": "Schemas as the contract oracle, OpenAPI as an informational drift check",
+        "for": "schemas/*.schema.json are machine-readable and less stale; the OpenAPI file is documented as covering only 4 of 15 operations.",
+        "against": "The JSON schemas themselves are unverified against the implementation.",
+        "verdict": "Accepted with the caveat recorded — schema divergences are reported as findings naming the file, not as automatic product defects."
+      }
+    ],
+    "guardrails": [
+      "The suite performs no write to product source, configuration or infrastructure; it only calls documented public endpoints.",
+      "It refuses to run against any host outside its configured allowlist and has no production credential path.",
+      "No secret value is committed, defaulted, logged or attached; only environment variable names appear in configuration and documentation.",
+      "No assertion is derived from a contradicted document without quarantine, and no requirement is invented.",
+      "Every result claim must come from the deterministic command runner; this blueprint asserts none."
+    ],
+    "automationProjects": [
+      {
+        "name": "pricing-automation-service",
+        "path": "automation",
+        "purpose": "Headless HTTP, WebSocket and contract checks against the pricing API; runs on Node with no browser.",
+        "runsWith": "npm run test:api",
+        "toolchain": {
+          "detectedStack": {
+            "language": "C#",
+            "runtime": "net8.0",
+            "buildSystem": "dotnet",
+            "packageManager": "nuget",
+            "existingTestFrameworks": ["MSTest"],
+            "evidence": [
+              "CommodityPricingService.slnx",
+              "src/CommodityPricingService.Api/CommodityPricingService.Api.csproj",
+              "NuGet.config"
+            ]
+          },
+          "ecosystem": "npm",
+          "language": "TypeScript 5.9 (strict, ES2023 target, NodeNext modules)",
+          "runtime": { "name": "node", "version": "22" },
+          "testFramework": "@playwright/test",
+          "packages": [
+            {
+              "name": "@playwright/test",
+              "version": "^1.47.0",
+              "scope": "dev",
+              "purpose": "One runner covering the REST surface, the WebSocket surface and the Angular SPA, with tracing and reporting."
+            },
+            {
+              "name": "typescript",
+              "version": "~5.9.2",
+              "scope": "dev",
+              "purpose": "Compile-time contract enforcement, pinned to the version the Angular workspace already uses."
+            },
+            {
+              "name": "ajv",
+              "version": "^8.17.1",
+              "scope": "dev",
+              "purpose": "Structural assertions against the repository's own JSON schemas."
+            }
+          ],
+          "reusedConventions": [
+            "npm@10.9.4, already pinned by the pricing-service-ui workspace.",
+            "TypeScript 5.9 strict, matching the Angular application's compiler settings."
+          ],
+          "coverageFit": [
+            {
+              "capability": "HTTP and contract coverage of the pricing API",
+              "howItIsMet": "Playwright's request context calls the public HTTP surface with no browser started."
+            },
+            {
+              "capability": "WebSocket streaming coverage",
+              "howItIsMet": "Node 22 provides a native WebSocket client, so no additional dependency is introduced."
+            }
+          ],
+          "alternativesRejected": [
+            {
+              "option": "A new .NET integration-test project alongside the MSTest suites",
+              "reason": "It would inherit the proget.sefe.eu restore dependency recorded as RISK-02 and the .slnx Debug exclusion pitfall, and it cannot drive the Angular SPA that half the documented flows end in - which would mean two suites and two toolchains for one set of flows."
+            },
+            {
+              "option": "Extending the pricing-service-ui vitest workspace",
+              "reason": "vitest runs on jsdom against mocked services and is that application's unit surface; cross-service tests there would couple UI unit CI to backend availability."
+            }
+          ],
+          "ciRequirements": [
+            "Node.js 22 LTS on the agent.",
+            "Reachability of the public npm registry from the runner, which build 447 left unproven."
+          ],
+          "deviatesFromDetectedStack": true,
+          "deviationReason": "The flows under test end in the Angular SPA, and the repository is genuinely polyglot: TypeScript and npm are already first-class here (pricing-service-ui pins typescript ~5.9.2 and npm@10.9.4). A .NET suite would cover the HTTP surface but not the browser one, so the alternative is not .NET instead of TypeScript, it is .NET plus TypeScript - two toolchains for one set of flows."
+        }
+      },
+      {
+        "name": "pricing-automation-ui",
+        "path": "automation/tests/ui",
+        "purpose": "Browser journeys through the Angular client, which need a Playwright browser runtime the service project does not install.",
+        "runsWith": "npm run test:ui",
+        "toolchain": {
+          "detectedStack": {
+            "language": "TypeScript",
+            "runtime": "node 22",
+            "buildSystem": "Angular CLI",
+            "packageManager": "npm",
+            "existingTestFrameworks": ["vitest"],
+            "evidence": ["src/pricing-service-ui/package.json", "src/pricing-service-ui/angular.json"]
+          },
+          "ecosystem": "npm",
+          "language": "TypeScript 5.9 (strict, ES2023 target, NodeNext modules)",
+          "runtime": { "name": "node", "version": "22" },
+          "testFramework": "@playwright/test",
+          "packages": [
+            {
+              "name": "@playwright/test",
+              "version": "^1.47.0",
+              "scope": "dev",
+              "purpose": "Drives Chromium through the same journeys the application's users take."
+            }
+          ],
+          "reusedConventions": [
+            "The Angular workspace's TypeScript version and npm client.",
+            "The Chromium-only policy the runner image already supports."
+          ],
+          "coverageFit": [
+            {
+              "capability": "End-to-end browser journeys through the Angular client",
+              "howItIsMet": "Playwright drives Chromium against a deployed SPA and captures traces on failure."
+            }
+          ],
+          "alternativesRejected": [
+            {
+              "option": "Cypress or WebdriverIO",
+              "reason": "Neither offers a first-class API request context, so the browser suite could not share fixtures with the service suite that sets its data up."
+            }
+          ],
+          "ciRequirements": [
+            "Node.js 22 LTS on the agent.",
+            "Permission to download the Chromium build Playwright pins."
+          ],
+          "deviatesFromDetectedStack": false
+        }
+      }
+    ]
+  }
+}

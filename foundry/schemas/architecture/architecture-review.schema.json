@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Architecture review",
+  "allOf": [
+    { "$ref": "../common/review-decision.schema.json" },
+    { "$ref": "blueprint-review-rules.schema.json" },
+    {
+      "properties": {
+        "agentId": { "const": "architecture-critic" },
+        "stageId": { "const": "architecture" }
+      }
+    }
+  ]
+}
+

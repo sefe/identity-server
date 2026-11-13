@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "The work item a run was started to implement",
+  "type": "object",
+  "required": ["schemaVersion", "runId", "collectedAt", "provider", "status", "item", "parent", "warnings"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "runId": { "type": "string", "minLength": 1 },
+    "collectedAt": { "type": "string", "format": "date-time" },
+    "provider": {
+      "type": "string",
+      "enum": ["local", "azure-devops"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["collected", "not_applicable", "unavailable"]
+    },
+    "item": { "$ref": "#/$defs/workItem" },
+    "parent": { "$ref": "#/$defs/workItem" },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "workItem": {
+      "type": ["object", "null"],
+      "required": [
+        "id",
+        "revision",
+        "type",
+        "title",
+        "state",
+        "description",
+        "acceptanceCriteria",
+        "tags",
+        "areaPath",
+        "iterationPath",
+        "url"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "revision": { "type": "integer", "minimum": 0 },
+        "type": { "type": "string" },
+        "title": { "type": "string" },
+        "state": { "type": "string" },
+        "description": { "type": "string" },
+        "acceptanceCriteria": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "areaPath": { "type": "string" },
+        "iterationPath": { "type": "string" },
+        "url": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

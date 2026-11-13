@@ -1,0 +1,59 @@
+trigger:
+  branches:
+    include:
+      - {{TARGET_BRANCH}}
+    exclude:
+      - {{DELIVERY_BRANCH_PREFIX}}*
+# Azure Repos Git ignores a YAML pr: trigger - it is honoured only for GitHub and
+# Bitbucket Cloud. This file used to declare one, which read like pull request
+# validation and was never once executed. Validation on a pull request is a
+# branch policy on the target branch, configured against the repository, so it is
+# declared where it actually takes effect rather than pretended here.
+pr: none
+
+parameters:
+  - name: eventType
+    type: string
+    default: auto
+  - name: copilotCliVersion
+    displayName: GitHub Copilot CLI npm version
+    type: string
+    default: latest
+
+variables:
+  - group: sdlc-foundry-secrets
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - checkout: self
+    fetchDepth: 0
+    persistCredentials: false
+  - template: /{{FRAMEWORK_PATH}}/pipelines/azure-devops/templates/setup-copilot-cli.yml
+    parameters:
+      version: ${{ parameters.copilotCliVersion }}
+  - script: npm ci
+    workingDirectory: "{{FRAMEWORK_PATH}}"
+    displayName: Prepare deterministic Foundry dependencies
+  - task: PowerShell@2
+    displayName: Route and execute SDLC workflow
+    env:
+      {{AZURE_DEVOPS_AUTH_ENV}}: $({{AZURE_DEVOPS_AUTH_ENV}})
+      COPILOT_GITHUB_TOKEN: $(COPILOT_GITHUB_TOKEN)
+      GH_TOKEN: $(GH_TOKEN)
+      GITHUB_TOKEN: $(GITHUB_TOKEN)
+    inputs:
+      pwsh: true
+      targetType: filePath
+      filePath: "{{FRAMEWORK_PATH}}/scripts/ci/AzureDevOps.ps1"
+      arguments: >
+        -ConfigPath "{{PROJECT_CONFIG_PATH}}"
+        -PolicyPath "{{POLICY_PATH}}"
+        -EventType ${{ parameters.eventType }}
+  - task: PublishPipelineArtifact@1
+    displayName: Publish Foundry evidence
+    condition: always()
+    inputs:
+      targetPath: .qa-foundry-artifacts
+      artifact: sdlc-foundry-$(Build.BuildId)

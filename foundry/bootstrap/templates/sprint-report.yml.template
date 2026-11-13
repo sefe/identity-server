@@ -1,0 +1,54 @@
+trigger: none
+pr: none
+
+schedules:
+  - cron: "0 16 * * 5"
+    displayName: End of week sprint report
+    branches:
+      include:
+        - {{TARGET_BRANCH}}
+    always: false
+
+parameters:
+  - name: copilotCliVersion
+    displayName: GitHub Copilot CLI npm version
+    type: string
+    default: latest
+
+variables:
+  - group: sdlc-foundry-secrets
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - checkout: self
+    fetchDepth: 0
+  - template: /{{FRAMEWORK_PATH}}/pipelines/azure-devops/templates/setup-copilot-cli.yml
+    parameters:
+      version: ${{ parameters.copilotCliVersion }}
+  - script: npm ci
+    workingDirectory: "{{FRAMEWORK_PATH}}"
+    displayName: Prepare deterministic Foundry dependencies
+  - task: PowerShell@2
+    displayName: Report what the sprint delivered
+    env:
+      {{AZURE_DEVOPS_AUTH_ENV}}: $({{AZURE_DEVOPS_AUTH_ENV}})
+      COPILOT_GITHUB_TOKEN: $(COPILOT_GITHUB_TOKEN)
+      GH_TOKEN: $(GH_TOKEN)
+      GITHUB_TOKEN: $(GITHUB_TOKEN)
+    inputs:
+      pwsh: true
+      targetType: filePath
+      filePath: "{{FRAMEWORK_PATH}}/scripts/ci/AzureDevOps.ps1"
+      arguments: >
+        -ConfigPath "{{PROJECT_CONFIG_PATH}}"
+        -PolicyPath "{{POLICY_PATH}}"
+        -WorkflowPath "{{FRAMEWORK_PATH}}/workflows/sprint-report.yaml"
+        -EventType sprint.report
+  - task: PublishPipelineArtifact@1
+    displayName: Publish sprint report evidence
+    condition: always()
+    inputs:
+      targetPath: .qa-foundry-artifacts
+      artifact: sdlc-foundry-sprint-report-$(Build.BuildId)
