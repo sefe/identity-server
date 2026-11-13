@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Resolved redacted run configuration",
+  "type": "object",
+  "required": [
+    "runId",
+    "projectName",
+    "targetRepository",
+    "workflow",
+    "event",
+    "assurance",
+    "inputs",
+    "ai",
+    "secrets",
+    "delivery",
+    "workTracking",
+    "automation"
+  ],
+  "properties": {
+    "runId": { "type": "string", "minLength": 1 },
+    "projectName": { "type": "string", "minLength": 1 },
+    "targetRepository": { "type": "string", "minLength": 1 },
+    "workflow": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "event": {
+      "type": "object",
+      "required": ["id", "type", "source"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "assurance": {
+      "type": "object",
+      "required": [
+        "mode",
+        "minimumSpecialists",
+        "highRiskMinimumSpecialists",
+        "minimumReviewers",
+        "highRiskMinimumReviewers",
+        "unanimousReviewsRequired",
+        "deterministicEvidenceRequired"
+      ],
+      "properties": {
+        "mode": { "type": "string", "enum": ["standard", "maximum"] },
+        "minimumSpecialists": { "type": "integer", "minimum": 2 },
+        "highRiskMinimumSpecialists": { "type": "integer", "minimum": 2 },
+        "minimumReviewers": { "type": "integer", "minimum": 2 },
+        "highRiskMinimumReviewers": { "type": "integer", "minimum": 2 },
+        "unanimousReviewsRequired": { "type": "boolean" },
+        "deterministicEvidenceRequired": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "inputs": {
+      "type": "object",
+      "required": [
+        "documentation",
+        "requirements",
+        "architecture",
+        "additionalContext"
+      ],
+      "properties": {
+        "documentation": { "type": "array", "items": { "type": "string" } },
+        "requirements": { "type": "array", "items": { "type": "string" } },
+        "architecture": { "type": "array", "items": { "type": "string" } },
+        "additionalContext": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "ai": {
+      "type": "object",
+      "required": ["profile", "provider", "model", "reasoningEffort", "collaborationProfiles"],
+      "properties": {
+        "profile": { "type": "string" },
+        "provider": { "type": "string" },
+        "model": { "type": "string" },
+        "reasoningEffort": { "type": "string" },
+        "collaborationProfiles": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "secrets": {
+      "type": "object",
+      "required": ["source", "mappedEnvironmentNames", "modelEnvironmentNames"],
+      "properties": {
+        "source": { "type": "string", "enum": ["none", "file", "environment"] },
+        "mappedEnvironmentNames": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[A-Z_][A-Z0-9_]*$" }
+        },
+        "modelEnvironmentNames": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[A-Z_][A-Z0-9_]*$" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "delivery": {
+      "type": "object",
+      "required": [
+        "provider", "dryRun", "applyChanges", "createBranch",
+        "commitChanges", "pushBranch", "createDraftPullRequest"
+      ],
+      "properties": {
+        "provider": { "type": "string" },
+        "dryRun": { "type": "boolean" },
+        "applyChanges": { "type": "boolean" },
+        "createBranch": { "type": "boolean" },
+        "commitChanges": { "type": "boolean" },
+        "pushBranch": { "type": "boolean" },
+        "createDraftPullRequest": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "workTracking": {
+      "type": "object",
+      "required": ["provider", "enabled", "dryRun"],
+      "properties": {
+        "provider": { "type": "string" },
+        "enabled": { "type": "boolean" },
+        "dryRun": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "automation": {
+      "type": "object",
+      "$comment": "What this run can install, build and run, and the limits any dependency set has to satisfy. It deliberately lists no packages: which packages an automation project is built from is decided per project from the product's own solution and pinned by the resolver into a separate toolchain lock. A list here would have settled the architecture in a configuration file months before anyone read the repository it is for.",
+      "required": ["ecosystems", "packagePolicy"],
+      "properties": {
+        "ecosystems": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "recipe", "source", "runtime", "canonicalRuntime", "sha256"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+              "recipe": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+                "$comment": "The materialisation recipe the ecosystem's adapter answers to. Recorded here so a run configuration says which resolver produced its lock files rather than leaving the materialiser to infer it from a manifest name."
+              },
+              "source": {
+                "type": "object",
+                "required": ["id", "registry", "authentication"],
+                "properties": {
+                  "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+                  "registry": {
+                    "type": "string",
+                    "format": "uri",
+                    "pattern": "^https://[^@?#]+$"
+                  },
+                  "authentication": { "const": "none" }
+                },
+                "additionalProperties": false
+              },
+              "runtime": {
+                "type": "object",
+                "minProperties": 1,
+                "$comment": "The interpreter or SDK a build agent provides. The keys differ per ecosystem - a Node major and an npm version, an SDK major - so the shape belongs to the adapter that reads them rather than to this file.",
+                "additionalProperties": { "type": ["string", "integer", "boolean"] }
+              },
+              "canonicalRuntime": {
+                "type": "object",
+                "minProperties": 1,
+                "$comment": "The same runtime facts under the names the adapter's own checks use. Kept beside the raw runtime rather than replacing it, so a configuration file stays readable by the person who wrote it while the resolver reads names it can rely on.",
+                "additionalProperties": { "type": ["string", "integer", "boolean"] }
+              },
+              "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "packagePolicy": {
+          "type": "object",
+          "required": ["maxDirectPackages", "allowPrerelease", "deniedPackages", "deniedLicenses"],
+          "properties": {
+            "maxDirectPackages": { "type": "integer", "minimum": 0 },
+            "allowPrerelease": { "type": "boolean" },
+            "deniedPackages": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+            "deniedLicenses": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

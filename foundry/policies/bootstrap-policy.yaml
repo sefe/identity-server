@@ -1,0 +1,58 @@
+commands:
+  allowed_executables:
+    - git
+    - node
+    - npm
+    - npx
+    - dotnet
+    - python
+    - python3
+    - pip
+    - pip3
+    - pytest
+    - mvn
+    - gradle
+    # The remaining ecosystems this installation declares adapters for. A gate
+    # derived from a Composer or Bundler project would otherwise be refused by
+    # policy for using the only tool that can run it.
+    - composer
+    - php
+    - bundle
+    - ruby
+    - go
+    - semgrep
+    - trivy
+    - osv-scanner
+    - pip-audit
+  forbidden_patterns:
+    - "(?i)reset\\s+--hard"
+    - "(?i)push\\s+.*--force"
+    - "(?i)clean\\s+-[a-z]*f"
+    - "(?i)rm\\s+-rf"
+    - "(?i)remove-item\\s+.*-recurse"
+    - "(?i)env|printenv|set\\s*$"
+    - "(?i)curl|wget|invoke-webrequest"
+    - "(?i)production|prod-"
+  timeout_seconds: 300
+  allowed_environment_variables: [CI, NODE_ENV, PLAYWRIGHT_BROWSERS_PATH]
+  success_exit_codes: [0]
+  mask_name_patterns: ["(?i)token", "(?i)secret", "(?i)password", "(?i)key"]
+
+# This profile can create only reviewable changes. Merge and production stay denied.
+delivery:
+  allow_repository_changes: true
+  allow_branch_creation: true
+  allow_commit: true
+  allow_push: true
+  allow_draft_pull_request: true
+  allow_merge: false
+  allow_production_deploy: false
+
+work_tracking:
+  allow_create: true
+
+# The installed system runs as a relay of pipelines: the analyser starts the
+# implementor, the executor starts triage. Each of them still delivers through a
+# pull request, so this permits hand-off, not merge.
+ci:
+  allow_pipeline_queue: true

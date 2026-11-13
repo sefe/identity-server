@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Dependency resolution evidence",
+  "$comment": "Written whether the resolution succeeded or was refused. A refusal that leaves no trace is indistinguishable from a step that never ran.",
+  "type": "object",
+  "required": [
+    "runId",
+    "stageId",
+    "status",
+    "blueprintSha256",
+    "materialisations",
+    "checks",
+    "findings"
+  ],
+  "properties": {
+    "runId": { "type": "string", "minLength": 1 },
+    "stageId": { "type": "string", "minLength": 1 },
+    "status": { "type": "string", "enum": ["completed", "blocked"] },
+    "dryRun": {
+      "type": "boolean",
+      "default": false,
+      "$comment": "True when the stage rehearsed: every check that reads this run's own files was made, but no resolver was started and no lock file exists. A rehearsal that recorded an exit code would be claiming a resolver ran."
+    },
+    "blueprintSha256": {
+      "type": "string",
+      "pattern": "^$|^[0-9a-f]{64}$",
+      "$comment": "Identifies the exact approved blueprint whose toolchain choice was honoured, so a later reader can tell which design this lock file belongs to. It hashes the raw bytes, not a canonical reading of them."
+    },
+    "materialisations": {
+      "type": "array",
+      "$comment": "One plan can ask for several lock files. A scalar record would describe only the last one and hide the rest.",
+      "items": {
+        "type": "object",
+        "required": [
+          "recipe",
+          "toolchainId",
+          "toolchainSha256",
+          "ecosystem",
+          "registry",
+          "manifestPath",
+          "lockPath",
+          "projectPaths"
+        ],
+        "properties": {
+          "recipe": { "type": "string", "minLength": 1 },
+          "toolchainId": { "type": "string", "minLength": 1 },
+          "toolchainSha256": { "type": "string", "pattern": "^$|^[0-9a-f]{64}$" },
+          "ecosystem": { "type": "string" },
+          "registry": { "type": "string" },
+          "manifestPath": { "type": "string", "minLength": 1 },
+          "lockPath": { "type": "string", "minLength": 1 },
+          "projectPaths": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "resolverExitCode": { "type": ["integer", "null"] },
+          "durationSeconds": { "type": ["number", "null"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "outcome", "detail"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "outcome": { "type": "string", "enum": ["passed", "failed", "skipped"] },
+          "detail": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "findings": { "type": "array", "items": { "type": "string" } }
+  },
+  "allOf": [
+    {
+      "$comment": "A refusal can happen before the blueprint is even read, so the identifying fields are only knowable once resolution completed. Demanding them on every record would force a refusal to invent them.",
+      "if": {
+        "properties": {
+          "status": { "const": "completed" },
+          "dryRun": { "not": { "const": true } }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "blueprintSha256": { "pattern": "^[0-9a-f]{64}$" },
+          "materialisations": {
+            "items": {
+              "required": ["resolverExitCode", "durationSeconds"],
+              "properties": {
+                "toolchainSha256": { "pattern": "^[0-9a-f]{64}$" },
+                "ecosystem": { "minLength": 1 },
+                "registry": { "minLength": 1 },
+                "resolverExitCode": { "type": "integer", "const": 0 }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "$comment": "A rehearsal that completed still identifies the blueprint and the toolchain it would have resolved against - those are read from files this run already wrote - but it must not report an exit code or a duration for a resolver that was never started. A rehearsal that was blocked may have refused before reading the blueprint at all, so it is held to the base constraints instead: requiring a digest of a file that was never opened would turn a controlled refusal into a validation failure.",
+      "if": {
+        "properties": {
+          "dryRun": { "const": true },
+          "status": { "const": "completed" }
+        },
+        "required": ["dryRun", "status"]
+      },
+      "then": {
+        "properties": {
+          "blueprintSha256": { "pattern": "^[0-9a-f]{64}$" },
+          "materialisations": {
+            "items": {
+              "properties": {
+                "toolchainSha256": { "pattern": "^[0-9a-f]{64}$" },
+                "ecosystem": { "minLength": 1 },
+                "registry": { "minLength": 1 },
+                "resolverExitCode": { "type": "null" },
+                "durationSeconds": { "type": "null" }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

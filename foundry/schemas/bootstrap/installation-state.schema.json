@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SDLC Foundry installation state",
+  "type": "object",
+  "required": [
+    "schemaVersion", "installationId", "status", "updatedAt", "targetBranch",
+    "planHash", "configurationHash", "commitSha", "pipelines", "evidence"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "installationId": { "type": "string", "minLength": 1 },
+    "status": { "type": "string", "enum": ["awaiting_merge", "installed", "dry_run"] },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "targetBranch": { "type": "string", "minLength": 1 },
+    "planHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "configurationHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "commitSha": { "type": "string" },
+    "pipelines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "name", "status", "pipelineId", "runId"],
+        "properties": {
+          "key": { "type": "string", "minLength": 1 },
+          "name": { "type": "string", "minLength": 1 },
+          "status": { "type": "string", "enum": ["created", "reused", "dry_run", "disabled"] },
+          "pipelineId": { "type": "string" },
+          "runId": { "type": "string" },
+          "defaultBranch": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "evidence": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

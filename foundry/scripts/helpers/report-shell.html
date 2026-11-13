@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Foundry · Automation report</title><style>/*FOUNDRY_STYLE*/</style></head>
+<body>
+<header><div class="header-inner"><div class="eyebrow">FOUNDRY / AUTOMATION DELIVERY</div>
+<div class="headline"><div><h1>What changed. What is verified.</h1><p id="subtitle"></p></div><button id="print" class="header-button">Print current view</button></div>
+<p class="identity" id="identity"></p></div></header>
+<main>
+<div class="metrics" id="cards" aria-label="Run at a glance"></div>
+<div id="attention"></div>
+<nav class="tabs" role="tablist" aria-label="Report sections">
+<button role="tab" id="tab-overview" aria-controls="overview" aria-selected="true" data-tab="overview">Overview</button>
+<button role="tab" id="tab-coverage" aria-controls="coverage" aria-selected="false" tabindex="-1" data-tab="coverage">Coverage</button>
+<button role="tab" id="tab-technology" aria-controls="technology" aria-selected="false" tabindex="-1" data-tab="technology">Technology</button>
+<button role="tab" id="tab-usage" aria-controls="usage" aria-selected="false" tabindex="-1" data-tab="usage">AI usage</button>
+<button role="tab" id="tab-value" aria-controls="value" aria-selected="false" tabindex="-1" data-tab="value">Value &amp; cost</button>
+<button role="tab" id="tab-pipelines" aria-controls="pipelines" aria-selected="false" tabindex="-1" data-tab="pipelines">Pipelines</button>
+<button role="tab" id="tab-evidence" aria-controls="evidence" aria-selected="false" tabindex="-1" data-tab="evidence">Delivery &amp; readiness</button>
+</nav>
+<section id="overview" role="tabpanel" aria-labelledby="tab-overview" tabindex="0">
+<div class="section-heading"><div><h2>The result at a glance</h2><p class="muted">Start here. Select a card or chart to explore the evidence.</p></div></div>
+<div class="two-columns"><article class="panel"><div class="panel-heading"><h3>Automation checks</h3><button class="text-button" data-go="coverage">Explore coverage</button></div><div id="test-chart"></div><p class="footnote">Counts describe the recorded local verification, not deployed end-to-end coverage.</p></article>
+<article class="panel"><div class="panel-heading"><h3>Ready to review</h3><button class="text-button" data-go="evidence">View delivery</button></div><div id="delivery-summary"></div></article></div>
+<div class="two-columns"><article class="panel"><div class="panel-heading"><h3>Project footprint</h3><button class="text-button" id="show-projects">Explore projects</button></div><div id="language-chart"></div><p class="footnote">Source size, not a measure of tested lines.</p></article>
+<article class="panel"><div class="panel-heading"><h3>Needs attention</h3><button class="text-button" id="show-notes">All notes</button></div><div id="issue-summary"></div></article></div>
+</section>
+<section id="coverage" role="tabpanel" aria-labelledby="tab-coverage" tabindex="0" hidden>
+<div class="section-heading"><div><h2>What the automation is designed to check</h2><p class="muted">Browse planned scenarios. Execution results are shown separately below.</p></div></div>
+<div class="toolbar"><label>Area <select id="coverage-area"><option value="all">All areas</option></select></label><label>Priority <select id="coverage-priority"><option value="all">All priorities</option></select></label><label class="search-label">Find a scenario <input type="search" id="coverage-search" placeholder="Sign-in, pricing, validation…"></label></div>
+<p class="result-count" id="coverage-count" role="status"></p><div id="coverage-cards" class="three-columns"></div><div id="coverage-pages" class="pagination"></div>
+<article class="panel"><div class="panel-heading"><h3>Recorded verification</h3><span class="badge neutral">Local run</span></div><div id="verification"></div><p class="footnote">A planned scenario is not a passed test. This snapshot does not map each scenario to an executed result. Instrumented line coverage is not recorded.</p></article>
+</section>
+<section id="technology" role="tabpanel" aria-labelledby="tab-technology" tabindex="0" hidden><div class="section-heading"><div><h2>Why these technologies?</h2><p class="muted">A separate toolkit for each automation project, with the reasoning behind it.</p></div></div><div id="technology-cards" class="two-columns"></div></section>
+<section id="usage" role="tabpanel" aria-labelledby="tab-usage" tabindex="0" hidden><div class="section-heading"><div><h2>Where the AI effort went</h2><p class="muted">Compare consumption across stages or models. Select a bar for exact figures.</p></div><label>Group by <select id="group"><option value="byStage">Stage</option><option value="byModel">Model</option></select></label></div><div id="usage-cards" class="three-columns"></div><article class="panel"><div id="usage-chart"></div><button id="usage-method" class="text-button">How is usage counted?</button></article></section>
+<section id="evidence" role="tabpanel" aria-labelledby="tab-evidence" tabindex="0" hidden><div class="section-heading"><div><h2>What was delivered</h2><p class="muted">Review the outputs, the recorded checks and the conditions for using them in your environment.</p></div><button id="download">Download full evidence JSON</button></div><div class="toolbar"><label>Explore <select id="evidence-kind"><optgroup label="Delivery"><option value="handover">Delivered result</option><option value="findings">Product &amp; verification findings</option><option value="rollout">Rollout conditions &amp; review notes</option><option value="notes">Report measurement notes</option><option value="documentation">Documentation</option><option value="delivery">Pull requests &amp; pipelines</option><option value="progress">Run progress</option></optgroup><optgroup label="Historical evidence archive"><option value="decisions">Archived stage decisions</option><option value="planning">Archived planning questions</option></optgroup></select></label><label class="search-label">Search this collection <input type="search" id="evidence-search" placeholder="Stage, finding, source…"></label></div><p id="evidence-context" class="muted"></p><p id="evidence-count" class="result-count" role="status"></p><div id="evidence-list"></div><div id="evidence-pages" class="pagination"></div></section>
+<section id="value" role="tabpanel" aria-labelledby="tab-value" tabindex="0" hidden>
+<div class="section-heading"><div><h2>The business case for Foundry</h2><p class="muted">Recorded output. Transparent cost. An adjustable comparison with manual delivery.</p></div><button id="cost-method">Sources &amp; assumptions</button></div>
+<div class="value-banner"><div><span class="eyebrow">THIS RUN / ESTIMATED AI USAGE VALUE</span><strong id="cost-total"></strong><p id="cost-confidence"></p></div><button id="cost-breakdown">Explore cost by model</button></div>
+<div id="value-proof" class="three-columns"></div>
+<div class="two-columns"><article class="panel"><h3>Compare the same delivery scope</h3><p class="muted">Illustrative workload, not a measured human benchmark. Adjust every assumption.</p>
+<div class="calculator"><label>Team size <select id="team-size"><option value="1">1 specialist</option><option value="2" selected>2 specialists</option><option value="3">3 specialists</option><option value="4">4 specialists</option><option value="5">5 specialists</option></select></label><label>Hours per specialist <input id="manual-hours" type="number" min="1" max="2000" step="1" value="40"></label><label>Hourly rate (USD) <input id="hourly-rate" type="number" min="1" max="1000" step="1" value="40"></label><label>Foundry supervision (hours) <input id="review-hours" type="number" min="0" max="2000" step="1" value="8"></label><label>Other Foundry costs (USD) <input id="other-costs" type="number" min="0" max="1000000" step="1" value="0"></label><label>Actual AI charge, if known (USD) <input id="actual-ai-cost" type="number" min="0" max="1000000" step="0.01" placeholder="Use reference range"></label></div>
+<p class="footnote">Defaults: 2 people × 40 hours, $40/hour, 8 hours of supervision, $0 additional allocation. Hours and allocations are scenario assumptions. Include CI, setup, subscription and maintenance costs as appropriate.</p><p id="market-source" class="footnote"></p><button class="text-button" id="reset-cost">Reset assumptions</button></article>
+<article class="panel"><h3>Delivery cost comparison</h3><div id="cost-comparison"></div><div id="savings" class="savings" role="status"></div><p class="footnote">Both bars use the same scale. The Foundry range includes supervision and your additional costs. A saving here is conditional on equal scope and quality, not proof of reduced headcount.</p></article></div>
+</section>
+<section id="pipelines" role="tabpanel" aria-labelledby="tab-pipelines" tabindex="0" hidden>
+<div class="section-heading"><div><h2>What starts the next step?</h2><p class="muted">Choose an event. Follow the arrows. Select any pipeline for its full description.</p></div><span id="pipeline-count" class="badge"></span></div>
+<div id="pipeline-scenarios" class="scenario-switch" role="group" aria-label="Pipeline trigger scenarios"></div>
+<div class="trigger-legend"><span class="badge">Automatic</span><span class="badge warning">A person acts</span><span class="badge neutral">Only if a condition is met</span></div>
+<div class="pipeline-layout"><div id="pipeline-map"></div><article class="panel pipeline-detail" id="pipeline-detail" aria-live="polite"></article></div>
+<details class="pipeline-catalog"><summary>All registered and configured pipelines</summary><div id="pipeline-catalog" class="pipeline-nodes"></div></details>
+<p class="footnote">This explains the standard Foundry templates, not a live execution trace. Registration is recorded; successful execution of every handoff is not established by this report. Nothing on this page starts a pipeline.</p>
+</section>
+<footer><span>Built from recorded evidence. No extra AI calls to generate this report.</span><button class="text-button" id="report-method">How to read the numbers</button></footer>
+</main>
+<dialog id="detail-dialog" aria-labelledby="dialog-title"><div class="dialog-header"><h2 id="dialog-title"></h2><button id="dialog-close" aria-label="Close details">Close</button></div><div id="dialog-body"></div></dialog>
+<noscript><p>This interactive report needs JavaScript enabled in your browser.</p></noscript>
+<script id="report-data" type="application/json">/*FOUNDRY_DATA*/</script><script>/*FOUNDRY_SCRIPT*/</script>
+</body></html>

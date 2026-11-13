@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Test quality review",
+  "allOf": [
+    { "$ref": "../common/review-decision.schema.json" },
+    {
+      "properties": {
+        "agentId": { "const": "test-quality-review" },
+        "stageId": { "const": "review" }
+      }
+    }
+  ]
+}
+

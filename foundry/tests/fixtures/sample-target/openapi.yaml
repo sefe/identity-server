@@ -1,0 +1,18 @@
+openapi: 3.1.0
+info:
+  title: Sample Store API
+  version: 1.0.0
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      responses:
+        "200":
+          description: Service is healthy
+  /orders:
+    post:
+      operationId: createOrder
+      responses:
+        "201":
+          description: Order created
+

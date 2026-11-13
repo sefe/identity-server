@@ -1,0 +1,81 @@
+# Bounded relay slots. Only maxLegCount slots are compiled; completed runs skip the remainder.
+parameters:
+  - name: frameworkPath
+    type: string
+  - name: bootstrapConfigPath
+    type: string
+  - name: documentationLinks
+    type: string
+  - name: phase
+    type: string
+  - name: copilotCliVersion
+    type: string
+  - name: azureDevOpsAuthEnvironment
+    type: string
+  - name: legBudgetMinutes
+    type: number
+  - name: agentPool
+    type: string
+  - name: resumeFromBuildId
+    type: string
+  - name: resumeRunId
+    type: string
+  - name: restartStage
+    type: string
+  - name: maxLegCount
+    type: number
+  - name: runBudgetMinutes
+    type: number
+  - name: maxNoProgressLegs
+    type: number
+  - name: slots
+    type: object
+    default:
+      - {index: 1, previous: '', fallback: ''}
+      - {index: 2, previous: 'leg1', fallback: ''}
+      - {index: 3, previous: 'leg2', fallback: 'leg1'}
+      - {index: 4, previous: 'leg3', fallback: 'leg2'}
+      - {index: 5, previous: 'leg4', fallback: 'leg3'}
+      - {index: 6, previous: 'leg5', fallback: 'leg4'}
+      - {index: 7, previous: 'leg6', fallback: 'leg5'}
+      - {index: 8, previous: 'leg7', fallback: 'leg6'}
+      - {index: 9, previous: 'leg8', fallback: 'leg7'}
+      - {index: 10, previous: 'leg9', fallback: 'leg8'}
+      - {index: 11, previous: 'leg10', fallback: 'leg9'}
+      - {index: 12, previous: 'leg11', fallback: 'leg10'}
+      - {index: 13, previous: 'leg12', fallback: 'leg11'}
+      - {index: 14, previous: 'leg13', fallback: 'leg12'}
+      - {index: 15, previous: 'leg14', fallback: 'leg13'}
+      - {index: 16, previous: 'leg15', fallback: 'leg14'}
+      - {index: 17, previous: 'leg16', fallback: 'leg15'}
+      - {index: 18, previous: 'leg17', fallback: 'leg16'}
+      - {index: 19, previous: 'leg18', fallback: 'leg17'}
+      - {index: 20, previous: 'leg19', fallback: 'leg18'}
+      - {index: 21, previous: 'leg20', fallback: 'leg19'}
+      - {index: 22, previous: 'leg21', fallback: 'leg20'}
+      - {index: 23, previous: 'leg22', fallback: 'leg21'}
+      - {index: 24, previous: 'leg23', fallback: 'leg22'}
+jobs:
+  - ${{ each slot in parameters.slots }}:
+      # Keep the typed number on the left: object members may arrive as strings.
+      - ${{ if ge(parameters.maxLegCount, slot.index) }}:
+          - template: relay-leg.yml
+            parameters:
+              legIndex: ${{ slot.index }}
+              previousLeg: ${{ slot.previous }}
+              fallbackLeg: ${{ slot.fallback }}
+              isFinalLeg: ${{ eq(slot.index, parameters.maxLegCount) }}
+              budgetMinutes: ${{ parameters.legBudgetMinutes }}
+              ${{ if eq(slot.index, 1) }}:
+                resumeFromBuildId: ${{ parameters.resumeFromBuildId }}
+                resumeRunId: ${{ parameters.resumeRunId }}
+                restartStage: ${{ parameters.restartStage }}
+              frameworkPath: ${{ parameters.frameworkPath }}
+              bootstrapConfigPath: ${{ parameters.bootstrapConfigPath }}
+              documentationLinks: ${{ parameters.documentationLinks }}
+              phase: ${{ parameters.phase }}
+              copilotCliVersion: ${{ parameters.copilotCliVersion }}
+              azureDevOpsAuthEnvironment: ${{ parameters.azureDevOpsAuthEnvironment }}
+              agentPool: ${{ parameters.agentPool }}
+              runBudgetMinutes: ${{ parameters.runBudgetMinutes }}
+              maxNoProgressLegs: ${{ parameters.maxNoProgressLegs }}

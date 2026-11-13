@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "One batch of a planned repository change set",
+  "$comment": "A model cannot emit the bodies of every authored file in one answer: build 475 spent nine calls and 170 minutes on a single stage, each one cut off by the output limit before the JSON closed. The runtime therefore assigns a named, bounded set of files per call, and this is what one such call returns. The assignment names the paths; inventing others or omitting assigned ones is refused when the batches are merged.",
+  "allOf": [
+    { "$ref": "../common/agent-result.schema.json" },
+    {
+      "type": "object",
+      "required": ["outcome", "batchId", "changes"],
+      "properties": {
+        "outcome": { "type": "string", "enum": ["proposed", "blocked"] },
+        "batchId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The identifier of the assignment this answer fulfils, copied from the assignment file. It is checked so an artifact left by a different batch cannot be mistaken for this one."
+        },
+        "changes": {
+          "type": "array",
+          "items": { "$ref": "change-item.schema.json" }
+        }
+      }
+    },
+    {
+      "$comment": "A batch that reports it is blocked has nothing to contribute. Letting it carry changes anyway is how a refusal still writes to the repository. It must also state, in machine-readable form, which approved files outside its own assignment would have to change for the work to be possible: build 498 refused for a stated and correct reason, and the run had no way to act on it because the reason was prose.",
+      "if": {
+        "required": ["status"],
+        "properties": { "status": { "const": "blocked" } }
+      },
+      "then": {
+        "properties": {
+          "outcome": { "const": "blocked" },
+          "changes": { "maxItems": 0 },
+          "details": {
+            "type": "object",
+            "required": ["requiredRepairPaths"],
+            "properties": {
+              "requiredRepairPaths": {
+                "$comment": "Approved paths outside this batch's assignment that would have to be written again, together with the assigned files, for the assignment to be satisfiable. Empty when nothing inside the approved set would make the work possible.",
+                "type": "array",
+                "items": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["outcome"],
+        "properties": { "outcome": { "const": "proposed" } }
+      },
+      "then": {
+        "properties": { "changes": { "minItems": 1 } }
+      }
+    }
+  ]
+}

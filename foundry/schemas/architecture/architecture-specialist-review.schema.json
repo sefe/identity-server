@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Architecture specialist review",
+  "allOf": [
+    { "$ref": "../common/review-decision.schema.json" },
+    { "$ref": "blueprint-review-rules.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "enum": ["architecture-security-critic", "architecture-delivery-critic"]
+        },
+        "stageId": { "const": "architecture" }
+      }
+    }
+  ]
+}

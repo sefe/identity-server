@@ -1,0 +1,313 @@
+# Portable defaults. Prepare-GitHubProject.ps1 supplies target, model and pinned runtime.
+project:
+  name: target-product
+  source_branch: main
+  automation_root: automation
+target:
+  repository_path: ../..
+  documentation_paths: []
+  requirements_paths: []
+  architecture_paths: []
+  additional_context_paths: []
+runtime:
+  artifacts_root: .qa-foundry-artifacts
+  max_stage_iterations: 3
+  agent_schema_retries: 2
+  resume_enabled: true
+  progress:
+    narrate_agent_output: true
+    narration_max_items: 2
+    narration_max_length: 160
+  relay:
+    budget_minutes: 280
+    max_legs: 12
+  context:
+    max_file_bytes: 262144
+    max_total_bytes: 524288
+    max_request_bytes: 131072
+    max_inventory_entries: 2000
+    excluded_directories:
+      - foundry
+      - .foundry
+      - .git
+      - .qa-foundry-artifacts
+routing:
+  enabled: true
+  routes:
+    - event_types:
+        - manual
+      workflow: ../workflows/bootstrap-automation.yaml
+    - event_types:
+        - repository.push
+        - pull_request.opened
+        - pull_request.updated
+      workflow: ../workflows/change-impact.yaml
+    - event_types:
+        - ci.build.failed
+      workflow: ../workflows/failed-build-triage.yaml
+    - event_types:
+        - work_item.ready
+      workflow: ../workflows/implement-work-item.yaml
+    - event_types:
+        - schedule.tick
+      workflow: ../workflows/requirements-backlog.yaml
+    - event_types:
+        - release.candidate
+      workflow: ../workflows/release-readiness.yaml
+    - event_types:
+        - incident.opened
+      workflow: ../workflows/incident-response.yaml
+    - event_types:
+        - documentation.changed
+      workflow: ../workflows/documentation-update.yaml
+    - event_types:
+        - test_case.sync
+      workflow: ../workflows/test-case-sync.yaml
+    - event_types:
+        - sprint.report
+      workflow: ../workflows/sprint-report.yaml
+idempotency:
+  enabled: true
+  registry_path: .sdlc-foundry/idempotency.json
+ci:
+  provider: github
+  collect_realtime: false
+  fail_on_collection_error: true
+  max_failed_tests: 200
+  max_jobs: 100
+  dry_run: false
+  github:
+    repository: OWNER/REPOSITORY
+    auth_env: FOUNDRY_GITHUB_TOKEN
+ai:
+  active_profile: copilot
+  run_budget:
+    max_total_tokens: 0
+  collaboration:
+    enabled: false
+    profiles:
+      - copilot
+      - codex
+    assignment: deterministic_round_robin
+  profiles:
+    mock:
+      provider: mock
+      model: claude-opus-5
+      reasoning_effort: high
+      command: ""
+      timeout_seconds: 120
+      max_artifact_bytes: 65536
+      secret_env: []
+    copilot:
+      provider: copilot-cli
+      model: claude-opus-5.5
+      reasoning_effort: high
+      command: copilot
+      timeout_seconds: 1500
+      max_artifact_bytes: 65536
+      secret_env:
+        - COPILOT_GITHUB_TOKEN
+      provider_options:
+        install_mode: npx-if-missing
+        package: "@github/copilot"
+        package_version: latest
+        auth_mode: environment
+        allow_stored_credentials_in_ci: false
+    codex:
+      provider: copilot-cli
+      model: gpt-6.1-sol
+      reasoning_effort: high
+      command: copilot
+      timeout_seconds: 1500
+      max_artifact_bytes: 65536
+      secret_env:
+        - COPILOT_GITHUB_TOKEN
+      provider_options:
+        install_mode: npx-if-missing
+        package: "@github/copilot"
+        package_version: latest
+        auth_mode: environment
+        allow_stored_credentials_in_ci: false
+    sol:
+      provider: copilot-cli
+      model: gpt-6.1-sol
+      reasoning_effort: high
+      command: copilot
+      timeout_seconds: 1500
+      max_artifact_bytes: 65536
+      secret_env:
+        - COPILOT_GITHUB_TOKEN
+      provider_options:
+        install_mode: npx-if-missing
+        package: "@github/copilot"
+        package_version: latest
+        auth_mode: environment
+        allow_stored_credentials_in_ci: false
+    gemini:
+      provider: copilot-cli
+      model: gemini-4-argon
+      reasoning_effort: high
+      command: copilot
+      timeout_seconds: 1500
+      max_artifact_bytes: 65536
+      secret_env:
+        - COPILOT_GITHUB_TOKEN
+      provider_options:
+        install_mode: npx-if-missing
+        package: "@github/copilot"
+        package_version: latest
+        auth_mode: environment
+        allow_stored_credentials_in_ci: false
+secrets:
+  source: environment
+  path: ""
+  format: auto
+  allow_inside_target: false
+  required_keys: []
+  mappings:
+    COPILOT_GITHUB_TOKEN: COPILOT_GITHUB_TOKEN
+    FOUNDRY_GITHUB_TOKEN: FOUNDRY_GITHUB_TOKEN
+language:
+  internal: en
+  report: en
+repository:
+  allowed_read_paths:
+    - .
+  allowed_write_paths:
+    - automation/
+    - docs/automation/
+    - .foundry/
+    - .github/workflows/
+  forbidden_write_paths:
+    - foundry/
+automation:
+  verification:
+    mode: deferred
+  min_projects: 2
+  max_projects: 4
+  isolation:
+    mode: process
+  naming:
+    mode: auto
+    prefix: ""
+    segment: Automation
+    enforce: true
+  required_capabilities:
+    - api-automation
+    - ui-automation
+    - environment-configuration
+    - secret-management
+    - structured-logging
+    - reporting
+    - diagnostics
+    - tagging
+    - ci-integration
+  rationale_document: technology-choices.md
+  toolchain_record: automation-toolchain.json
+  dependency_sources:
+    npm-public:
+      ecosystem: npm
+      registry: https://registry.npmjs.org/
+      authentication: none
+    nuget-public:
+      ecosystem: nuget
+      registry: https://api.nuget.org/v3/index.json
+      authentication: none
+    pypi-public:
+      ecosystem: pypi
+      registry: https://pypi.org/simple/
+      authentication: none
+    maven-central:
+      ecosystem: maven
+      registry: https://repo.maven.apache.org/maven2/
+      authentication: none
+    go-proxy:
+      ecosystem: go
+      registry: https://proxy.golang.org/
+      authentication: none
+  ecosystems:
+    npm:
+      source: npm-public
+      runtime:
+        node_major: 22
+        npm_version: 10.9.4
+        lockfile_version: 3
+    nuget:
+      source: nuget-public
+      runtime:
+        sdk_major: 10
+    pypi:
+      source: pypi-public
+      runtime:
+        python_version: "3.13"
+    maven:
+      source: maven-central
+      runtime:
+        java_version: "21"
+        maven_version: 3.9.11
+    go:
+      source: go-proxy
+      runtime:
+        go_version: "1.26"
+        module_path: example.invalid/automation
+  package_policy:
+    max_direct_packages: 0
+    allow_prerelease: true
+    denied_packages: []
+    denied_licenses: []
+quality:
+  auto_detect: false
+  fail_on_required_failure: true
+  commands: []
+  automation_gates:
+    - path: automation
+      required: true
+  security:
+    secret_scan: true
+    dependency_audit: true
+    max_file_bytes: 1048576
+work_tracking:
+  provider: github
+  enabled: false
+  dry_run: true
+  github:
+    repository: OWNER/REPOSITORY
+    auth_env: FOUNDRY_GITHUB_TOKEN
+observability:
+  input_paths: []
+  max_file_bytes: 1048576
+  max_total_bytes: 8388608
+assurance:
+  mode: maximum
+  minimum_specialists: 2
+  high_risk_minimum_specialists: 3
+  minimum_reviewers: 2
+  high_risk_minimum_reviewers: 3
+  require_unanimous_reviews: true
+  require_deterministic_evidence: true
+review:
+  approval_strategy: unanimous
+  max_iterations: 3
+supervisor:
+  enabled: true
+  provider: mock
+delivery:
+  provider: github
+  dry_run: true
+  create_branch: true
+  apply_changes: true
+  allow_file_deletions: false
+  commit_changes: true
+  push_branch: true
+  create_draft_pull_request: true
+  pull_request_draft: true
+  require_reviewer_group: false
+  branch_prefix: sdlc-foundry/
+  commit_message: "chore: apply SDLC Foundry approved changes"
+  reviewers: []
+  work_items: []
+  committer_name: github-actions[bot]
+  committer_email: 41898282+github-actions[bot]@users.noreply.github.com
+  github:
+    repository: OWNER/REPOSITORY
+    auth_env: FOUNDRY_GITHUB_TOKEN

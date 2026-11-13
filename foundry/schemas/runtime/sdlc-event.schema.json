@@ -1,0 +1,222 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Normalised SDLC event",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "runId",
+    "eventId",
+    "type",
+    "source",
+    "occurredAt",
+    "repository",
+    "correlation",
+    "change",
+    "metadata"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "eventId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "repository.push",
+        "pull_request.opened",
+        "pull_request.updated",
+        "ci.build.started",
+        "ci.build.completed",
+        "ci.build.failed",
+        "work_item.ready",
+        "schedule.tick",
+        "release.candidate",
+        "incident.opened",
+        "documentation.changed",
+        "unknown"
+      ]
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "local",
+        "azure-devops",
+        "external",
+        "github"
+      ]
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "repository": {
+      "type": "object",
+      "required": [
+        "provider",
+        "name",
+        "url",
+        "ref",
+        "commitSha"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "commitSha": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "correlation": {
+      "type": "object",
+      "required": [
+        "ciRunId",
+        "buildId",
+        "pipelineId",
+        "pipelineName",
+        "pullRequestId",
+        "workItemId"
+      ],
+      "properties": {
+        "ciRunId": {
+          "type": "string"
+        },
+        "buildId": {
+          "type": "string"
+        },
+        "pipelineId": {
+          "type": "string"
+        },
+        "pipelineName": {
+          "type": "string"
+        },
+        "pullRequestId": {
+          "type": "string"
+        },
+        "workItemId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "change": {
+      "type": "object",
+      "description": "The difference this event is about, taken from the repository rather than inferred. A run handed only a snapshot and a commit sha sees everything as equally new and cannot tell the files a push touched from the files that were already there.",
+      "required": [
+        "baseCommitSha",
+        "headCommitSha",
+        "basis",
+        "available",
+        "reason",
+        "fileCount",
+        "truncated",
+        "files"
+      ],
+      "properties": {
+        "baseCommitSha": {
+          "type": "string"
+        },
+        "headCommitSha": {
+          "type": "string"
+        },
+        "basis": {
+          "type": "string",
+          "enum": [
+            "declared",
+            "merge_base",
+            "parent",
+            "none"
+          ],
+          "description": "How the base was arrived at, so nobody has to guess how much it is worth. 'declared' was named by the caller, 'merge_base' is where the pull request's target branch and this commit last agreed, 'parent' is the commit before this one, and 'none' means there was no way to establish one."
+        },
+        "available": {
+          "type": "boolean",
+          "description": "False when the difference could not be established - a shallow checkout with no parent, or no working copy to read. The reason says which, and a run reading this must treat the whole repository as unclassified rather than assume nothing changed."
+        },
+        "reason": {
+          "type": "string"
+        },
+        "fileCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many files differ in total, whether or not they are all listed."
+        },
+        "truncated": {
+          "type": "boolean",
+          "description": "True when the list below was cut short. Declared rather than silent: a shortened list read as a whole change is how work goes missing."
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "status",
+              "insertions",
+              "deletions"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "added",
+                  "modified",
+                  "deleted",
+                  "renamed",
+                  "copied",
+                  "type_changed",
+                  "changed"
+                ]
+              },
+              "insertions": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "deletions": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "string",
+          "number",
+          "integer",
+          "boolean",
+          "null"
+        ]
+      }
+    }
+  },
+  "additionalProperties": false
+}

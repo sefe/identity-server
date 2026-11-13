@@ -1,0 +1,467 @@
+project:
+  name: commodity-pricing-service
+  source_branch: develop
+  automation_root: automation
+
+target:
+  repository_path: ../..
+  documentation_paths:
+    - ../../README.md
+  requirements_paths: []
+  architecture_paths:
+    - ../../CommodityPricingService.Api/SPEC.md
+    - ../../CommodityPricingService.Models/SPEC.md
+    - ../../CommodityPricingService.Validation/SPEC.md
+    - ../../CommodityPricingService.Messaging/SPEC.md
+    - ../../CommodityPricingService.DataStore/SPEC.md
+    - ../../CommodityPricingService.RequestValidationWorker/SPEC.md
+    - ../../CommodityPricingService.CalculationWorker/SPEC.md
+    - ../../CommodityPricingService.ResponseValidationWorker/SPEC.md
+    - ../../CommodityPricingService.PersistenceWorker/SPEC.md
+    - ../../CommodityPricingService.RabbitMqKafkaBridgeWorker/SPEC.md
+  additional_context_paths:
+    - ../../CommodityPricingService.slnx
+
+runtime:
+  artifacts_root: .qa-foundry-artifacts
+  max_stage_iterations: 3
+  agent_schema_retries: 2
+  resume_enabled: true
+  progress:
+    narrate_agent_output: true
+    narration_max_items: 2
+    narration_max_length: 160
+  relay:
+    budget_minutes: 0
+    max_legs: 12
+  context:
+    max_file_bytes: 262144
+    max_total_bytes: 524288
+    max_request_bytes: 131072
+    max_inventory_entries: 2000
+    excluded_directories:
+      - foundry
+
+routing:
+  enabled: true
+  routes:
+    - event_types: [manual]
+      workflow: ../workflows/bootstrap-automation.yaml
+    - event_types: [repository.push, pull_request.opened, pull_request.updated]
+      workflow: ../workflows/change-impact.yaml
+    - event_types: [ci.build.failed]
+      workflow: ../workflows/failed-build-triage.yaml
+    - event_types: [work_item.ready]
+      workflow: ../workflows/implement-work-item.yaml
+    - event_types: [schedule.tick]
+      workflow: ../workflows/requirements-backlog.yaml
+    - event_types: [release.candidate]
+      workflow: ../workflows/release-readiness.yaml
+    - event_types: [incident.opened]
+      workflow: ../workflows/incident-response.yaml
+    - event_types: [documentation.changed]
+      workflow: ../workflows/documentation-update.yaml
+    - event_types: [test_case.sync]
+      workflow: ../workflows/test-case-sync.yaml
+    - event_types: [sprint.report]
+      workflow: ../workflows/sprint-report.yaml
+
+idempotency:
+  enabled: true
+  registry_path: .sdlc-foundry/idempotency.json
+
+ci:
+  provider: auto
+  collect_realtime: true
+  fail_on_collection_error: true
+  max_failed_tests: 200
+  max_jobs: 100
+  dry_run: false
+  azure_devops:
+    organization_url: https://dev.azure.com/sefe
+    project: X AI Mission
+    auth_env: AZURE_DEVOPS_TOKEN
+    auth_scheme: basic
+
+ai:
+  active_profile: copilot
+  # A ceiling on what one run may spend, counted across every leg of the relay
+  # from the ledger each call writes. It is set to catch a run that has gone
+  # wrong - a stage looping, a context growing with every request - rather than
+  # to ration ordinary work.
+  #
+  # The figure is measured, not guessed. Build 972449 spent 25.1M tokens over 53
+  # calls to reach stage 10 of 13 of a bootstrap, so a healthy full bootstrap
+  # with its retries costs somewhere near 40-60M. The ceiling sits well above
+  # that because a runaway loop is unbounded and any finite limit catches it,
+  # while a limit set close to the real cost only stops honest runs - as 25M
+  # did. A run that reaches this one is blocked rather than paused, because
+  # resuming would only spend more; raising the allowance lets the same run
+  # continue from where it stopped rather than pay for its work twice.
+  # Zero would mean no ceiling at all.
+  run_budget:
+    max_total_tokens: 325000000
+  collaboration:
+    enabled: true
+    profiles:
+      - copilot
+      - gemini
+      - sol
+    assignment: deterministic_round_robin
+  profiles:
+    mock:
+      provider: mock
+      model: claude-opus-5
+      reasoning_effort: high
+      command: ""
+      timeout_seconds: 120
+      max_artifact_bytes: 65536
+      secret_env: []
+    copilot:
+      provider: copilot-cli
+      model: claude-opus-5
+      reasoning_effort: high
+      command: "copilot"
+      timeout_seconds: 1500
+      max_artifact_bytes: 65536
+      secret_env:
+        - COPILOT_GITHUB_TOKEN
+        - GH_TOKEN
+        - GITHUB_TOKEN
+      provider_options:
+        install_mode: npx-if-missing
+        package: "@github/copilot"
+        package_version: 1.0.83
+        auth_mode: auto
+        allow_stored_credentials_in_ci: false
+    codex:
+      provider: copilot-cli
+      model: gpt-5.3-codex
+      reasoning_effort: high
+      command: "copilot"
+      timeout_seconds: 1500
+      max_artifact_bytes: 65536
+      secret_env:
+        - COPILOT_GITHUB_TOKEN
+        - GH_TOKEN
+        - GITHUB_TOKEN
+      provider_options:
+        install_mode: npx-if-missing
+        package: "@github/copilot"
+        package_version: 1.0.83
+        auth_mode: auto
+        allow_stored_credentials_in_ci: false
+    sol:
+      provider: copilot-cli
+      model: gpt-5.6-sol
+      reasoning_effort: high
+      command: "copilot"
+      timeout_seconds: 1500
+      max_artifact_bytes: 65536
+      secret_env:
+        - COPILOT_GITHUB_TOKEN
+        - GH_TOKEN
+        - GITHUB_TOKEN
+      provider_options:
+        install_mode: npx-if-missing
+        package: "@github/copilot"
+        package_version: 1.0.83
+        auth_mode: auto
+        allow_stored_credentials_in_ci: false
+    gemini:
+      provider: copilot-cli
+      model: gemini-3.7-flash
+      reasoning_effort: high
+      command: "copilot"
+      timeout_seconds: 1500
+      max_artifact_bytes: 65536
+      secret_env:
+        - COPILOT_GITHUB_TOKEN
+        - GH_TOKEN
+        - GITHUB_TOKEN
+      provider_options:
+        install_mode: npx-if-missing
+        package: "@github/copilot"
+        package_version: 1.0.83
+        auth_mode: auto
+        allow_stored_credentials_in_ci: false
+
+secrets:
+  source: environment
+  path: ""
+  format: auto
+  allow_inside_target: false
+  required_keys: []
+  mappings:
+    COPILOT_GITHUB_TOKEN: COPILOT_GITHUB_TOKEN
+    GH_TOKEN: GH_TOKEN
+    GITHUB_TOKEN: GITHUB_TOKEN
+    AZURE_DEVOPS_TOKEN: AZURE_DEVOPS_TOKEN
+
+language:
+  internal: en
+  report: en
+
+repository:
+  allowed_read_paths:
+    - .
+  allowed_write_paths:
+    - automation/
+    - docs/
+    - .foundry/
+    - pipelines/
+  forbidden_write_paths:
+    - CommodityPricingService.Api/
+    - CommodityPricingService.Models/
+    - CommodityPricingService.Validation/
+    - CommodityPricingService.Messaging/
+    - CommodityPricingService.DataStore/
+    - CommodityPricingService.RequestValidationWorker/
+    - CommodityPricingService.CalculationWorker/
+    - CommodityPricingService.ResponseValidationWorker/
+    - CommodityPricingService.PersistenceWorker/
+    - CommodityPricingService.RabbitMqKafkaBridgeWorker/
+    - pricing-service-ui/
+    - docker/
+    - Scripts/
+    - foundry/
+
+automation:
+  min_projects: 2
+  max_projects: 4
+  # How far the code an agent wrote minutes ago is kept from this run. It governs
+  # every untrusted command the same way: the bootstrap verification that builds
+  # and exercises a new framework, the install and build steps of an execution
+  # plan, and the quality suite that runs the generated tests. One boundary
+  # rather than three that drift apart.
+  #
+  # In every mode the child's environment is built rather than inherited - no
+  # token reaches it through a variable, and every package manager's per-user
+  # configuration is pointed somewhere empty - so a generated test cannot pick up
+  # the Azure DevOps or GitHub credentials this run holds.
+  #
+  # 'process' is what this installation uses, and it is honest about what it does
+  # not do: the child runs as the same operating system user as the run, so
+  # generated code can still read anything that user can read by absolute path,
+  # and on Windows .NET asks the operating system where the profile is rather
+  # than reading APPDATA. Every run says so in its own verification artifact
+  # rather than leaving it to be inferred.
+  #
+  # 'container' closes that, mounting only the work root. It is not the default
+  # here because it requires a container runtime and an image carrying the
+  # toolchain the architect chose - and an image without the right SDK reports a
+  # sound design as broken. Where one exists, set:
+  #   isolation:
+  #     mode: container
+  #     container:
+  #       executable: docker
+  #       image: mcr.microsoft.com/dotnet/sdk:10.0
+  # There is no fallback between the two: a run configured for a container on an
+  # agent that has none stops, because a run that believes it is isolated and is
+  # not is worse than one that refuses.
+  #
+  # In container mode every command is its own container and only the work root
+  # is mounted, so the run keeps each package manager's cache under the work root
+  # and names it in the container's own terms. Otherwise what one command
+  # downloaded would be gone by the next, and a build told not to fetch again
+  # would fail on an agent that has network access.
+  isolation:
+    mode: process
+  naming:
+    # auto derives the prefix from the repository's own project names, fixed uses
+    # the prefix below verbatim, off leaves naming entirely to the architect.
+    mode: auto
+    prefix: ""
+    segment: Automation
+    enforce: true
+  required_capabilities:
+    - api-automation
+    - ui-automation
+    - environment-configuration
+    - secret-management
+    - structured-logging
+    - reporting
+    - diagnostics
+    - tagging
+    - ci-integration
+  # Every automation project must carry this file at its root, explaining why its
+  # language and technologies were chosen. The reasoning already exists in the
+  # blueprint and used to die there; a framework nobody can question a year later
+  # is a framework nobody can correct. The runtime refuses an inventory that
+  # leaves a project without one.
+  rationale_document: technology-choices.md
+  # Where a merged bootstrap leaves its decision. A repository that already has a
+  # framework has already answered the technology question, and answering it
+  # again on the next run is how a second framework appears beside the first in a
+  # language nobody chose twice. Changing what is recorded here is a migration:
+  # its own pull request, its own justification, its own checks.
+  toolchain_record: automation-toolchain.json
+  # Where a resolver is allowed to look up packages. Logical names keep the
+  # ecosystems below readable and stop a URL from arriving through whatever the
+  # environment happens to have configured. Credentials never appear here.
+  dependency_sources:
+    npm-public:
+      ecosystem: npm
+      registry: https://registry.npmjs.org/
+      authentication: none
+    nuget-public:
+      ecosystem: nuget
+      registry: https://api.nuget.org/v3/index.json
+      authentication: none
+    pypi-public:
+      ecosystem: pypi
+      registry: https://pypi.org/simple/
+      authentication: none
+    maven-central:
+      ecosystem: maven
+      registry: https://repo.maven.apache.org/maven2/
+      authentication: none
+    go-proxy:
+      ecosystem: go
+      registry: https://proxy.golang.org/
+      authentication: none
+  # What this programme can install, build and run. It is a statement about the
+  # runtime, not about the architecture. Which packages an automation project is
+  # built from is decided per project from the product's own solution and then
+  # resolved against these sources - an approved-package list would have decided
+  # the architecture in this file, months before anyone looked at the repository
+  # the automation is for.
+  ecosystems:
+    npm:
+      source: npm-public
+      runtime:
+        node_major: 22
+        npm_version: "10.9.4"
+        lockfile_version: 3
+    nuget:
+      source: nuget-public
+      runtime:
+        # The SDK this installation has. An SDK builds its own target framework
+        # and every older one, so this is the ceiling a design may be written
+        # to, not the framework every design must use - the resolver locks
+        # whichever target the architecture chose and refuses, by name, only a
+        # design this SDK could not build.
+        sdk_major: 10
+    pypi:
+      source: pypi-public
+      runtime:
+        # A maintained interpreter with broad wheel availability; not a rule
+        # about which language or package versions the architect should prefer.
+        python_version: "3.13"
+    maven:
+      source: maven-central
+      runtime:
+        # LTS JDK; Maven 3 preserves compatibility with existing build plugins.
+        java_version: "21"
+        maven_version: "3.9.11"
+    go:
+      source: go-proxy
+      runtime:
+        # Supported release line; preparation selects a stable patch in it.
+        go_version: "1.26"
+        module_path: example.invalid/automation
+  # The limits any resolved dependency set has to satisfy. Constraints, not
+  # choices: the architect proposes, the resolver pins and refuses what breaks a
+  # rule here.
+  package_policy:
+    max_direct_packages: 0 # No fixed count limit; each dependency still needs a purpose.
+    allow_prerelease: true # Only explicitly requested, justified prereleases are considered.
+    denied_packages: []
+    # Refused licences are checked against the whole resolved graph, not only
+    # the packages the architect named. That check needs a lock format that
+    # records a licence per package - npm and Composer do, NuGet and Go do not -
+    # and it fails closed where it cannot be established rather than reporting
+    # nothing found. This installation states no refusals, so nothing is checked
+    # and nothing is silently passed either.
+    denied_licenses: []
+
+quality:
+  # Detection is off because this repository cannot be judged by what a hosted
+  # agent happens to find in it. Its NuGet.Config clears every source and leaves
+  # one private feed on a 10.x address, so `dotnet test` at the repository root
+  # on a Microsoft-hosted agent never reaches a registry and dies on the command
+  # timeout instead. That is not a quality signal, it is a routing failure
+  # wearing one. Builds 470 and 471 both spent ten minutes proving it. List
+  # below only what this environment can honestly execute.
+  auto_detect: false
+  fail_on_required_failure: true
+  commands: []
+  # The gate on the automation this programme generates. A place, not a command:
+  # which ecosystem lives here is settled by the architecture stage, months after
+  # this line was written, and a command pinned here would be an npm install
+  # aimed at a .NET project the first time an architect chose differently. The
+  # install, build and test commands come from the adapter that matches the
+  # manifest actually sitting in the directory - and that project carries its own
+  # neutral feed configuration, which is what lets it restore on a hosted agent
+  # where the product's own build cannot.
+  automation_gates:
+    - path: automation
+      required: true
+  security:
+    secret_scan: true
+    dependency_audit: true
+    max_file_bytes: 1048576
+
+work_tracking:
+  provider: azure-devops
+  enabled: true
+  dry_run: false
+  azure_devops:
+    organization_url: https://dev.azure.com/sefe
+    project: X AI Mission
+    area_path: ""
+    # Left empty on purpose: the sprint to file work against is whichever one is
+    # running on the day it is written, resolved through the team's iterations.
+    # A literal path here would be correct until the sprint rolls over.
+    iteration_path: ""
+    use_current_iteration: true
+    auth_env: AZURE_DEVOPS_TOKEN
+    auth_scheme: basic
+    expected_user_id: ""
+    match_build_requester: true
+
+observability:
+  input_paths: []
+  max_file_bytes: 1048576
+  max_total_bytes: 8388608
+
+assurance:
+  mode: maximum
+  minimum_specialists: 2
+  high_risk_minimum_specialists: 3
+  minimum_reviewers: 2
+  high_risk_minimum_reviewers: 3
+  require_unanimous_reviews: true
+  require_deterministic_evidence: true
+
+review:
+  approval_strategy: unanimous
+  max_iterations: 3
+
+supervisor:
+  enabled: true
+  provider: mock
+
+delivery:
+  provider: azure-devops
+  dry_run: false
+  create_branch: true
+  apply_changes: true
+  allow_file_deletions: false
+  commit_changes: true
+  push_branch: true
+  create_draft_pull_request: true
+  pull_request_draft: false
+  require_reviewer_group: false
+  branch_prefix: sdlc-foundry/
+  commit_message: "chore: apply SDLC Foundry approved changes"
+  reviewers: []
+  work_items: []
+  azure_devops:
+    organization_url: https://dev.azure.com/sefe
+    project: X AI Mission
+    repository_id: X AI Mission
+    auth_env: AZURE_DEVOPS_TOKEN
+    auth_scheme: basic
+    expected_user_id: ""
+    match_build_requester: true

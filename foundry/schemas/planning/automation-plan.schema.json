@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Synthesized automation plan",
+  "allOf": [
+    { "$ref": "../common/agent-result.schema.json" },
+    {
+      "properties": {
+        "agentId": { "const": "coverage-synthesis" },
+        "stageId": { "const": "test-planning" }
+      }
+    }
+  ]
+}
+

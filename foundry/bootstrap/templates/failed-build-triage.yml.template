@@ -1,0 +1,50 @@
+trigger: none
+pr: none
+
+parameters:
+  - name: failedBuildId
+    displayName: Failed upstream build ID
+    type: string
+  - name: copilotCliVersion
+    displayName: GitHub Copilot CLI npm version
+    type: string
+    default: latest
+
+variables:
+  - group: sdlc-foundry-secrets
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - checkout: self
+    fetchDepth: 0
+  - template: /{{FRAMEWORK_PATH}}/pipelines/azure-devops/templates/setup-copilot-cli.yml
+    parameters:
+      version: ${{ parameters.copilotCliVersion }}
+  - script: npm ci
+    workingDirectory: "{{FRAMEWORK_PATH}}"
+    displayName: Prepare deterministic Foundry dependencies
+  - task: PowerShell@2
+    displayName: Analyse failed build with SDLC Foundry
+    env:
+      {{AZURE_DEVOPS_AUTH_ENV}}: $({{AZURE_DEVOPS_AUTH_ENV}})
+      COPILOT_GITHUB_TOKEN: $(COPILOT_GITHUB_TOKEN)
+      GH_TOKEN: $(GH_TOKEN)
+      GITHUB_TOKEN: $(GITHUB_TOKEN)
+    inputs:
+      pwsh: true
+      targetType: filePath
+      filePath: "{{FRAMEWORK_PATH}}/scripts/ci/AzureDevOps.ps1"
+      arguments: >
+        -ConfigPath "{{PROJECT_CONFIG_PATH}}"
+        -PolicyPath "{{POLICY_PATH}}"
+        -WorkflowPath "{{FRAMEWORK_PATH}}/workflows/failed-build-triage.yaml"
+        -EventType ci.build.failed
+        -CiBuildId ${{ parameters.failedBuildId }}
+  - task: PublishPipelineArtifact@1
+    displayName: Publish failure evidence
+    condition: always()
+    inputs:
+      targetPath: .qa-foundry-artifacts
+      artifact: sdlc-foundry-failed-build-$(Build.BuildId)

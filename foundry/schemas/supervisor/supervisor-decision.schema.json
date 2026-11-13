@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Supervisor decision",
+  "allOf": [
+    { "$ref": "../common/agent-result.schema.json" },
+    {
+      "type": "object",
+      "required": ["reason", "recommendation"],
+      "properties": {
+        "agentId": { "const": "supervisor" },
+        "stageId": { "const": "supervisor" },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "conflicting_agent_results",
+            "iteration_limit_reached",
+            "ambiguous_failure",
+            "missing_required_context",
+            "invalid_stage_transition",
+            "contradictory_requirements"
+          ]
+        },
+        "recommendation": {
+          "type": "string",
+          "enum": ["continue", "retry", "block", "fail"]
+        }
+      }
+    }
+  ]
+}

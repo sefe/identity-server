@@ -1,0 +1,69 @@
+name: documentation-update
+version: 1
+settings: { max_stage_iterations: 3, fail_on_schema_error: true, preserve_all_artifacts: true }
+stages:
+  - id: documentation-analysis
+    risk: high
+    type: parallel_with_synthesis
+    depends_on: []
+    agents:
+      - { id: documentation-accuracy-analyst, prompt: prompts/sdlc/docs-accuracy.md, schema: schemas/sdlc/analysis.schema.json, output: accuracy-analysis.json }
+      - { id: documentation-code-analyst, prompt: prompts/sdlc/docs-code.md, schema: schemas/sdlc/analysis.schema.json, output: code-analysis.json }
+      - { id: documentation-user-analyst, prompt: prompts/sdlc/docs-user.md, schema: schemas/sdlc/analysis.schema.json, output: user-analysis.json }
+    synthesis: { agent: documentation-synthesis, prompt: prompts/sdlc/synthesis.md, schema: schemas/sdlc/synthesis.schema.json, output: documentation-synthesis.json }
+  - id: documentation-generation
+    risk: high
+    type: sequential
+    depends_on: [documentation-analysis]
+    agents:
+      - { id: documentation-change-generator, prompt: prompts/sdlc/change-generator.md, schema: schemas/actions/change-set.schema.json, output: change-set.json }
+    assurance: { reviewed_by: documentation-review, deterministic_evidence: true }
+  - id: documentation-review
+    risk: high
+    type: parallel_review
+    depends_on: [documentation-generation]
+    agents:
+      - { id: documentation-correctness-reviewer, prompt: prompts/sdlc/review-correctness.md, schema: schemas/sdlc/review.schema.json, output: correctness-review.json }
+      - { id: documentation-quality-reviewer, prompt: prompts/sdlc/review-quality.md, schema: schemas/sdlc/review.schema.json, output: quality-review.json }
+      - { id: documentation-security-reviewer, prompt: prompts/sdlc/review-security.md, schema: schemas/sdlc/review.schema.json, output: security-review.json }
+    approval: { strategy: unanimous, on_reject: { return_to: documentation-generation }, max_iterations: 3 }
+  - id: apply-documentation
+    risk: high
+    type: deterministic_action
+    depends_on: [documentation-review]
+    action: { handler: apply_change_set, input: change-set.json, output: action-result.json }
+    assurance: { approved_by: documentation-review }
+  - id: documentation-quality
+    risk: high
+    type: deterministic_action
+    depends_on: [apply-documentation]
+    action: { handler: quality_suite, output: action-result.json }
+  - id: documentation-delivery-review
+    risk: high
+    type: parallel_review
+    depends_on: [documentation-quality]
+    agents:
+      - { id: docs-delivery-correctness-reviewer, prompt: prompts/sdlc/review-correctness.md, schema: schemas/sdlc/review.schema.json, output: correctness-review.json }
+      - { id: docs-delivery-quality-reviewer, prompt: prompts/sdlc/review-quality.md, schema: schemas/sdlc/review.schema.json, output: quality-review.json }
+      - { id: docs-delivery-security-reviewer, prompt: prompts/sdlc/review-security.md, schema: schemas/sdlc/review.schema.json, output: security-review.json }
+    # No return_to on purpose. The files are already on disk by the time this
+    # review runs, and a second generation round cannot be applied over them:
+    # the idempotency registry reports the paths as already written and skips
+    # the revision, or the apply stage refuses them as dirty. A rejection here
+    # is therefore reported and the run stops, with the changes in the working
+    # tree and nothing published.
+    approval: { strategy: unanimous, max_iterations: 1 }
+  - id: publish-documentation-draft
+    risk: high
+    type: deterministic_action
+    depends_on: [documentation-delivery-review]
+    action:
+      handler: deliver_changes
+      # Named, not searched for: the reviewers approved this document, and a
+      # critic loop leaves earlier drafts of the same name behind it.
+      inputs:
+        changeSet:
+          stage: documentation-generation
+          artifact: change-set.json
+      output: action-result.json
+    assurance: { approved_by: documentation-delivery-review }

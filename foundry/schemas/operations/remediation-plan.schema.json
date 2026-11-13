@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Failed-build remediation proposal",
+  "allOf": [
+    { "$ref": "../common/agent-result.schema.json" },
+    {
+      "type": "object",
+      "required": ["outcome", "proposals"],
+      "properties": {
+        "agentId": { "const": "remediation-planner" },
+        "stageId": { "const": "remediation-planning" },
+        "outcome": {
+          "type": "string",
+          "enum": ["proposed", "no_action_needed", "human_investigation_required"]
+        },
+        "proposals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "sourceRef",
+              "actionType",
+              "permissionClass",
+              "title",
+              "description",
+              "evidence",
+              "priority",
+              "idempotencyKey"
+            ],
+            "properties": {
+              "sourceRef": { "type": "string", "minLength": 1 },
+              "actionType": {
+                "type": "string",
+                "enum": ["create_bug", "propose_fix", "rerun", "route_to_team", "investigate"]
+              },
+              "permissionClass": {
+                "type": "string",
+                "enum": ["none", "work_tracking_write", "repository_write", "ci_execute"]
+              },
+              "title": { "type": "string", "minLength": 1 },
+              "description": { "type": "string", "minLength": 1 },
+              "evidence": { "type": "array", "items": { "type": "string" } },
+              "priority": { "type": "integer", "minimum": 1, "maximum": 4 },
+              "idempotencyKey": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  ]
+}

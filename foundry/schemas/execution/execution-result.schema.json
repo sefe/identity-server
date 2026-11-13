@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Deterministic execution result",
+  "type": "object",
+  "required": ["runId", "stageId", "status", "commands"],
+  "properties": {
+    "runId": { "type": "string", "minLength": 1 },
+    "stageId": { "const": "execution" },
+    "status": { "type": "string", "enum": ["completed", "failed", "blocked"] },
+    "planSignature": { "type": "string", "minLength": 1 },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "command",
+          "exitCode",
+          "standardOutput",
+          "standardError",
+          "durationMs",
+          "status"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "command": { "type": "string" },
+          "exitCode": { "type": "integer" },
+          "standardOutput": { "type": "string" },
+          "standardError": { "type": "string" },
+          "durationMs": { "type": "integer", "minimum": 0 },
+          "status": { "type": "string", "enum": ["completed", "failed", "skipped", "rejected", "blocked"] }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
+

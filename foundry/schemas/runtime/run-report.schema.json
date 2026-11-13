@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Deterministic Foundry report",
+  "type": "object",
+  "required": ["version", "generatedAt", "runId", "status", "repository", "metrics", "usage", "stages", "automationProjects", "verification", "summaries", "documentation", "pipelines", "delivery", "warnings", "limits"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 }, "generatedAt": { "type": "string", "format": "date-time" },
+    "runId": { "type": "string" }, "status": { "type": "string" }, "repository": { "type": "string" },
+    "metrics": { "type": "object" }, "usage": { "type": "object" }, "economics": { "type": "object" }, "stages": { "type": "array" },
+    "automationProjects": { "type": "array" }, "verification": { "type": ["object", "null"] },
+    "summaries": { "type": "array" }, "documentation": { "type": "array" },
+    "pipelines": { "type": "array" }, "delivery": { "type": "array" },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "limits": { "type": "array", "items": { "type": "string" } }
+  }
+}

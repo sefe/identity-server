@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Change summary",
+  "allOf": [
+    { "$ref": "../common/agent-result.schema.json" },
+    {
+      "properties": {
+        "agentId": { "const": "change-summary" },
+        "stageId": { "const": "delivery-preparation" }
+      }
+    }
+  ]
+}

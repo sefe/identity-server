@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Inputs whose outputs may be reused on resume",
+  "type": "object",
+  "required": ["version", "sourceCommit", "hashes"],
+  "properties": {
+    "version": { "const": 1 },
+    "sourceCommit": { "type": "string" },
+    "hashes": {
+      "type": "object",
+      "required": ["source", "contracts", "config", "workflow", "policy", "analysisInputs"],
+      "additionalProperties": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+    }
+  },
+  "additionalProperties": false
+}

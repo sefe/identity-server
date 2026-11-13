@@ -1,0 +1,62 @@
+name: incident-response
+version: 1
+settings: { max_stage_iterations: 3, fail_on_schema_error: true, preserve_all_artifacts: true }
+stages:
+  - id: observability-collection
+    risk: high
+    type: deterministic_action
+    depends_on: []
+    action: { handler: collect_observability, output: action-result.json }
+  - id: incident-investigation
+    risk: critical
+    type: parallel_with_synthesis
+    depends_on: [observability-collection]
+    agents:
+      - { id: incident-application-analyst, prompt: prompts/sdlc/incident-application.md, schema: schemas/sdlc/analysis.schema.json, output: application-analysis.json }
+      - { id: incident-infrastructure-analyst, prompt: prompts/sdlc/incident-infrastructure.md, schema: schemas/sdlc/analysis.schema.json, output: infrastructure-analysis.json }
+      - { id: incident-change-analyst, prompt: prompts/sdlc/incident-change.md, schema: schemas/sdlc/analysis.schema.json, output: change-analysis.json }
+    synthesis: { agent: incident-synthesis, prompt: prompts/sdlc/synthesis.md, schema: schemas/sdlc/synthesis.schema.json, output: incident-synthesis.json }
+  - id: incident-action-planning
+    risk: critical
+    type: sequential
+    depends_on: [incident-investigation]
+    agents:
+      - { id: incident-work-item-planner, prompt: prompts/sdlc/work-item-planner.md, schema: schemas/actions/work-item-plan.schema.json, output: work-item-plan.json }
+    assurance: { reviewed_by: incident-action-review, deterministic_evidence: true }
+  - id: incident-action-review
+    risk: critical
+    type: parallel_review
+    depends_on: [incident-action-planning]
+    agents:
+      - { id: incident-correctness-reviewer, prompt: prompts/sdlc/review-correctness.md, schema: schemas/sdlc/review.schema.json, output: correctness-review.json }
+      - { id: incident-quality-reviewer, prompt: prompts/sdlc/review-quality.md, schema: schemas/sdlc/review.schema.json, output: quality-review.json }
+      - { id: incident-security-reviewer, prompt: prompts/sdlc/review-security.md, schema: schemas/sdlc/review.schema.json, output: security-review.json }
+    approval: { strategy: unanimous, on_reject: { return_to: incident-action-planning }, max_iterations: 3 }
+  - id: create-incident-items
+    risk: critical
+    type: deterministic_action
+    depends_on: [incident-action-review]
+    action: { handler: create_work_items, input: work-item-plan.json, output: action-result.json }
+    assurance: { approved_by: incident-action-review }
+
+  # An incident that ends with a filed task has not been responded to, only described. The remedial
+  # work is started here, by the run that filed it, because nothing else will: Azure DevOps has no
+  # trigger for a work item becoming ready. Only tasks are queued - a bug or a feature filed
+  # alongside them is a record of what happened, not an instruction - and only once, because the
+  # marker the queue writes onto the item outlives this run.
+  - id: queue-incident-implementation
+    risk: critical
+    type: deterministic_action
+    depends_on: [create-incident-items]
+    action:
+      handler: queue_pipeline
+      pipeline: SDLC Foundry - Implement Work Item
+      output: action-result.json
+      inputs:
+        plan:
+          stage: incident-action-planning
+          artifact: work-item-plan.json
+        workItems:
+          stage: create-incident-items
+          artifact: action-result.json
+    assurance: { approved_by: incident-action-review }

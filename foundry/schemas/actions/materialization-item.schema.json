@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "One manifest handed to a resolver",
+  "$comment": "Shared by the materialization planning call and the merged plan. A lock file's integrity hashes come from a resolver, not from a model, so this names the manifest to resolve rather than carrying the lock.",
+  "type": "object",
+  "required": [
+    "recipe",
+    "toolchainId",
+    "projectPaths",
+    "manifestPath",
+    "lockPath",
+    "operation",
+    "expectedSha256",
+    "reason",
+    "sourceRefs"
+  ],
+  "properties": {
+    "recipe": {
+      "type": "string",
+      "enum": [
+        "npm-package-lock",
+        "nuget-packages-lock",
+        "pip-requirements-lock",
+        "maven-dependency-lock",
+        "bundler-gemfile-lock",
+        "go-module-sum",
+        "composer-package-lock"
+      ],
+      "$comment": "One recipe per supported ecosystem. An ecosystem nothing here can lock must not be nameable, or a plan could declare itself executable on a toolchain no resolver in this runtime can produce."
+    },
+    "toolchainId": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "projectPaths": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "$comment": "One manifest can serve several nested projects, so the plan has to say which approved projects it speaks for. The runtime checks every one of them against the blueprint and refuses if they do not agree on a single toolchain."
+    },
+    "manifestPath": {
+      "type": "string",
+      "minLength": 1,
+      "$comment": "Which file names a manifest depends on the ecosystem, so the adapter decides rather than this schema; the runtime checks the path against the adapter's pattern and refuses a mismatch."
+    },
+    "lockPath": { "type": "string", "minLength": 1 },
+    "operation": {
+      "type": "string",
+      "enum": ["create", "update"],
+      "description": "Deleting a lock file is a change a model can write itself, so it has no place here."
+    },
+    "expectedSha256": { "type": "string", "pattern": "^$|^[a-f0-9]{64}$" },
+    "reason": { "type": "string", "minLength": 1 },
+    "sourceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+  },
+  "additionalProperties": false
+}
