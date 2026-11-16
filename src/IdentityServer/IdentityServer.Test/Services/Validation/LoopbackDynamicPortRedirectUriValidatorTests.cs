@@ -6,6 +6,7 @@ using Duende.IdentityServer.Models;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using IdentityServer.Services.Validation;
+using Duende.IdentityServer.Validation;
 
 namespace IdentityServer.Test.Services.Validation;
 
@@ -79,7 +80,8 @@ public class LoopbackDynamicPortRedirectUriValidatorTests
         };
 
         // Act
-        var result = await _validator.IsRedirectUriValidAsync(actualUri, client);
+        var context = new RedirectUriValidationContext { RequestedUri = actualUri, Client = client };
+        var result = await _validator.IsRedirectUriValidAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(result, Is.EqualTo(expectedResult));
