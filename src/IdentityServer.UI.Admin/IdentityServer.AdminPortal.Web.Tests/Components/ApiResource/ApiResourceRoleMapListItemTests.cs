@@ -220,7 +220,7 @@ public class ApiResourceRoleMapListItemTests
         ));
 
         // Act
-        var deleteButton = cut.Find("button.k-button-outline-error");
+        var deleteButton = cut.Find("button.k-button-outline.k-button-error");
         deleteButton.Click();
 
         // Assert

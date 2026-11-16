@@ -64,7 +64,7 @@ public class NewSecretFormTests
             .Add(p => p.ProhibitedValues, new List<string>()));
 
         // Assert
-        Assert.That(cut.Markup, Does.Contain("Create").And.Contain("k-button-solid-primary"));
+        Assert.That(cut.Markup, Does.Contain("Create").And.Contain("k-button-primary"));
     }
 
     [Test]
@@ -80,7 +80,7 @@ public class NewSecretFormTests
             .Add(p => p.ProhibitedValues, new List<string>()));
 
         // Assert
-        Assert.That(cut.Markup, Does.Contain("Cancel").And.Contain("k-button-solid-secondary"));
+        Assert.That(cut.Markup, Does.Contain("Cancel").And.Contain("k-button-secondary"));
     }
 
     [Test]

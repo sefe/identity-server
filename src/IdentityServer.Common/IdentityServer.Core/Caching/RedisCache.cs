@@ -177,7 +177,7 @@ public class RedisCache<T> : ICache<T> where T : class
         try
         {
             var json = JsonSerializer.Serialize(item, _jsonOptions);
-            await _database.StringSetAsync(normalizedKey, json, expiration);
+            await _database.StringSetAsync(normalizedKey, json, expiration, false, When.Always, CommandFlags.None);
 
             var elapsedMs = CommonHelpers.GetElapsedMilliseconds(startTimestamp);
             _logger.CacheSet(_cacheTypeName, normalizedKey, expiration.TotalSeconds, elapsedMs);
@@ -211,7 +211,7 @@ public class RedisCache<T> : ICache<T> where T : class
             {
                 var normalizedKey = NormalizeKey(kvp.Key);
                 var json = JsonSerializer.Serialize(kvp.Value, _jsonOptions);
-                tasks.Add(batch.StringSetAsync(normalizedKey, json, expiration));
+                tasks.Add(batch.StringSetAsync(normalizedKey, json, expiration, false, When.Always, CommandFlags.None));
             }
 
             // Execute all commands in the batch

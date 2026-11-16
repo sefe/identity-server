@@ -132,7 +132,7 @@ public class ClientPostLogoutRedirectUriListTests
         );
 
         // Assert
-        var addButton = cut.Find("button.k-button-solid-primary");
+        var addButton = cut.Find("button.k-button-primary");
         Assert.That(addButton.TextContent, Does.Contain("Add New"));
     }
 
@@ -179,7 +179,7 @@ public class ClientPostLogoutRedirectUriListTests
         );
 
         // Assert
-        var deleteButtons = cut.FindAll("button").Where(b => b.ClassList.Contains("k-button-outline-error"));
+        var deleteButtons = cut.FindAll("button").Where(b => b.ClassList.Contains("k-button-outline") && b.ClassList.Contains("k-button-error"));
         Assert.That(deleteButtons, Is.Empty);
     }
 
@@ -456,7 +456,7 @@ public class ClientPostLogoutRedirectUriListTests
         );
 
         // Act
-        var deleteButton = cut.Find("button.k-button-outline-error");
+        var deleteButton = cut.Find("button.k-button-outline.k-button-error");
         deleteButton.Click();
 
         // Assert
@@ -497,7 +497,7 @@ public class ClientPostLogoutRedirectUriListTests
         );
 
         // Act
-        var deleteButton = cut.Find("button.k-button-outline-error");
+        var deleteButton = cut.Find("button.k-button-outline.k-button-error");
         deleteButton.Click();
 
         // Assert
@@ -536,7 +536,7 @@ public class ClientPostLogoutRedirectUriListTests
         );
 
         // Act
-        var deleteButton = cut.Find("button.k-button-outline-error");
+        var deleteButton = cut.Find("button.k-button-outline.k-button-error");
         deleteButton.Click();
 
         // Assert

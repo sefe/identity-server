@@ -33,7 +33,7 @@ public class CopyToClipboardButtonTests
 
         // Assert
         var btn = cut.Find("button");
-        Assert.That(cut.Markup, Does.Contain("k-button-clear-secondary").And.Contain("k-svg-i-copy")); // simple way check
+        Assert.That(cut.Markup, Does.Contain("k-button-clear").And.Contain("k-button-secondary").And.Contain("k-svg-i-copy")); // simple way check
     }
 
     [Test]
@@ -87,9 +87,9 @@ public class CopyToClipboardButtonTests
         cut.Find("button").Click();
 
         // Assert
-        CheckMarkup(cut, "k-button-solid-success", "k-svg-i-check"); // changes to success state
+        CheckMarkup(cut, "k-button-solid.k-button-success", "k-svg-i-check"); // changes to success state
         await Task.Delay(2300);
-        CheckMarkup(cut, "k-button-clear-secondary", "k-svg-i-copy"); // ...and back to default after delay
+        CheckMarkup(cut, "k-button-clear.k-button-secondary", "k-svg-i-copy"); // ...and back to default after delay
     }
 
     [Test]
@@ -107,7 +107,7 @@ public class CopyToClipboardButtonTests
         cut.Find("button").Click();
 
         // Assert
-        CheckMarkup(cut, "k-button-solid-error", "k-svg-i-x-circle");
+        CheckMarkup(cut, "k-button-solid.k-button-error", "k-svg-i-x-circle");
     }
 
     private static void CheckMarkup(IRenderedComponent<CopyToClipboardButton> cut, string btnStyleSelector, string spanStyleSelector)
