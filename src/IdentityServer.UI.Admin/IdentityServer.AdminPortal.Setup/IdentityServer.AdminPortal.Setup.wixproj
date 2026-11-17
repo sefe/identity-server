@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
     <Name>IdentityServer.AdminPortal.Setup</Name>
-    <IdpWebDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\IdentityServer.AdminPortal.Server\bin\p\'))</IdpWebDir>
+    <IdpWebDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\IdentityServer.AdminPortal.Server\bin\p'))</IdpWebDir>
     <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
     <ProjectGuid>{8f355c0a-c2d3-42fe-a5bd-d4447167ae9e}</ProjectGuid>
   </PropertyGroup>
