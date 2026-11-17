@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Deterministic permissioned action result",
+  "type": "object",
+  "required": ["runId", "stageId", "handler", "status", "dryRun", "actions", "evidence"],
+  "properties": {
+    "runId": { "type": "string", "minLength": 1 },
+    "stageId": { "type": "string", "minLength": 1 },
+    "handler": { "type": "string", "minLength": 1 },
+    "status": {
+      "type": "string",
+      "enum": ["completed", "no_action_needed", "failed", "blocked", "revision_required"],
+      "$comment": "revision_required is how a deterministic check sends work back. A stage that runs the chosen framework and finds it does not build has a fact an agent can act on, and the workflow's own iteration budget and on_reject.return_to already know what to do with a rejection - so it says 'revision_required' rather than 'failed', which would end the run over something repairable."
+    },
+    "dryRun": { "type": "boolean" },
+    "failureKind": { "type": "string", "enum": ["artifact_invalid", "external_prerequisite", "policy_blocker"] },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["sourceRef", "type", "idempotencyKey", "status", "externalId", "summary"],
+        "properties": {
+          "sourceRef": { "type": "string" },
+          "type": { "type": "string", "minLength": 1 },
+          "parentRef": { "type": "string" },
+          "idempotencyKey": { "type": "string", "pattern": "^$|^[a-f0-9]{64}$" },
+          "status": { "type": "string", "enum": ["executed", "dry_run", "duplicate", "skipped", "failed"] },
+          "externalId": { "type": "string" },
+          "summary": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "evidence": { "type": "array", "items": { "type": "string" } },
+    "produced": {
+      "type": "array",
+      "items": { "type": "string" },
+      "$comment": "Artifacts the action wrote that are not evidence about the action itself: a resolved change set, a review subject. Recorded so a later stage can find them through the run state instead of searching the run directory for the newest matching file."
+    }
+  },
+  "additionalProperties": false
+}

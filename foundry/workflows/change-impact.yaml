@@ -1,0 +1,56 @@
+name: change-impact
+version: 1
+settings: { max_stage_iterations: 3, fail_on_schema_error: true, preserve_all_artifacts: true }
+stages:
+  - id: impact-analysis
+    risk: high
+    type: parallel_with_synthesis
+    depends_on: []
+    agents:
+      - { id: impact-product-analyst, prompt: prompts/sdlc/impact-product.md, schema: schemas/sdlc/analysis.schema.json, output: impact-product.json }
+      - { id: impact-architecture-analyst, prompt: prompts/sdlc/impact-architecture.md, schema: schemas/sdlc/analysis.schema.json, output: impact-architecture.json }
+      - { id: impact-quality-analyst, prompt: prompts/sdlc/impact-quality.md, schema: schemas/sdlc/analysis.schema.json, output: impact-quality.json }
+    synthesis: { agent: impact-synthesis, prompt: prompts/sdlc/synthesis.md, schema: schemas/sdlc/synthesis.schema.json, output: impact-synthesis.json }
+  - id: impact-backlog
+    risk: high
+    type: sequential
+    depends_on: [impact-analysis]
+    agents:
+      - { id: impact-work-item-planner, prompt: prompts/sdlc/work-item-planner.md, schema: schemas/actions/work-item-plan.schema.json, output: work-item-plan.json }
+    assurance: { reviewed_by: impact-review, deterministic_evidence: true }
+  - id: impact-review
+    risk: high
+    type: parallel_review
+    depends_on: [impact-backlog]
+    agents:
+      - { id: impact-correctness-reviewer, prompt: prompts/sdlc/review-correctness.md, schema: schemas/sdlc/review.schema.json, output: correctness-review.json }
+      - { id: impact-quality-reviewer, prompt: prompts/sdlc/review-quality.md, schema: schemas/sdlc/review.schema.json, output: quality-review.json }
+      - { id: impact-security-reviewer, prompt: prompts/sdlc/review-security.md, schema: schemas/sdlc/review.schema.json, output: security-review.json }
+    approval: { strategy: unanimous, on_reject: { return_to: impact-backlog }, max_iterations: 3 }
+  - id: create-impact-work-items
+    risk: high
+    type: deterministic_action
+    depends_on: [impact-review]
+    action: { handler: create_work_items, input: work-item-plan.json, output: action-result.json }
+    assurance: { approved_by: impact-review }
+
+  # Filing the work is not doing it. Azure DevOps has no trigger for "a work item became ready" -
+  # nothing in the repository changes when one is filed - so the run that filed the task starts the
+  # pipeline that implements it, naming the task it filed. One run per task, and only for tasks this
+  # run actually created: an item a previous run already filed was already handed on by that run.
+  - id: queue-impact-implementation
+    risk: high
+    type: deterministic_action
+    depends_on: [create-impact-work-items]
+    action:
+      handler: queue_pipeline
+      pipeline: SDLC Foundry - Implement Work Item
+      output: action-result.json
+      inputs:
+        plan:
+          stage: impact-backlog
+          artifact: work-item-plan.json
+        workItems:
+          stage: create-impact-work-items
+          artifact: action-result.json
+    assurance: { approved_by: impact-review }

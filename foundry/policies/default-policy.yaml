@@ -1,0 +1,75 @@
+commands:
+  allowed_executables:
+    - git
+    - node
+    - npm
+    - npx
+    - dotnet
+    - python
+    - python3
+    - pip
+    - pip3
+    - pytest
+    - mvn
+    - gradle
+    # The remaining ecosystems this installation declares adapters for. A gate
+    # derived from a Composer or Bundler project would otherwise be refused by
+    # policy for using the only tool that can run it.
+    - composer
+    - php
+    - bundle
+    - ruby
+    - go
+    - semgrep
+    - trivy
+    - osv-scanner
+    - pip-audit
+  forbidden_patterns:
+    - "(?i)reset\\s+--hard"
+    - "(?i)push\\s+.*--force"
+    - "(?i)clean\\s+-[a-z]*f"
+    - "(?i)rm\\s+-rf"
+    - "(?i)remove-item\\s+.*-recurse"
+    - "(?i)env|printenv|set\\s*$"
+    - "(?i)curl|wget|invoke-webrequest"
+    - "(?i)production|prod-"
+  timeout_seconds: 300
+  allowed_environment_variables:
+    - CI
+    - NODE_ENV
+    - PLAYWRIGHT_BROWSERS_PATH
+    # Innocuous build-tool switches. They carry no credential and no target, and
+    # refusing them only pushed agents into proposing commands that never ran.
+    - DOTNET_CLI_TELEMETRY_OPTOUT
+    - DOTNET_NOLOGO
+    - DOTNET_SKIP_FIRST_TIME_EXPERIENCE
+    - DOTNET_CLI_UI_LANGUAGE
+    - NUGET_XMLDOC_MODE
+    - NPM_CONFIG_LOGLEVEL
+    - PYTHONDONTWRITEBYTECODE
+    - PYTHONUNBUFFERED
+  success_exit_codes:
+    - 0
+  mask_name_patterns:
+    - "(?i)token"
+    - "(?i)secret"
+    - "(?i)password"
+    - "(?i)key"
+
+delivery:
+  allow_repository_changes: false
+  allow_branch_creation: false
+  allow_commit: false
+  allow_push: false
+  allow_draft_pull_request: false
+  allow_merge: false
+  allow_production_deploy: false
+
+work_tracking:
+  allow_create: false
+
+# Starting another pipeline is how one stage hands work to the next, and what it
+# starts can write. A profile that may not change anything itself must not be
+# able to start something that can, so this stays denied by default.
+ci:
+  allow_pipeline_queue: false

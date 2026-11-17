@@ -1,0 +1,93 @@
+version: 1
+
+target:
+  repository_path: ../..
+  branch: develop
+
+framework:
+  path: foundry
+  project_config_path: foundry/config/project.yaml
+  policy_path: foundry/policies/bootstrap-policy.yaml
+  bootstrap_workflow_path: foundry/workflows/bootstrap-automation.yaml
+
+installation:
+  managed_root: .foundry
+  artifacts_root: .qa-foundry-artifacts/bootstrap
+  run_analysis: true
+
+azure_devops:
+  organization_url: https://dev.azure.com/sefe
+  project: X AI Mission
+  repository_id: X AI Mission
+  repository_type: azureReposGit
+  auth_env: AZURE_DEVOPS_TOKEN
+  auth_scheme: basic
+  expected_user_id: ""
+  match_build_requester: true
+  pipeline_folder: "\\SDLC Foundry"
+  dry_run: false
+  queue_smoke_run: false
+
+pipelines:
+  - key: sdlc-router
+    name: SDLC Foundry - Router
+    yaml_path: .foundry/pipelines/sdlc-router.yml
+    template_path: bootstrap/templates/sdlc-router.yml.template
+    enabled: true
+    smoke: true
+  - key: failed-build-triage
+    name: SDLC Foundry - Failed Build Triage
+    yaml_path: .foundry/pipelines/failed-build-triage.yml
+    template_path: bootstrap/templates/failed-build-triage.yml.template
+    enabled: true
+    smoke: false
+  - key: implement-work-item
+    name: SDLC Foundry - Implement Work Item
+    yaml_path: .foundry/pipelines/implement-work-item.yml
+    template_path: bootstrap/templates/implement-work-item.yml.template
+    enabled: true
+    # Never smoke-run the implementor: a smoke run with no work item either fails
+    # or, worse, invents work to do and opens a pull request for it.
+    smoke: false
+  - key: scheduled-backlog
+    name: SDLC Foundry - Scheduled Backlog Sweep
+    yaml_path: .foundry/pipelines/scheduled-backlog.yml
+    template_path: bootstrap/templates/scheduled-backlog.yml.template
+    # The sprint is driven by merges into the target branch: a merge is analysed
+    # and the work it implies is filed. This sweep files work from the
+    # requirements documents instead, on a timer, with no knowledge of what the
+    # merge-driven analyser already filed - so the same item arrives twice, from
+    # two runs that cannot see each other. Off until the duplication is solved.
+    enabled: false
+    smoke: false
+  - key: test-case-sync
+    name: SDLC Foundry - Test Case Sync
+    yaml_path: .foundry/pipelines/test-case-sync.yml
+    template_path: bootstrap/templates/test-case-sync.yml.template
+    enabled: true
+    smoke: false
+  - key: sprint-report
+    name: SDLC Foundry - Sprint Report
+    yaml_path: .foundry/pipelines/sprint-report.yml
+    template_path: bootstrap/templates/sprint-report.yml.template
+    enabled: true
+    smoke: false
+
+# Files the installer owns that are not pipelines. A step template is included by
+# a pipeline; registering it would create a pipeline that runs a fragment.
+shared_templates:
+  - yaml_path: .foundry/pipelines/steps/report-suite-failure.yml
+    template_path: bootstrap/templates/report-suite-failure.yml.template
+    required_in_agent_pipelines: true
+
+# Pipelines the agents author rather than the installer. Their content is theirs;
+# registering them is the installer's job, because nothing else in the run turns
+# a YAML file into something Azure DevOps will ever trigger.
+agent_pipelines:
+  register_from_change_set: true
+  path_prefix: pipelines
+  name_prefix: "Automation - "
+  # An installation whose suites are never run is not an installation. If the
+  # approved change set contains no executor pipeline, the run says so rather
+  # than delivering automation that nothing will ever execute.
+  require_at_least: 1

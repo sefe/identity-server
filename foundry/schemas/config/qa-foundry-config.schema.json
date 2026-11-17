@@ -1,0 +1,1333 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "QA Foundry configuration",
+  "type": "object",
+  "$defs": {
+    "executionIsolation": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "How far the code an agent wrote minutes ago is kept from this run. It governs every untrusted command the same way - the bootstrap verification that builds and exercises a new framework, an execution plan's install and build steps, and the quality suite that runs the generated tests - because one boundary is the only kind that cannot drift. The environment is built rather than inherited in every mode, so no credential reaches the child through a variable or through a package manager's configuration file. What this decides is whether the child also gets a file system and an identity of its own.",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "process",
+            "container"
+          ],
+          "description": "'process' runs the command as a child of this run: nothing is inherited, but it shares this run's operating system user and file permissions, so generated code can still read anything that user can by absolute path. 'container' runs it in an image of its own with only the work root mounted. There is no fallback between them - a run configured for a container on an agent that has none stops, because a run that believes it is isolated and is not is worse than one that refuses."
+        },
+        "container": {
+          "type": "object",
+          "required": [
+            "executable",
+            "image"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "executable": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The container runtime to start, by name. Deliberately not an enum: docker, podman and nerdctl take the same arguments and an installation should not need this schema edited to use the one it has."
+            },
+            "image": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The image the command runs in. It decides which toolchain is present, so it cannot be guessed from the ecosystem: an image without the right SDK reports the architect's design as broken when nothing is wrong with it."
+            },
+            "network": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The container network. Installing dependencies needs one, so this cannot default to 'none'; an installation that resolves from a local mirror can set it to a network that reaches only that."
+            },
+            "extra_args": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": "Arguments passed to the runtime before the image, for whatever this site's containers need - a user, a memory limit, a read-only root. They are added after the mount and the environment this runtime sets, and cannot remove them."
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "project",
+    "target",
+    "runtime",
+    "routing",
+    "idempotency",
+    "ci",
+    "ai",
+    "secrets",
+    "language",
+    "repository",
+    "automation",
+    "quality",
+    "work_tracking",
+    "observability",
+    "assurance",
+    "review",
+    "supervisor",
+    "delivery"
+  ],
+  "properties": {
+    "project": {
+      "type": "object",
+      "required": [
+        "name",
+        "source_branch",
+        "automation_root"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_branch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "automation_root": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "target": {
+      "type": "object",
+      "required": [
+        "repository_path",
+        "documentation_paths",
+        "requirements_paths",
+        "architecture_paths",
+        "additional_context_paths"
+      ],
+      "properties": {
+        "repository_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "documentation_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "requirements_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "architecture_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additional_context_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtime": {
+      "type": "object",
+      "required": [
+        "artifacts_root",
+        "max_stage_iterations",
+        "agent_schema_retries",
+        "resume_enabled",
+        "context"
+      ],
+      "properties": {
+        "artifacts_root": {
+          "type": "string",
+          "minLength": 1
+        },
+        "max_stage_iterations": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "agent_schema_retries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "resume_enabled": {
+          "type": "boolean"
+        },
+        "progress": {
+          "type": "object",
+          "properties": {
+            "narrate_agent_output": {
+              "type": "boolean"
+            },
+            "narration_max_items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10
+            },
+            "narration_max_length": {
+              "type": "integer",
+              "minimum": 40,
+              "maximum": 400
+            }
+          },
+          "additionalProperties": false
+        },
+        "relay": {
+          "type": "object",
+          "properties": {
+            "budget_minutes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1440
+            },
+            "max_legs": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          "additionalProperties": false
+        },
+        "context": {
+          "type": "object",
+          "required": [
+            "max_file_bytes",
+            "max_total_bytes"
+          ],
+          "properties": {
+            "max_file_bytes": {
+              "type": "integer",
+              "minimum": 1024
+            },
+            "max_total_bytes": {
+              "type": "integer",
+              "minimum": 1024
+            },
+            "max_request_bytes": {
+              "type": "integer",
+              "minimum": 1024
+            },
+            "max_inventory_entries": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "excluded_directories": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "routing": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "routes"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "routes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "event_types",
+              "workflow"
+            ],
+            "properties": {
+              "event_types": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "workflow": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "idempotency": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "registry_path"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "registry_path": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "ci": {
+      "type": "object",
+      "required": [
+        "provider",
+        "collect_realtime",
+        "fail_on_collection_error",
+        "max_failed_tests",
+        "max_jobs"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "local",
+            "auto",
+            "azure-devops",
+            "github"
+          ]
+        },
+        "collect_realtime": {
+          "type": "boolean"
+        },
+        "fail_on_collection_error": {
+          "type": "boolean"
+        },
+        "max_failed_tests": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5000
+        },
+        "max_jobs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "dry_run": {
+          "type": "boolean"
+        },
+        "azure_devops": {
+          "type": "object",
+          "required": [
+            "organization_url",
+            "project",
+            "auth_env",
+            "auth_scheme"
+          ],
+          "properties": {
+            "organization_url": {
+              "type": "string"
+            },
+            "project": {
+              "type": "string"
+            },
+            "auth_env": {
+              "type": "string",
+              "pattern": "^[A-Z_][A-Z0-9_]*$"
+            },
+            "auth_scheme": {
+              "type": "string",
+              "enum": [
+                "bearer",
+                "basic"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "github": {
+          "type": "object",
+          "required": [
+            "repository",
+            "auth_env"
+          ],
+          "properties": {
+            "repository": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+            },
+            "auth_env": {
+              "type": "string",
+              "pattern": "^[A-Z_][A-Z0-9_]*$"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "provider": {
+                "const": "github"
+              }
+            },
+            "required": [
+              "provider"
+            ]
+          },
+          "then": {
+            "required": [
+              "github"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "provider": {
+                "const": "azure-devops"
+              }
+            },
+            "required": [
+              "provider"
+            ]
+          },
+          "then": {
+            "required": [
+              "azure_devops"
+            ]
+          }
+        }
+      ]
+    },
+    "ai": {
+      "type": "object",
+      "required": [
+        "active_profile",
+        "profiles"
+      ],
+      "properties": {
+        "active_profile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "collaboration": {
+          "type": "object",
+          "required": [
+            "enabled",
+            "profiles",
+            "assignment"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "profiles": {
+              "type": "array",
+              "minItems": 2,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "assignment": {
+              "const": "deterministic_round_robin"
+            }
+          },
+          "additionalProperties": false
+        },
+        "run_budget": {
+          "type": "object",
+          "properties": {
+            "max_total_tokens": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "profiles": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "provider",
+              "model",
+              "reasoning_effort",
+              "command",
+              "timeout_seconds"
+            ],
+            "properties": {
+              "provider": {
+                "type": "string",
+                "enum": [
+                  "mock",
+                  "command",
+                  "copilot-cli"
+                ]
+              },
+              "model": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reasoning_effort": {
+                "type": "string"
+              },
+              "command": {
+                "type": "string"
+              },
+              "timeout_seconds": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "max_artifact_bytes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "required_secret_env": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Z_][A-Z0-9_]*$"
+                }
+              },
+              "secret_env": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Z_][A-Z0-9_]*$"
+                }
+              },
+              "provider_options": {
+                "type": "object",
+                "properties": {
+                  "install_mode": {
+                    "type": "string",
+                    "enum": [
+                      "required",
+                      "npx-if-missing"
+                    ]
+                  },
+                  "package": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "package_version": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "auth_mode": {
+                    "type": "string",
+                    "enum": [
+                      "auto",
+                      "environment"
+                    ]
+                  },
+                  "allow_stored_credentials_in_ci": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": true
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "secrets": {
+      "type": "object",
+      "required": [
+        "source",
+        "path",
+        "format",
+        "allow_inside_target",
+        "required_keys",
+        "mappings"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": [
+            "none",
+            "file",
+            "environment"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "env",
+            "json"
+          ]
+        },
+        "allow_inside_target": {
+          "type": "boolean"
+        },
+        "required_keys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z_][A-Z0-9_]*$"
+          }
+        },
+        "mappings": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[A-Z_][A-Z0-9_]*$"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "language": {
+      "type": "object",
+      "required": [
+        "internal",
+        "report"
+      ],
+      "properties": {
+        "internal": {
+          "const": "en"
+        },
+        "report": {
+          "type": "string",
+          "minLength": 2
+        }
+      },
+      "additionalProperties": false
+    },
+    "repository": {
+      "type": "object",
+      "required": [
+        "allowed_read_paths",
+        "allowed_write_paths",
+        "forbidden_write_paths"
+      ],
+      "properties": {
+        "allowed_read_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allowed_write_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "forbidden_write_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "automation": {
+      "type": "object",
+      "required": [
+        "dependency_sources",
+        "ecosystems",
+        "package_policy"
+      ],
+      "properties": {
+        "min_projects": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_projects": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "naming": {
+          "type": "object"
+        },
+        "isolation": {
+          "$ref": "#/$defs/executionIsolation"
+        },
+        "required_capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "rationale_document": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$",
+          "description": "File name every automation project must carry at its root, recording why its language and technologies were chosen. A bare file name, not a path: the runtime looks for it beneath each project."
+        },
+        "toolchain_record": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$",
+          "description": "File name, written beneath the automation root, recording the toolchain a merged bootstrap settled on. A later run reads it instead of deciding again: an ordinary product change is not a reason to re-choose what the tests are written in, and a run that re-chooses silently delivers a second framework beside the first. A bare file name, not a path."
+        },
+        "verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["execute", "deferred"],
+              "default": "execute",
+              "description": "Deferred bootstrap prepares and reviews automation without executing it. Verification records not_attempted; credentials and test execution are configured after delivery."
+            },
+            "dry_run": {
+              "type": "boolean",
+              "description": "When true, the stage that proves the chosen framework installs nothing and executes nothing, and records that it proved nothing. Verification reaches a package registry and then runs code written minutes earlier, so a rehearsal suppresses it exactly as it suppresses pushing a branch or starting a pipeline. A run that is meant to establish whether the technology works must leave this false."
+            },
+            "isolation": {
+              "$ref": "#/$defs/executionIsolation"
+            }
+          }
+        },
+        "materialization": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "dry_run": {
+              "type": "boolean",
+              "description": "When true, the stage that turns a planned change set into a final one resolves no dependency and writes no lock file, and the change set it produces is marked so it can never be committed. Resolution reaches a package registry and demands that the exact toolchain the decision was settled on is installed on the agent, so a rehearsal suppresses it exactly as it suppresses pushing a branch or starting a pipeline. A run that is meant to deliver automation must leave this false."
+            }
+          }
+        },
+        "dependency_sources": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "ecosystem",
+              "registry",
+              "authentication"
+            ],
+            "properties": {
+              "ecosystem": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+$",
+                "description": "Any ecosystem this installation has an adapter for. Deliberately not a fixed list: automation is written in whatever the product is written in, and a closed enum here would decide that in advance."
+              },
+              "registry": {
+                "type": "string",
+                "format": "uri",
+                "pattern": "^https://"
+              },
+              "authentication": {
+                "type": "string",
+                "enum": [
+                  "none"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "ecosystems": {
+          "type": "object",
+          "minProperties": 1,
+          "description": "The ecosystems this programme can actually install, build and run. It states what the runtime supports, not what the architecture must be: which packages an automation project uses is decided per project from the product's own solution and resolved from these sources. Supporting another one - Python, Java, Go, Ruby, anything - is an adapter file under scripts/ecosystems, not an edit to this schema.",
+          "propertyNames": {
+            "pattern": "^[a-z0-9]+$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "source",
+              "runtime"
+            ],
+            "properties": {
+              "source": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The key under dependency_sources this ecosystem resolves from."
+              },
+              "runtime": {
+                "type": "object",
+                "minProperties": 1,
+                "description": "The interpreter or SDK the agents may assume is present on a build machine.",
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "integer",
+                    "boolean"
+                  ]
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "package_policy": {
+          "type": "object",
+          "required": [
+            "max_direct_packages",
+            "allow_prerelease",
+            "denied_packages"
+          ],
+          "description": "The limits a resolved dependency set has to satisfy. These are constraints on any choice, deliberately not a list of permitted choices: the architect proposes packages from what the product is written in, and the resolver rejects what breaks a rule here.",
+          "properties": {
+            "max_direct_packages": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Per automation project. Zero means no fixed package count limit."
+            },
+            "allow_prerelease": {
+              "type": "boolean"
+            },
+            "denied_packages": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": "Packages this programme refuses regardless of who proposes them. Matched case-insensitively against the package name."
+            },
+            "denied_licenses": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "quality": {
+      "type": "object",
+      "required": [
+        "auto_detect",
+        "fail_on_required_failure",
+        "commands",
+        "security"
+      ],
+      "properties": {
+        "auto_detect": {
+          "type": "boolean"
+        },
+        "fail_on_required_failure": {
+          "type": "boolean"
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "category",
+              "executable",
+              "arguments",
+              "working_directory",
+              "required"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "build",
+                  "test",
+                  "lint",
+                  "security",
+                  "dependency",
+                  "documentation"
+                ]
+              },
+              "executable": {
+                "type": "string",
+                "minLength": 1
+              },
+              "arguments": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "working_directory": {
+                "type": "string",
+                "minLength": 1
+              },
+              "required": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "security": {
+          "type": "object",
+          "required": [
+            "secret_scan",
+            "dependency_audit",
+            "max_file_bytes"
+          ],
+          "properties": {
+            "secret_scan": {
+              "type": "boolean"
+            },
+            "dependency_audit": {
+              "type": "boolean"
+            },
+            "max_file_bytes": {
+              "type": "integer",
+              "minimum": 1024
+            }
+          },
+          "additionalProperties": false
+        },
+        "automation_gates": {
+          "type": "array",
+          "description": "Directories holding automation this programme generated. Each names a place, never a command: the install, build and test commands are taken from the ecosystem adapter that matches the manifest found there, so the gate follows whatever the architecture stage decided rather than a command written down months earlier in a different ecosystem.",
+          "items": {
+            "type": "object",
+            "required": [
+              "path"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "required": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "work_tracking": {
+      "type": "object",
+      "required": [
+        "provider",
+        "enabled",
+        "dry_run"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "none",
+            "azure-devops",
+            "github"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "dry_run": {
+          "type": "boolean"
+        },
+        "azure_devops": {
+          "type": "object",
+          "required": [
+            "organization_url",
+            "project",
+            "area_path",
+            "iteration_path",
+            "auth_env",
+            "auth_scheme"
+          ],
+          "properties": {
+            "organization_url": {
+              "type": "string"
+            },
+            "project": {
+              "type": "string"
+            },
+            "area_path": {
+              "type": "string"
+            },
+            "iteration_path": {
+              "type": "string"
+            },
+            "use_current_iteration": {
+              "type": "boolean",
+              "description": "Resolve the team's current sprint at write time and file work against it. Used only when iteration_path is empty, because an explicit path is a deliberate override."
+            },
+            "auth_env": {
+              "type": "string",
+              "pattern": "^[A-Z_][A-Z0-9_]*$"
+            },
+            "auth_scheme": {
+              "type": "string",
+              "enum": [
+                "bearer",
+                "basic"
+              ]
+            },
+            "expected_user_id": {
+              "type": "string"
+            },
+            "match_build_requester": {
+              "type": "boolean"
+            },
+            "story_work_item_type": {
+              "type": "string",
+              "description": "The work item type a plain requirement is filed as. Only Scrum projects have Product Backlog Item; Agile has User Story, CMMI has Requirement and Basic has Issue. Left empty, the writer asks the project which types it has and picks one that fits."
+            }
+          },
+          "additionalProperties": false
+        },
+        "github": {
+          "type": "object",
+          "required": [
+            "repository",
+            "auth_env"
+          ],
+          "properties": {
+            "repository": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+            },
+            "auth_env": {
+              "type": "string",
+              "pattern": "^[A-Z_][A-Z0-9_]*$"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "provider": {
+                "const": "github"
+              }
+            },
+            "required": [
+              "provider"
+            ]
+          },
+          "then": {
+            "required": [
+              "github"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "provider": {
+                "const": "azure-devops"
+              }
+            },
+            "required": [
+              "provider"
+            ]
+          },
+          "then": {
+            "required": [
+              "azure_devops"
+            ]
+          }
+        }
+      ]
+    },
+    "observability": {
+      "type": "object",
+      "required": [
+        "input_paths",
+        "max_file_bytes",
+        "max_total_bytes"
+      ],
+      "properties": {
+        "input_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "max_file_bytes": {
+          "type": "integer",
+          "minimum": 1024
+        },
+        "max_total_bytes": {
+          "type": "integer",
+          "minimum": 1024
+        }
+      },
+      "additionalProperties": false
+    },
+    "assurance": {
+      "type": "object",
+      "required": [
+        "mode",
+        "minimum_specialists",
+        "high_risk_minimum_specialists",
+        "minimum_reviewers",
+        "high_risk_minimum_reviewers",
+        "require_unanimous_reviews",
+        "require_deterministic_evidence"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "standard",
+            "maximum"
+          ]
+        },
+        "minimum_specialists": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 10
+        },
+        "high_risk_minimum_specialists": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 10
+        },
+        "minimum_reviewers": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 10
+        },
+        "high_risk_minimum_reviewers": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 10
+        },
+        "require_unanimous_reviews": {
+          "type": "boolean"
+        },
+        "require_deterministic_evidence": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "review": {
+      "type": "object"
+    },
+    "supervisor": {
+      "type": "object"
+    },
+    "delivery": {
+      "type": "object",
+      "required": [
+        "provider",
+        "dry_run",
+        "create_branch",
+        "apply_changes",
+        "allow_file_deletions",
+        "commit_changes",
+        "push_branch",
+        "create_draft_pull_request",
+        "branch_prefix",
+        "commit_message",
+        "reviewers",
+        "work_items"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "none",
+            "azure-devops",
+            "github"
+          ]
+        },
+        "dry_run": {
+          "type": "boolean"
+        },
+        "create_branch": {
+          "type": "boolean"
+        },
+        "apply_changes": {
+          "type": "boolean"
+        },
+        "allow_file_deletions": {
+          "type": "boolean"
+        },
+        "commit_changes": {
+          "type": "boolean"
+        },
+        "push_branch": {
+          "type": "boolean"
+        },
+        "create_draft_pull_request": {
+          "type": "boolean"
+        },
+        "pull_request_draft": {
+          "type": "boolean"
+        },
+        "require_reviewer_group": {
+          "type": "boolean"
+        },
+        "branch_prefix": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commit_message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "committer_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "committer_email": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reviewers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "work_items": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "integer"
+            ]
+          }
+        },
+        "azure_devops": {
+          "type": "object",
+          "required": [
+            "organization_url",
+            "project",
+            "repository_id",
+            "auth_env",
+            "auth_scheme"
+          ],
+          "properties": {
+            "organization_url": {
+              "type": "string"
+            },
+            "project": {
+              "type": "string"
+            },
+            "repository_id": {
+              "type": "string"
+            },
+            "auth_env": {
+              "type": "string",
+              "pattern": "^[A-Z_][A-Z0-9_]*$"
+            },
+            "auth_scheme": {
+              "type": "string",
+              "enum": [
+                "bearer",
+                "basic"
+              ]
+            },
+            "expected_user_id": {
+              "type": "string"
+            },
+            "match_build_requester": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "github": {
+          "type": "object",
+          "required": [
+            "repository",
+            "auth_env"
+          ],
+          "properties": {
+            "repository": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+            },
+            "auth_env": {
+              "type": "string",
+              "pattern": "^[A-Z_][A-Z0-9_]*$"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "provider": {
+                "const": "github"
+              }
+            },
+            "required": [
+              "provider"
+            ]
+          },
+          "then": {
+            "required": [
+              "github"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "provider": {
+                "const": "azure-devops"
+              }
+            },
+            "required": [
+              "provider"
+            ]
+          },
+          "then": {
+            "required": [
+              "azure_devops"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

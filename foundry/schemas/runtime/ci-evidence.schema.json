@@ -1,0 +1,221 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Normalised realtime CI evidence",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "runId",
+    "collectedAt",
+    "provider",
+    "status",
+    "source",
+    "build",
+    "jobs",
+    "failedTests",
+    "summary",
+    "warnings"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "collectedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "local",
+        "azure-devops",
+        "github"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "collected",
+        "not_applicable",
+        "unavailable"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "eventId",
+        "buildId",
+        "ciRunId"
+      ],
+      "properties": {
+        "eventId": {
+          "type": "string"
+        },
+        "buildId": {
+          "type": "string"
+        },
+        "ciRunId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "build": {
+      "type": "object",
+      "required": [
+        "id",
+        "pipeline",
+        "status",
+        "result",
+        "branch",
+        "commitSha",
+        "url",
+        "startedAt",
+        "finishedAt"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "pipeline": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "result": {
+          "type": "string"
+        },
+        "branch": {
+          "type": "string"
+        },
+        "commitSha": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "startedAt": {
+          "type": "string"
+        },
+        "finishedAt": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "jobs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "status",
+          "result",
+          "url"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "failedTests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "outcome",
+          "errorMessage",
+          "stackTrace",
+          "durationMs",
+          "container"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "errorMessage": {
+            "type": "string"
+          },
+          "stackTrace": {
+            "type": "string"
+          },
+          "durationMs": {
+            "type": "number",
+            "minimum": 0
+          },
+          "container": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "jobCount",
+        "failedJobCount",
+        "testRunCount",
+        "failedTestCount",
+        "truncated"
+      ],
+      "properties": {
+        "jobCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failedJobCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "testRunCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failedTestCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

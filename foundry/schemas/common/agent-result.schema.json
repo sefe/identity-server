@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Common agent result",
+  "type": "object",
+  "required": [
+    "agentId",
+    "stageId",
+    "runId",
+    "status",
+    "summary",
+    "evidence",
+    "assumptions",
+    "unknowns",
+    "warnings",
+    "details"
+  ],
+  "properties": {
+    "agentId": { "type": "string", "minLength": 1 },
+    "stageId": { "type": "string", "minLength": 1 },
+    "runId": { "type": "string", "minLength": 1 },
+    "status": {
+      "type": "string",
+      "enum": ["completed", "blocked", "failed"]
+    },
+    "summary": { "type": "string", "minLength": 1 },
+    "evidence": {
+      "type": "array",
+      "items": { "$ref": "evidence.schema.json" }
+    },
+    "assumptions": { "type": "array", "items": { "type": "string" } },
+    "unknowns": { "type": "array", "items": { "type": "string" } },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "deferrals": {
+      "type": "array",
+      "maxItems": 200,
+      "description": "Required work this artifact does not contain. Classify each omission: only output_budget and artifact_invalid can be repaired by repeating generation. External prerequisites and product gaps need a resolved dependency or an explicit scope decision, and must not be retried as output budget exhaustion.",
+      "items": {
+        "type": "object",
+        "required": ["item", "reason"],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["output_budget", "artifact_invalid", "external_prerequisite", "product_gap", "unclassified"],
+            "description": "Required on new answers. Legacy entries without a kind are unclassified and require diagnosis instead of an automatic retry."
+          },
+          "item": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "description": "The single piece of work left out, named specifically enough that a later attempt can produce it without asking what was meant."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 600,
+            "description": "Why this item was the one to leave out rather than another."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "dependencyRequests": { "$ref": "../runtime/dependency-requests.schema.json" },
+    "details": { "type": "object" }
+  },
+  "additionalProperties": true
+}

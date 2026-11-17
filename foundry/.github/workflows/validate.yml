@@ -1,0 +1,23 @@
+name: Validate Foundry
+on:
+  push:
+    paths: ['foundry/**', '.github/workflows/foundry-*.yml']
+  pull_request:
+    paths: ['foundry/**', '.github/workflows/foundry-*.yml']
+permissions:
+  contents: read
+jobs:
+  helpers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --prefix foundry --ignore-scripts --no-audit --no-fund
+      - run: npm run test:helpers --prefix foundry
+      - name: Offline GitHub integration checks
+        shell: pwsh
+        run: ./foundry/scripts/github/Test-GitHubIntegration.ps1

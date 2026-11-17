@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI provider invocation metadata",
+  "description": "What one call to an AI provider cost. Written once per attempt, including attempts that returned nothing, because a call that timed out still spent the budget and a ledger that only records successes understates the run. Sizes are measured bytes and are always exact; token counts appear only when a provider reported them.",
+  "type": "object",
+  "required": [
+    "id",
+    "runId",
+    "stageId",
+    "agentId",
+    "attempt",
+    "provider",
+    "model",
+    "status",
+    "purpose",
+    "startedAt",
+    "durationMs",
+    "request",
+    "response",
+    "usage",
+    "error"
+  ],
+  "properties": {
+    "id": {
+      "description": "Identifies the attempt this record is about, so records left by repeated legs of a relay can be told apart rather than summed twice.",
+      "type": "string",
+      "minLength": 1
+    },
+    "runId": { "type": "string", "minLength": 1 },
+    "stageId": { "type": "string", "minLength": 1 },
+    "agentId": { "type": "string", "minLength": 1 },
+    "stageIteration": { "type": "integer", "minimum": 0 },
+    "attempt": {
+      "description": "Which schema-retry attempt this was. Attempt two and beyond is the cost of a rejected answer, and separating it is how a run shows what correction is worth.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "provider": { "type": "string", "minLength": 1 },
+    "model": { "type": "string", "minLength": 1 },
+    "reasoningEffort": { "type": "string" },
+    "status": {
+      "description": "answered: the provider returned text, whatever that text later proved to be. timed_out: the attempt was stopped without an answer. faltered: the provider failed in a way that says nothing about the request. failed: the provider failed in a way that will not come right on its own, so the run stops here — the call still happened and still cost what it cost.",
+      "type": "string",
+      "enum": ["answered", "timed_out", "faltered", "failed"]
+    },
+    "purpose": {
+      "description": "What the call was for. artifact: the agent's own answer, whether a first attempt or a retry after a rejection. field_repair: a follow-up asking for prose that overran a schema limit to be shortened, which is a second call against the same attempt and would otherwise be invisible in the ledger.",
+      "type": "string",
+      "enum": ["artifact", "field_repair"]
+    },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "durationMs": { "type": "integer", "minimum": 0 },
+    "request": { "$ref": "#/$defs/payload" },
+    "response": { "$ref": "#/$defs/payload" },
+    "usage": {
+      "description": "Null when no provider reported token counts. It is left null rather than filled with an estimate, because a guess written into the same field as a measurement stops being distinguishable from one.",
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["source"],
+          "properties": {
+            "source": {
+              "description": "Where the counts came from. Only a provider can measure them.",
+              "type": "string",
+              "enum": ["provider"]
+            },
+            "inputTokens": { "type": "integer", "minimum": 0 },
+            "outputTokens": { "type": "integer", "minimum": 0 },
+            "cachedInputTokens": { "type": "integer", "minimum": 0 },
+            "totalTokens": { "type": "integer", "minimum": 0 },
+            "model": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "error": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["message"],
+          "properties": {
+            "message": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "payload": {
+      "description": "A measured size. Bytes are what was actually written or received; characters are reported alongside because a multi-byte prompt costs more bytes than it does text.",
+      "type": "object",
+      "required": ["bytes", "characters"],
+      "properties": {
+        "bytes": { "type": "integer", "minimum": 0 },
+        "characters": { "type": "integer", "minimum": 0 },
+        "sections": {
+          "description": "How a request divides up, so a prompt that grew can be attributed to the part that grew rather than to the call as a whole.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "bytes"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "bytes": { "type": "integer", "minimum": 0 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

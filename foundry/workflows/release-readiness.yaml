@@ -1,0 +1,54 @@
+name: release-readiness
+version: 1
+settings: { max_stage_iterations: 3, fail_on_schema_error: true, preserve_all_artifacts: true }
+stages:
+  - id: release-quality-evidence
+    risk: critical
+    type: deterministic_action
+    depends_on: []
+    action: { handler: quality_suite, output: action-result.json }
+  - id: release-analysis
+    risk: critical
+    type: parallel_with_synthesis
+    depends_on: [release-quality-evidence]
+    agents:
+      - { id: release-functionality-analyst, prompt: prompts/sdlc/release-functionality.md, schema: schemas/sdlc/analysis.schema.json, output: functionality-analysis.json }
+      - { id: release-security-analyst, prompt: prompts/sdlc/release-security.md, schema: schemas/sdlc/analysis.schema.json, output: security-analysis.json }
+      - { id: release-operations-analyst, prompt: prompts/sdlc/release-operations.md, schema: schemas/sdlc/analysis.schema.json, output: operations-analysis.json }
+    synthesis: { agent: release-synthesis, prompt: prompts/sdlc/synthesis.md, schema: schemas/sdlc/synthesis.schema.json, output: release-synthesis.json }
+  - id: release-notes-generation
+    risk: high
+    type: sequential
+    depends_on: [release-analysis]
+    agents:
+      - { id: release-notes-change-generator, prompt: prompts/sdlc/change-generator.md, schema: schemas/actions/change-set.schema.json, output: change-set.json }
+    assurance: { reviewed_by: release-review, deterministic_evidence: true }
+  - id: release-review
+    risk: critical
+    type: parallel_review
+    depends_on: [release-notes-generation]
+    agents:
+      - { id: release-correctness-reviewer, prompt: prompts/sdlc/review-correctness.md, schema: schemas/sdlc/review.schema.json, output: correctness-review.json }
+      - { id: release-quality-reviewer, prompt: prompts/sdlc/review-quality.md, schema: schemas/sdlc/review.schema.json, output: quality-review.json }
+      - { id: release-security-reviewer, prompt: prompts/sdlc/review-security.md, schema: schemas/sdlc/review.schema.json, output: security-review.json }
+    approval: { strategy: unanimous, on_reject: { return_to: release-notes-generation }, max_iterations: 3 }
+  - id: apply-release-notes
+    risk: high
+    type: deterministic_action
+    depends_on: [release-review]
+    action: { handler: apply_change_set, input: change-set.json, output: action-result.json }
+    assurance: { approved_by: release-review }
+  - id: publish-release-draft
+    risk: critical
+    type: deterministic_action
+    depends_on: [apply-release-notes]
+    action:
+      handler: deliver_changes
+      # Named, not searched for: the reviewers approved this document, and a
+      # critic loop leaves earlier drafts of the same name behind it.
+      inputs:
+        changeSet:
+          stage: release-notes-generation
+          artifact: change-set.json
+      output: action-result.json
+    assurance: { approved_by: release-review }

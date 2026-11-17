@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Workflow state",
+  "type": "object",
+  "required": [
+    "workflowName",
+    "workflowVersion",
+    "runId",
+    "status",
+    "currentStage",
+    "stageIteration",
+    "startedAt",
+    "updatedAt",
+    "stages"
+  ],
+  "properties": {
+    "workflowName": { "type": "string", "minLength": 1 },
+    "workflowVersion": { "type": "integer", "minimum": 1 },
+    "runId": { "type": "string", "minLength": 1 },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "running", "completed", "failed", "blocked", "cancelled", "paused"]
+    },
+    "blockedReason": {
+      "type": ["string", "null"],
+      "$comment": "Why a blocked run stopped. A block for judgement needs a person to resolve it and a fresh run; a block for spending is undone by raising the allowance, and only a stated reason lets the two be told apart on resume.",
+      "enum": ["run_budget_exhausted", "coverage_iteration_limit", "unresolved_prerequisites", "stage_blocked", "external_prerequisite", "policy_blocker", null]
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["agentId", "item", "reason", "kind"],
+        "properties": {
+          "agentId": { "type": "string" }, "item": { "type": "string" },
+          "reason": { "type": "string" }, "kind": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "currentStage": { "type": ["string", "null"] },
+    "stageIteration": { "type": "integer", "minimum": 0 },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "stages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "status", "iteration", "attempts"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string" },
+          "handler": {
+            "type": "string",
+            "$comment": "Present on deterministic actions. Deciding whether an interrupted run may continue depends on whether the stage that stopped had already changed something outside this repository.",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "running",
+              "approved",
+              "approved_with_dissent",
+              "revision_required",
+              "completed",
+              "no_action_needed",
+              "failed",
+              "blocked",
+              "skipped"
+            ]
+          },
+          "iteration": { "type": "integer", "minimum": 0 },
+          "attempts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "artifacts": {
+                  "type": "array",
+                  "$comment": "What this attempt produced. A critic loop leaves one document per iteration, so the newest file in a stage directory is not the approved one; a later stage reads this list instead of searching.",
+                  "items": {
+                    "type": "object",
+                    "required": ["name", "relativePath", "sha256"],
+                    "properties": {
+                      "name": { "type": "string", "minLength": 1 },
+                      "relativePath": { "type": "string", "minLength": 1 },
+                      "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "inputs": {
+                  "type": "array",
+                  "$comment": "What this attempt was given by identity rather than by searching the run. An approval recorded here names the exact bytes the agents judged.",
+                  "items": {
+                    "type": "object",
+                    "required": ["input", "stage", "name", "relativePath", "sha256"],
+                    "properties": {
+                      "input": { "type": "string", "minLength": 1 },
+                      "stage": { "type": "string", "minLength": 1 },
+                      "name": { "type": "string", "minLength": 1 },
+                      "relativePath": { "type": "string", "minLength": 1 },
+                      "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

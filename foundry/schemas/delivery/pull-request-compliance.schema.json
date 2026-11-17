@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Pull request compliance",
+  "allOf": [
+    { "$ref": "../common/review-decision.schema.json" },
+    {
+      "type": "object",
+      "required": ["draftPullRequestAllowed", "checks"],
+      "properties": {
+        "agentId": { "const": "pull-request-compliance" },
+        "stageId": { "const": "delivery-review" },
+        "draftPullRequestAllowed": { "type": "boolean" },
+        "checks": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  ]
+}

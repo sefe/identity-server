@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Batch assignment",
+  "$comment": "What the runtime cut from the approved inventory and handed to one generator call. Written by the runtime rather than by a model, so the assignment is auditable independently of the answer it produced.",
+  "type": "object",
+  "required": [
+    "batchId",
+    "ordinal",
+    "batchCount",
+    "estimatedBytes",
+    "assignedFiles",
+    "assignedPaths",
+    "allApprovedPaths"
+  ],
+  "properties": {
+    "batchId": { "type": "string", "pattern": "^batch-[0-9]{2,}(-escalated)?(-part-[0-9]+)*$" },
+    "ordinal": { "type": "integer", "minimum": 1 },
+    "batchCount": { "type": "integer", "minimum": 1 },
+    "estimatedBytes": { "type": "integer", "minimum": 0 },
+    "assignedFiles": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["path"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "operation": { "type": "string", "enum": ["create", "update", "delete"] },
+          "purpose": { "type": "string" },
+          "contentContract": { "type": "string" },
+          "dependsOn": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "assignedPaths": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "resolverOwnedPaths": {
+      "$comment": "Approved paths deliberately withheld from every batch because a resolver produces them. Named so the omission reads as a decision rather than as a gap the generator should fill.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "allApprovedPaths": {
+      "$comment": "Every approved path, not only this batch's. A batch that may import a helper another batch is writing needs to know the helper exists, or it invents a second copy.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "layer": {
+      "$comment": "How deep this batch sits in the dependency graph of the approved inventory. Layer zero depends on nothing the run writes; every layer above it is asked only once the layers below have answered.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "dependsOnBatchIds": {
+      "$comment": "The batches that wrote the files this one builds on. Their answers are supplied with this assignment, so an import here is checked against text rather than against intent.",
+      "type": "array",
+      "items": { "type": "string", "pattern": "^batch-[0-9]{2,}$" }
+    },
+    "repairInstructions": {
+      "$comment": "Present only when a review asked for a targeted repair. What each reviewer wants changed in the files this batch owns, in the reviewer's own words.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["paths", "instruction"],
+        "properties": {
+          "reviewer": { "type": "string" },
+          "paths": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "instruction": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "carriedDependencies": {
+      "$comment": "Paths of files this batch has to keep agreeing with that are not being regenerated: its dependencies and the callers a targeted repair left alone. The bodies are supplied as a separate artifact named by carriedDependencyArtifact, so this assignment stays small enough to be read inline.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "carriedDependencyArtifact": {
+      "$comment": "The name of the artifact holding the final text of every path in carriedDependencies. Empty when nothing is carried forward.",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

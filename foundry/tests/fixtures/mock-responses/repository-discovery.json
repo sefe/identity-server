@@ -1,0 +1,80 @@
+{
+  "agentId": "repository-discovery",
+  "stageId": "discovery",
+  "runId": "run-example",
+  "status": "completed",
+  "summary": "A deterministic example repository discovery result.",
+  "evidence": [
+    {
+      "source": "context/repository.json",
+      "description": "Repository metadata manifest."
+    }
+  ],
+  "assumptions": [],
+  "unknowns": [
+    "Runtime product behavior was not observed."
+  ],
+  "warnings": [],
+  "details": {
+    "technologies": [
+      "PowerShell",
+      "Node.js"
+    ],
+    "componentStacks": [
+      {
+        "name": "Billing API",
+        "path": "src/Billing.Api",
+        "role": "product",
+        "primaryLanguage": "C#",
+        "runtime": "net8.0",
+        "buildSystem": "dotnet",
+        "packageManager": "nuget",
+        "dependencies": [
+          { "name": "Serilog.AspNetCore", "version": "8.0.1", "scope": "runtime" }
+        ],
+        "testFrameworks": [],
+        "configurationApproach": "appsettings.json bound through IOptions.",
+        "loggingApproach": "Serilog writing structured events to the console sink.",
+        "ciEnvironment": "windows-latest with the .NET 8 SDK installed by UseDotNet@2.",
+        "packageFeeds": ["https://pkgs.dev.azure.com/sefe/_packaging/sefe/nuget/v3/index.json"],
+        "evidence": [
+          "src/Billing.Api/Billing.Api.csproj",
+          "global.json",
+          "NuGet.config",
+          "azure-pipelines.yml"
+        ]
+      },
+      {
+        "name": "Foundry installation",
+        "path": "foundry",
+        "role": "tooling",
+        "primaryLanguage": "PowerShell",
+        "buildSystem": "none",
+        "packageManager": "npm",
+        "testFrameworks": ["Pester", "node:test"],
+        "ciEnvironment": "The same agent pool, with Node.js supplied by the pipeline.",
+        "packageFeeds": [],
+        "evidence": ["foundry/package.json", "foundry/tests/powershell"]
+      }
+    ],
+    "primaryStack": {
+      "language": "C#",
+      "runtime": "net8.0",
+      "buildSystem": "dotnet",
+      "packageManager": "nuget",
+      "ecosystem": "nuget",
+      "polyglot": false,
+      "rationale": "Every component the repository exists to ship is a .NET project pinned to the SDK in global.json; the only other language belongs to the automation installation itself.",
+      "evidence": [
+        "Billing.sln",
+        "global.json",
+        "src/Billing.Api/Billing.Api.csproj"
+      ]
+    },
+    "excludedFromStackDetermination": [
+      { "path": "foundry", "reason": "foundry_installation" },
+      { "path": "src/Billing.Api/obj", "reason": "generated" }
+    ]
+  }
+}
+

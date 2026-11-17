@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Field repair record",
+  "type": "object",
+  "required": ["artifact", "shortened"],
+  "additionalProperties": false,
+  "properties": {
+    "artifact": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "shortened": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 40,
+      "items": {
+        "type": "object",
+        "required": ["pointer", "limit", "before", "after"],
+        "additionalProperties": false,
+        "properties": {
+          "pointer": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "limit": { "type": "integer", "minimum": 1 },
+          "before": { "type": "integer", "minimum": 1 },
+          "after": { "type": "integer", "minimum": 1 }
+        }
+      }
+    }
+  }
+}

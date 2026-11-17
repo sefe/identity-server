@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent answer coverage",
+  "$comment": "Written beside every agent artifact. It answers one question the artifact itself cannot: was this agent asked for less than the run asked it for, and if so what did it leave out. A run that cuts an output budget is deciding to leave work undone, and this file is where that decision is recorded so a stage can refuse to finish over it.",
+  "type": "object",
+  "required": [
+    "runId",
+    "agentId",
+    "stageId",
+    "status",
+    "requestedBytes",
+    "grantedBytes",
+    "attempts",
+    "reductions",
+    "deferrals"
+  ],
+  "properties": {
+    "runId": { "type": "string", "minLength": 1 },
+    "agentId": { "type": "string", "minLength": 1 },
+    "stageId": { "type": "string", "minLength": 1 },
+    "status": {
+      "type": "string",
+      "enum": ["covered", "deferred"],
+      "description": "'covered' means the artifact is the whole answer. 'deferred' means it is not, and every missing item is listed below."
+    },
+    "requestedBytes": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "The output budget the run started this agent with. Zero means the agent was not given one."
+    },
+    "grantedBytes": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "The budget the accepted answer was actually written against. Below requestedBytes means the run asked for less than it wanted."
+    },
+    "attempts": { "type": "integer", "minimum": 1 },
+    "reductions": {
+      "type": "array",
+      "description": "Every time the budget was cut, and why. Empty is the ordinary case.",
+      "items": {
+        "type": "object",
+        "required": ["attempt", "cause", "grantedBytes"],
+        "properties": {
+          "attempt": { "type": "integer", "minimum": 1 },
+          "cause": {
+            "type": "string",
+            "enum": ["no_answer_in_time", "answer_cut_off"]
+          },
+          "grantedBytes": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "deferrals": {
+      "type": "array",
+      "description": "Copied from the artifact so the record of what is missing survives independently of the document that is missing it.",
+      "items": {
+        "type": "object",
+        "required": ["item", "reason"],
+        "properties": {
+          "item": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 },
+          "kind": { "type": "string", "enum": ["output_budget", "artifact_invalid", "external_prerequisite", "product_gap", "unclassified"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "deferralsSource": {
+      "type": "string",
+      "enum": ["agent", "run"],
+      "description": "'agent' means the entries below are the ones the artifact declared. 'run' means the artifact declared none although it was written under a reduced budget, and the run entered its whole assignment as one item rather than take the answer for finished. Absent means 'agent'."
+    }
+  },
+  "additionalProperties": false
+}

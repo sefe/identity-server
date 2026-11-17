@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Approved path coverage",
+  "$comment": "The paths the change set batches are authoring, handed to the materialisation planner so it can only name manifests the change set actually writes.",
+  "type": "object",
+  "required": ["generatedPaths", "batches"],
+  "properties": {
+    "generatedPaths": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "resolverOwnedPaths": {
+      "$comment": "Approved paths no batch authors because a resolver produces them. The planner reads these to see which lock files its materialisations are expected to account for.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "previousMaterializations": {
+      "$comment": "Resolver instructions reused from a previously generated plan for the still-approved manifests.",
+      "type": "array",
+      "items": { "$ref": "../actions/materialization-item.schema.json" }
+    },
+    "carriedManifests": {
+      "$comment": "Existing approved manifest bodies provided to the planner during repair.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "content"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "content": { "type": "string" }
+        }
+      }
+    },
+    "batches": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "additionalProperties": false
+}

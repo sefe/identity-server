@@ -1,0 +1,24 @@
+# Included by every executor pipeline as its last step, and owned by the installation rather than by
+# the pipeline that includes it.
+#
+# Azure DevOps has no "a build failed" trigger: its pipeline-completion trigger fires only when the
+# upstream run SUCCEEDED, which is precisely the case where there is nothing to triage. So a suite
+# that fails says so itself, by starting triage and naming the run whose evidence explains it.
+#
+# The pipeline including this file must declare the variable group that carries
+# {{AZURE_DEVOPS_AUTH_ENV}}; without it a failing suite would fail silently a second time, here.
+
+steps:
+  - pwsh: |
+      & "$(Build.SourcesDirectory)/{{FRAMEWORK_PATH}}/scripts/writers/Start-AdoPipelineRun.ps1" `
+        -PipelineName '{{TRIAGE_PIPELINE_NAME}}' `
+        -Organization '$(System.TeamFoundationCollectionUri)' `
+        -Project '$(System.TeamProject)' `
+        -Branch '$(Build.SourceBranch)' `
+        -TokenEnvironmentName '{{AZURE_DEVOPS_AUTH_ENV}}' `
+        -AuthScheme '{{AZURE_DEVOPS_AUTH_SCHEME}}' `
+        -TemplateParameters @{ failedBuildId = '$(Build.BuildId)' }
+    displayName: Hand this failure to SDLC Foundry triage
+    condition: failed()
+    env:
+      {{AZURE_DEVOPS_AUTH_ENV}}: $({{AZURE_DEVOPS_AUTH_ENV}})

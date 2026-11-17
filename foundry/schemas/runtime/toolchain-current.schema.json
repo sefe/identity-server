@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["relativePath", "sha256", "previousPath", "previousSha256", "requestsPath"],
+  "additionalProperties": false,
+  "properties": {
+    "relativePath": { "type": "string", "minLength": 1 },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "previousPath": { "type": "string", "minLength": 1 },
+    "previousSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "requestsPath": { "type": "string", "minLength": 1 }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "targets": [
+    {
+      "organization_url": "https://dev.azure.com/sefe",
+      "project": "X AI Mission",
+      "work_item_type": "Bug",
+      "fields": {
+        "Gazprom.RequestedBy": "@authenticated-user",
+        "Gazprom.TShirtSize": "Small",
+        "Gazprom.TestPhase": "Regression Test",
+        "Gazprom.EnvironmentType": "Development",
+        "Gazprom.BusinessUnit": "TradingIT"
+      }
+    }
+  ]
+}

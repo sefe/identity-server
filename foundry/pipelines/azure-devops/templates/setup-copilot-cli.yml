@@ -1,0 +1,37 @@
+parameters:
+  - name: version
+    displayName: GitHub Copilot CLI npm version
+    type: string
+    default: 1.0.83
+
+steps:
+  - task: NodeTool@0
+    displayName: Use Node.js 22 for GitHub Copilot CLI
+    timeoutInMinutes: 10
+    retryCountOnTaskFailure: 2
+    inputs:
+      versionSpec: 22.23.2
+
+  # A global npm install has no clock of its own, and the leg budget does not
+  # start until the bootstrap step. Build 500 lost leg 6 to exactly that: this
+  # step sat on an unresponsive registry with nothing to stop it, and the job
+  # would have held the agent for its full six-hour ceiling. A registry that
+  # stops answering is a transient fault, so it is bounded and retried rather
+  # than waited on.
+  - bash: |
+      set -euo pipefail
+      case "$COPILOT_CLI_VERSION" in
+        (*[!A-Za-z0-9._-]*|'')
+          echo "Invalid GitHub Copilot CLI version: $COPILOT_CLI_VERSION" >&2
+          exit 2
+          ;;
+      esac
+      npm install --global "@github/copilot@$COPILOT_CLI_VERSION" --no-audit --no-fund \
+        --fetch-timeout=120000 --fetch-retries=3
+      copilot --no-auto-update version
+    displayName: Install and verify GitHub Copilot CLI
+    timeoutInMinutes: 6
+    retryCountOnTaskFailure: 2
+    env:
+      COPILOT_CLI_VERSION: ${{ parameters.version }}
+      npm_config_ignore_scripts: 'false'

@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Scoped repository change set",
+  "$comment": "Every byte here is final. A plan that still names work for a resolver is not a change set, so this contract refuses one outright rather than applying it half-resolved.",
+  "allOf": [
+    { "$ref": "../common/agent-result.schema.json" },
+    {
+      "type": "object",
+      "required": ["outcome", "changes"],
+      "properties": {
+        "outcome": { "type": "string", "enum": ["proposed", "no_action_needed", "blocked"] },
+        "details": {
+          "type": "object",
+          "properties": {
+            "dryRun": {
+              "type": "boolean",
+              "$comment": "True when the change set was rehearsed: no dependency was resolved and it carries no lock file. It travels with the document rather than only in the run's evidence, because the document is the thing that must never be committed, and a reader that has to open another file to learn that is a reader that will not.",
+              "default": false
+            },
+            "materializations": {
+              "type": "array",
+              "$comment": "Which locked toolchain each manifest belongs to. Verification installs and runs one framework per entry; inferring the toolchain from the ecosystem instead leaves a second decision in the same ecosystem untested.",
+              "items": {
+                "type": "object",
+                "required": ["toolchainId", "ecosystem", "manifestPath", "lockPath", "projectPaths"],
+                "properties": {
+                  "toolchainId": { "type": "string", "minLength": 1 },
+                  "ecosystem": { "type": "string", "minLength": 1 },
+                  "manifestPath": { "type": "string", "minLength": 1 },
+                  "lockPath": { "type": "string", "minLength": 1 },
+                  "projectPaths": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": { "type": "string", "minLength": 1 }
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["operation", "path", "expectedSha256", "content", "reason", "sourceRefs"],
+            "properties": {
+              "operation": { "type": "string", "enum": ["create", "update", "delete"] },
+              "path": { "type": "string", "minLength": 1 },
+              "expectedSha256": { "type": "string", "pattern": "^$|^[a-f0-9]{64}$" },
+              "content": { "type": "string" },
+              "reason": { "type": "string", "minLength": 1 },
+              "sourceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "$comment": "agent-result allows additional properties, so an unresolved plan would otherwise validate as a finished change set.",
+      "not": { "required": ["materializations"] }
+    },
+    {
+      "if": {
+        "required": ["status"],
+        "properties": { "status": { "const": "blocked" } }
+      },
+      "then": {
+        "properties": {
+          "outcome": { "const": "blocked" },
+          "changes": { "maxItems": 0 }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["status"],
+        "properties": { "status": { "const": "completed" } }
+      },
+      "then": {
+        "properties": {
+          "outcome": { "enum": ["proposed", "no_action_needed"] }
+        }
+      }
+    }
+  ]
+}

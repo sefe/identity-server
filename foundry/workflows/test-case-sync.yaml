@@ -1,0 +1,26 @@
+name: test-case-sync
+version: 1
+settings: { max_stage_iterations: 3, fail_on_schema_error: true, preserve_all_artifacts: true }
+stages:
+  - id: test-case-planning
+    risk: high
+    type: sequential
+    depends_on: []
+    agents:
+      - { id: test-case-planner, prompt: prompts/planning/test-case-planner.md, schema: schemas/actions/work-item-plan.schema.json, output: work-item-plan.json }
+    assurance: { reviewed_by: test-case-review, deterministic_evidence: true }
+  - id: test-case-review
+    risk: high
+    type: parallel_review
+    depends_on: [test-case-planning]
+    agents:
+      - { id: test-case-correctness-reviewer, prompt: prompts/sdlc/review-correctness.md, schema: schemas/sdlc/review.schema.json, output: correctness-review.json }
+      - { id: test-case-quality-reviewer, prompt: prompts/sdlc/review-quality.md, schema: schemas/sdlc/review.schema.json, output: quality-review.json }
+      - { id: test-case-security-reviewer, prompt: prompts/sdlc/review-security.md, schema: schemas/sdlc/review.schema.json, output: security-review.json }
+    approval: { strategy: unanimous, on_reject: { return_to: test-case-planning }, max_iterations: 3 }
+  - id: create-test-cases
+    risk: high
+    type: deterministic_action
+    depends_on: [test-case-review]
+    action: { handler: create_work_items, input: work-item-plan.json, output: action-result.json }
+    assurance: { approved_by: test-case-review }

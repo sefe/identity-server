@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Implementation result",
+  "$defs": {
+    "findingDisposition": {
+      "type": "object",
+      "required": ["findingId", "disposition", "locations"],
+      "additionalProperties": false,
+      "properties": {
+        "findingId": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "disposition": {
+          "type": "string",
+          "enum": ["applied", "rejected", "not_applicable"]
+        },
+        "locations": {
+          "type": "array",
+          "maxItems": 20,
+          "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+        },
+        "note": { "type": "string", "minLength": 1, "maxLength": 1000 }
+      }
+    },
+    "plannedFile": {
+      "type": "object",
+      "required": ["path", "operation", "purpose", "contentContract"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "operation": { "type": "string", "enum": ["create", "update"] },
+        "project": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "purpose": { "type": "string", "minLength": 1, "maxLength": 400 },
+        "contentContract": { "type": "string", "minLength": 1, "maxLength": 4500 },
+        "dependsOn": {
+          "type": "array",
+          "maxItems": 10,
+          "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+        }
+      }
+    }
+  },
+  "allOf": [
+    { "$ref": "../common/agent-result.schema.json" },
+    {
+      "type": "object",
+      "required": ["plannedFiles", "commandsProposed"],
+      "properties": {
+        "plannedFiles": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/plannedFile" }
+        },
+        "unchangedFiles": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+        },
+        "removedFiles": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+        },
+        "mergedRemovals": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+        },
+        "findingDispositions": {
+          "type": "array",
+          "maxItems": 30,
+          "items": { "$ref": "#/$defs/findingDisposition" }
+        },
+        "commandsProposed": {
+          "type": "array",
+          "maxItems": 20,
+          "items": { "type": "string", "minLength": 1, "maxLength": 600 }
+        }
+      }
+    }
+  ]
+}

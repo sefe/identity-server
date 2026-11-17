@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Review decision",
+  "allOf": [
+    { "$ref": "agent-result.schema.json" },
+    {
+      "type": "object",
+      "required": ["decision", "findings", "requiredChanges", "confidence"],
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": ["approved", "revision_required", "blocked"]
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["severity", "message", "evidence"],
+            "properties": {
+              "severity": {
+                "type": "string",
+                "enum": ["info", "warning", "error", "critical"]
+              },
+              "message": { "type": "string", "minLength": 1 },
+              "evidence": { "type": "string" },
+              "resolutionScope": {
+                "type": "string",
+                "enum": ["blueprint_revision", "external_prerequisite"]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "requiredChanges": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "repairScope": {
+          "type": "string",
+          "enum": ["targeted", "all"]
+        },
+        "repairTargets": {
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "type": "object",
+            "required": ["paths", "instruction"],
+            "additionalProperties": false,
+            "properties": {
+              "paths": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 20,
+                "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+              },
+              "instruction": { "type": "string", "minLength": 1, "maxLength": 1000 }
+            }
+          }
+        },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    }
+  ]
+}

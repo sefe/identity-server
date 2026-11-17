@@ -1,0 +1,44 @@
+version: 1
+
+# This file assumes the Foundry folder is named "foundry" inside the product repo.
+target:
+  repository_path: ../..
+  branch: dev
+
+framework:
+  path: foundry
+  project_config_path: foundry/config/project.yaml
+  policy_path: foundry/policies/default-policy.yaml
+  bootstrap_workflow_path: foundry/workflows/bootstrap-automation.yaml
+
+installation:
+  managed_root: .foundry
+  artifacts_root: .qa-foundry-artifacts/bootstrap
+  run_analysis: true
+
+azure_devops:
+  organization_url: ""
+  project: ""
+  repository_id: ""
+  repository_type: azureReposGit
+  auth_env: AZURE_DEVOPS_TOKEN
+  auth_scheme: basic
+  expected_user_id: ""
+  match_build_requester: true
+  pipeline_folder: "\\SDLC Foundry"
+  dry_run: true
+  queue_smoke_run: false
+
+pipelines:
+  - key: sdlc-router
+    name: SDLC Foundry - Router
+    yaml_path: .foundry/pipelines/sdlc-router.yml
+    template_path: bootstrap/templates/sdlc-router.yml.template
+    enabled: true
+    smoke: true
+  - key: failed-build-triage
+    name: SDLC Foundry - Failed Build Triage
+    yaml_path: .foundry/pipelines/failed-build-triage.yml
+    template_path: bootstrap/templates/failed-build-triage.yml.template
+    enabled: true
+    smoke: false

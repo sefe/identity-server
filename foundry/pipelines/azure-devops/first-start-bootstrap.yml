@@ -1,0 +1,119 @@
+trigger:
+  branches:
+    include: ['*']
+  paths:
+    include:
+      - .foundry/installation-plan.json
+pr: none
+
+parameters:
+  - name: frameworkPath
+    displayName: Foundry folder in the product repository
+    type: string
+    default: foundry
+  - name: bootstrapConfigPath
+    displayName: Bootstrap configuration path
+    type: string
+    default: foundry/bootstrap/foundry.bootstrap.yaml
+  - name: documentationLinks
+    displayName: Project documentation URLs (space separated), or none
+    type: string
+    default: none
+  - name: phase
+    displayName: Bootstrap phase
+    type: string
+    default: Auto
+    values: [Auto, Plan, Finalize, Repair]
+  - name: copilotCliVersion
+    displayName: GitHub Copilot CLI npm version
+    type: string
+    default: 1.0.83
+  - name: azureDevOpsAuthEnvironment
+    displayName: Variable-group name of the Azure DevOps user PAT
+    type: string
+    default: AZURE_DEVOPS_TOKEN
+  - name: legBudgetMinutes
+    displayName: Minutes of agent work per relay leg
+    type: number
+    default: 40
+  - name: maxLegCount
+    displayName: Maximum legs in this build segment (unfinished work can continue in another build)
+    type: number
+    default: 12
+    values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+  - name: runBudgetMinutes
+    displayName: Total work minutes across this run and all resumed builds
+    type: number
+    default: 720
+  - name: maxNoProgressLegs
+    displayName: Stop after this many legs without new accepted results
+    type: number
+    default: 3
+  - name: additionalAiBudgetUsd
+    displayName: Additional estimated AI allowance, retained across resumed builds (USD)
+    type: number
+    default: 15
+  - name: aiCallCreditLimit
+    displayName: Copilot soft credit limit per invocation (100 credits = 1 USD)
+    type: number
+    default: 250
+  - name: recoveryCandidatePath
+    displayName: Operator recovery source bound to the saved run, or none
+    type: string
+    default: none
+  # Azure DevOps asks the operator to fill in any parameter whose default is
+  # empty, so "no build to continue" has to be spelled out as a word.
+  - name: resumeFromBuildId
+    displayName: Build id to continue, or none to start a new run
+    type: string
+    default: none
+  - name: resumeRunId
+    displayName: Analysis run ID when importing evidence from an older build
+    type: string
+    default: none
+  - name: restartStage
+    displayName: Explicit stage to rerun after resolving a blocker, or none
+    type: string
+    default: none
+  # The hosted grant is a fixed number of minutes a month, and a relay of twelve
+  # legs spends it quickly. Naming a self-hosted pool moves every leg onto it.
+  - name: agentPool
+    displayName: Self-hosted pool to run the relay on, or none for the hosted image
+    type: string
+    default: TRADING-CLOUD-01
+
+variables:
+  - group: sdlc-foundry-secrets
+  - name: QA_FOUNDRY_ADDITIONAL_USD_LIMIT
+    value: ${{ parameters.additionalAiBudgetUsd }}
+  - name: QA_FOUNDRY_CALL_CREDIT_LIMIT
+    value: ${{ parameters.aiCallCreditLimit }}
+  - name: QA_FOUNDRY_RECOVERY_CANDIDATE
+    value: ${{ parameters.recoveryCandidatePath }}
+
+# The analysis is run as a relay, not as one long job.
+#
+# A ten-stage multi-agent run takes hours, and a single hosted agent does not
+# survive that: the previous single-job build lost its agent after 82 minutes
+# with no diagnostic beyond "we stopped hearing from agent". Each leg here does
+# a bounded amount of work, stops on an agent boundary when its budget runs out,
+# and hands the evidence root to the next leg through a pipeline artifact. A leg
+# that finishes the analysis lets the remaining legs skip, so a short run still
+# costs one job.
+jobs:
+  - template: templates/relay-chain.yml
+    parameters:
+      frameworkPath: ${{ parameters.frameworkPath }}
+      bootstrapConfigPath: ${{ parameters.bootstrapConfigPath }}
+      documentationLinks: ${{ parameters.documentationLinks }}
+      phase: ${{ parameters.phase }}
+      copilotCliVersion: ${{ parameters.copilotCliVersion }}
+      azureDevOpsAuthEnvironment: ${{ parameters.azureDevOpsAuthEnvironment }}
+      legBudgetMinutes: ${{ parameters.legBudgetMinutes }}
+      agentPool: ${{ parameters.agentPool }}
+      resumeFromBuildId: ${{ parameters.resumeFromBuildId }}
+      resumeRunId: ${{ parameters.resumeRunId }}
+      restartStage: ${{ parameters.restartStage }}
+      maxLegCount: ${{ parameters.maxLegCount }}
+      runBudgetMinutes: ${{ parameters.runBudgetMinutes }}
+      maxNoProgressLegs: ${{ parameters.maxNoProgressLegs }}

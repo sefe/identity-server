@@ -1,0 +1,47 @@
+name: Foundry Router
+on:
+  workflow_dispatch:
+    inputs:
+      event_type:
+        description: Lifecycle analysis to run
+        type: choice
+        options: [release.candidate, documentation.changed]
+        default: release.candidate
+permissions:
+  contents: read
+concurrency:
+  group: foundry-router
+  cancel-in-progress: false
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: '{{TARGET_BRANCH}}'
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Restore the embedded Foundry version used by bootstrap
+        shell: pwsh
+        run: |
+          git restore --source '{{RUNTIME_REF}}' --worktree -- foundry
+          if ($LASTEXITCODE) { throw 'Cannot restore pinned embedded Foundry.' }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --prefix foundry
+      - run: npm install -g @github/copilot
+      - name: Run lifecycle analysis
+        shell: pwsh
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          QA_FOUNDRY_ADDITIONAL_USD_LIMIT: ''
+          EVENT_TYPE: ${{ inputs.event_type }}
+        run: ./foundry/scripts/github/Invoke-GitHubLifecycle.ps1 -EventType $env:EVENT_TYPE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: foundry-lifecycle-evidence
+          path: .qa-foundry-artifacts/
+          include-hidden-files: true

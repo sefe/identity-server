@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cross-cutting risk test plan",
+  "allOf": [
+    { "$ref": "../common/agent-result.schema.json" },
+    {
+      "type": "object",
+      "required": ["riskScenarios"],
+      "properties": {
+        "agentId": { "const": "risk-test-planner" },
+        "stageId": { "const": "test-planning" },
+        "riskScenarios": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "category", "priority", "rationale"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "security",
+                  "resilience",
+                  "performance",
+                  "accessibility",
+                  "compatibility",
+                  "observability",
+                  "data_integrity"
+                ]
+              },
+              "priority": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+              "rationale": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  ]
+}

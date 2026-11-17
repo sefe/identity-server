@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Recorded automation toolchain",
+  "$comment": "What a merged bootstrap settled on, written into the repository it automates so the decision outlives the run directory. A later run reads this instead of choosing again. Changing it is a migration - a separate pull request with its own justification and its own checks - not something an ordinary product change may do on the way past.",
+  "type": "object",
+  "required": ["recordedBy", "recordedAt", "runId", "toolchains"],
+  "additionalProperties": false,
+  "properties": {
+    "recordedBy": { "type": "string", "minLength": 1 },
+    "recordedAt": { "type": "string", "minLength": 1 },
+    "runId": {
+      "type": "string",
+      "minLength": 1,
+      "$comment": "The bootstrap run that chose this. A person reading the file a year later can find the blueprint, the reviews and the pull request behind it."
+    },
+    "blueprintSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "toolchains": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "ecosystem", "projects"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+          "ecosystem": { "type": "string", "minLength": 1 },
+          "language": { "type": "string", "minLength": 1 },
+          "testFramework": { "type": "string", "minLength": 1 },
+          "runtime": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": { "type": ["string", "integer", "boolean"] }
+          },
+          "projects": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+        }
+      }
+    },
+    "supersedes": {
+      "type": "object",
+      "required": ["runId", "reason"],
+      "additionalProperties": false,
+      "description": "Present only on a migration. A toolchain replaced without a stated reason is a toolchain replaced by accident.",
+      "properties": {
+        "runId": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 2000 }
+      }
+    }
+  }
+}

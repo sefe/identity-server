@@ -1,0 +1,256 @@
+project:
+  name: sample-store
+  source_branch: main
+  automation_root: automation
+
+target:
+  repository_path: ./sample-target
+  documentation_paths:
+    - ./sample-target/README.md
+    - ./sample-target/docs
+  requirements_paths:
+    - ./sample-target/docs/requirements.md
+  architecture_paths:
+    - ./sample-target/docs/architecture.md
+  additional_context_paths:
+    - ./sample-target/openapi.yaml
+
+runtime:
+  artifacts_root: .qa-foundry-artifacts
+  max_stage_iterations: 3
+  agent_schema_retries: 1
+  resume_enabled: true
+  context:
+    max_file_bytes: 131072
+    max_total_bytes: 2097152
+
+routing:
+  enabled: true
+  routes:
+    - event_types: [manual]
+      workflow: ../../workflows/bootstrap-automation.yaml
+    - event_types: [repository.push, pull_request.opened, pull_request.updated]
+      workflow: ../../workflows/change-impact.yaml
+    - event_types: [ci.build.failed]
+      workflow: ../../workflows/failed-build-triage.yaml
+    - event_types: [work_item.ready]
+      workflow: ../../workflows/implement-work-item.yaml
+    - event_types: [schedule.tick]
+      workflow: ../../workflows/requirements-backlog.yaml
+    - event_types: [release.candidate]
+      workflow: ../../workflows/release-readiness.yaml
+    - event_types: [incident.opened]
+      workflow: ../../workflows/incident-response.yaml
+    - event_types: [documentation.changed]
+      workflow: ../../workflows/documentation-update.yaml
+
+idempotency:
+  enabled: true
+  registry_path: .sdlc-foundry/idempotency.json
+
+ci:
+  provider: auto
+  collect_realtime: true
+  fail_on_collection_error: false
+  max_failed_tests: 200
+  max_jobs: 100
+  # Mirrors the shipped configuration rather than declaring a rehearsal: -Demo
+  # only flips this key when it is already present, so a fixture that omitted it
+  # let the demo triage lane try to start a real pipeline against the empty
+  # organisation URL below.
+  dry_run: false
+  azure_devops:
+    organization_url: ""
+    project: ""
+    auth_env: AZURE_DEVOPS_TOKEN
+    auth_scheme: basic
+
+ai:
+  active_profile: copilot
+  collaboration:
+    enabled: false
+    profiles:
+      - copilot
+      - alternate
+    assignment: deterministic_round_robin
+  profiles:
+    mock:
+      provider: mock
+      model: claude-opus-5
+      reasoning_effort: high
+      command: ""
+      timeout_seconds: 120
+      max_artifact_bytes: 65536
+      secret_env: []
+    copilot:
+      provider: copilot-cli
+      model: claude-opus-5
+      reasoning_effort: high
+      command: "copilot"
+      timeout_seconds: 900
+      max_artifact_bytes: 65536
+      secret_env:
+        - COPILOT_GITHUB_TOKEN
+        - GH_TOKEN
+        - GITHUB_TOKEN
+      provider_options:
+        install_mode: npx-if-missing
+        package: "@github/copilot"
+        package_version: latest
+        auth_mode: auto
+        allow_stored_credentials_in_ci: false
+    alternate:
+      provider: command
+      model: gpt-5.6-sol
+      reasoning_effort: high
+      command: "node"
+      timeout_seconds: 900
+      required_secret_env:
+        - PROVIDER_TOKEN
+      secret_env:
+        - PROVIDER_TOKEN
+
+secrets:
+  source: environment
+  path: ""
+  format: auto
+  allow_inside_target: false
+  required_keys: []
+  mappings:
+    PROVIDER_TOKEN: PROVIDER_TOKEN
+    COPILOT_GITHUB_TOKEN: COPILOT_GITHUB_TOKEN
+    GH_TOKEN: GH_TOKEN
+    GITHUB_TOKEN: GITHUB_TOKEN
+    AZURE_DEVOPS_TOKEN: AZURE_DEVOPS_TOKEN
+
+language:
+  internal: en
+  report: en
+
+repository:
+  allowed_read_paths:
+    - .
+  allowed_write_paths:
+    - automation/
+    - docs/
+    - .foundry/
+    - pipelines/
+  forbidden_write_paths:
+    - src/
+    - infrastructure/
+    - production/
+
+automation:
+  # Proving the chosen framework means installing packages from a registry and
+  # then executing code the run has just written. Tests and rehearsals do
+  # neither, for the same reason they neither push a branch nor start a
+  # pipeline, and the verification artifact says plainly that it proved nothing.
+  # A real bootstrap leaves this false, which is the default when it is absent.
+  verification:
+    dry_run: true
+  # How far every untrusted command is kept from the machine: the bootstrap
+  # verification, an execution plan's install and build steps, and the quality
+  # suite that runs the generated tests. One setting for all three.
+  isolation:
+    mode: process
+  required_capabilities:
+    - api-automation
+    - ui-automation
+    - environment-configuration
+    - secret-management
+    - structured-logging
+    - reporting
+    - diagnostics
+    - tagging
+    - ci-integration
+  dependency_sources:
+    npm-public:
+      ecosystem: npm
+      registry: https://registry.npmjs.org/
+      authentication: none
+    nuget-public:
+      ecosystem: nuget
+      registry: https://api.nuget.org/v3/index.json
+      authentication: none
+  ecosystems:
+    npm:
+      source: npm-public
+      runtime:
+        node_major: 22
+        npm_version: "10.9.4"
+        lockfile_version: 3
+    nuget:
+      source: nuget-public
+      runtime:
+        sdk_major: 8
+  package_policy:
+    max_direct_packages: 12
+    allow_prerelease: false
+    denied_packages: []
+
+quality:
+  auto_detect: true
+  fail_on_required_failure: true
+  commands: []
+  security:
+    secret_scan: true
+    dependency_audit: true
+    max_file_bytes: 1048576
+
+work_tracking:
+  provider: azure-devops
+  enabled: false
+  dry_run: true
+  azure_devops:
+    organization_url: ""
+    project: ""
+    area_path: ""
+    iteration_path: ""
+    auth_env: AZURE_DEVOPS_TOKEN
+    auth_scheme: basic
+    expected_user_id: ""
+    match_build_requester: true
+
+observability:
+  input_paths: []
+  max_file_bytes: 1048576
+  max_total_bytes: 8388608
+
+assurance:
+  mode: maximum
+  minimum_specialists: 2
+  high_risk_minimum_specialists: 3
+  minimum_reviewers: 2
+  high_risk_minimum_reviewers: 3
+  require_unanimous_reviews: true
+  require_deterministic_evidence: true
+
+review:
+  approval_strategy: unanimous
+  max_iterations: 3
+
+supervisor:
+  enabled: true
+  provider: mock
+
+delivery:
+  provider: azure-devops
+  dry_run: true
+  create_branch: false
+  apply_changes: false
+  allow_file_deletions: false
+  commit_changes: false
+  push_branch: false
+  create_draft_pull_request: false
+  branch_prefix: sdlc-foundry/
+  commit_message: "chore: apply SDLC Foundry approved changes"
+  reviewers: []
+  work_items: []
+  azure_devops:
+    organization_url: ""
+    project: ""
+    repository_id: ""
+    auth_env: AZURE_DEVOPS_TOKEN
+    auth_scheme: basic
+    expected_user_id: ""
+    match_build_requester: true

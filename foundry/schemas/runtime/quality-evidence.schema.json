@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Deterministic build, test, lint, and security evidence",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "runId",
+    "collectedAt",
+    "status",
+    "commands",
+    "secretFindings",
+    "dependencyManifests",
+    "summary",
+    "warnings"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "runId": { "type": "string", "minLength": 1 },
+    "collectedAt": { "type": "string", "format": "date-time" },
+    "status": { "type": "string", "enum": ["completed", "failed", "no_action_needed"] },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "category", "required", "command", "workingDirectory", "exitCode", "status", "durationMs", "standardOutput", "standardError"],
+        "properties": {
+          "id": { "type": "string" },
+          "category": { "type": "string" },
+          "required": { "type": "boolean" },
+          "command": { "type": "string" },
+          "workingDirectory": { "type": "string" },
+          "exitCode": { "type": "integer" },
+          "status": { "type": "string", "enum": ["completed", "failed", "skipped", "rejected", "blocked"] },
+          "durationMs": { "type": "integer", "minimum": 0 },
+          "standardOutput": { "type": "string" },
+          "standardError": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "secretFindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "line", "rule"],
+        "properties": {
+          "path": { "type": "string" },
+          "line": { "type": "integer", "minimum": 1 },
+          "rule": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "dependencyManifests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": { "type": "string" },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["commandCount", "failedCommandCount", "requiredFailureCount", "secretFindingCount", "dependencyManifestCount"],
+      "properties": {
+        "commandCount": { "type": "integer", "minimum": 0 },
+        "failedCommandCount": { "type": "integer", "minimum": 0 },
+        "unexecutedCommandCount": { "type": "integer", "minimum": 0 },
+        "requiredFailureCount": { "type": "integer", "minimum": 0 },
+        "secretFindingCount": { "type": "integer", "minimum": 0 },
+        "dependencyManifestCount": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "warnings": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

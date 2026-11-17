@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Evidence-based SDLC specialist analysis",
+  "allOf": [
+    { "$ref": "../common/agent-result.schema.json" },
+    {
+      "type": "object",
+      "required": ["findings"],
+      "properties": {
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["sourceRef", "severity", "title", "description", "recommendation", "confidence"],
+            "properties": {
+              "sourceRef": { "type": "string", "minLength": 1 },
+              "severity": { "type": "string", "enum": ["info", "warning", "error", "critical"] },
+              "title": { "type": "string", "minLength": 1 },
+              "description": { "type": "string", "minLength": 1 },
+              "recommendation": { "type": "string" },
+              "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  ]
+}

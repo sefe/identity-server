@@ -1,0 +1,149 @@
+name: failed-build-triage
+version: 1
+
+settings:
+  max_stage_iterations: 3
+  fail_on_schema_error: true
+  preserve_all_artifacts: true
+
+stages:
+  - id: failure-investigation
+    risk: high
+    type: parallel_with_synthesis
+    depends_on: []
+    agents:
+      - id: failure-root-cause-analyst
+        prompt: prompts/operations/failure-root-cause-analyst.md
+        schema: schemas/operations/failure-investigation.schema.json
+        output: root-cause-analysis.json
+      - id: failure-change-analyst
+        prompt: prompts/operations/failure-change-analyst.md
+        schema: schemas/operations/failure-investigation.schema.json
+        output: change-correlation-analysis.json
+      - id: failure-evidence-auditor
+        prompt: prompts/operations/failure-evidence-auditor.md
+        schema: schemas/operations/failure-investigation.schema.json
+        output: evidence-integrity-analysis.json
+    synthesis:
+      agent: failure-analysis-synthesis
+      prompt: prompts/operations/failure-analysis-synthesis.md
+      schema: schemas/operations/verified-failure-analysis.schema.json
+      inputs:
+        - root-cause-analysis.json
+        - change-correlation-analysis.json
+        - evidence-integrity-analysis.json
+      output: verified-failure-analysis.json
+
+  - id: remediation-planning
+    risk: high
+    type: sequential
+    depends_on:
+      - failure-investigation
+    agents:
+      - id: remediation-planner
+        prompt: prompts/operations/remediation-planner.md
+        schema: schemas/operations/remediation-plan.schema.json
+        output: remediation-plan.json
+    assurance:
+      reviewed_by: remediation-review
+      deterministic_evidence: true
+
+  - id: remediation-review
+    risk: high
+    type: parallel_review
+    depends_on:
+      - remediation-planning
+    agents:
+      - id: remediation-safety-review
+        prompt: prompts/operations/remediation-safety-review.md
+        schema: schemas/operations/remediation-review.schema.json
+        output: remediation-safety-review.json
+      - id: remediation-value-review
+        prompt: prompts/operations/remediation-value-review.md
+        schema: schemas/operations/remediation-review.schema.json
+        output: remediation-value-review.json
+      - id: remediation-operations-review
+        prompt: prompts/operations/remediation-operations-review.md
+        schema: schemas/operations/remediation-review.schema.json
+        output: remediation-operations-review.json
+    approval:
+      strategy: unanimous
+      on_reject:
+        return_to: remediation-planning
+      max_iterations: 3
+
+  # Until here the run only reads: it explains the failure and proposes what to do about it, and
+  # then used to stop, which left a verified diagnosis nobody acted on. The outcome is a fork, and it
+  # is the plan below that decides which way it goes rather than a switch here: a defect in the
+  # product becomes a bug for the team, while a defect in the tests becomes tasks - and only tasks
+  # are handed to the implementor, so a product bug is never "fixed" by rewriting the test that
+  # caught it.
+  - id: triage-backlog
+    risk: high
+    type: sequential
+    depends_on:
+      - failure-investigation
+      - remediation-review
+    agents:
+      - id: triage-work-item-planner
+        prompt: prompts/sdlc/work-item-planner.md
+        schema: schemas/actions/work-item-plan.schema.json
+        output: work-item-plan.json
+    assurance:
+      reviewed_by: triage-backlog-review
+      deterministic_evidence: true
+
+  - id: triage-backlog-review
+    risk: high
+    type: parallel_review
+    depends_on:
+      - triage-backlog
+    agents:
+      - id: triage-correctness-reviewer
+        prompt: prompts/sdlc/review-correctness.md
+        schema: schemas/sdlc/review.schema.json
+        output: correctness-review.json
+      - id: triage-quality-reviewer
+        prompt: prompts/sdlc/review-quality.md
+        schema: schemas/sdlc/review.schema.json
+        output: quality-review.json
+      - id: triage-security-reviewer
+        prompt: prompts/sdlc/review-security.md
+        schema: schemas/sdlc/review.schema.json
+        output: security-review.json
+    approval:
+      strategy: unanimous
+      on_reject:
+        return_to: triage-backlog
+      max_iterations: 3
+
+  - id: create-triage-work-items
+    risk: high
+    type: deterministic_action
+    depends_on:
+      - triage-backlog-review
+    action:
+      handler: create_work_items
+      input: work-item-plan.json
+      output: action-result.json
+    assurance:
+      approved_by: triage-backlog-review
+
+  - id: queue-triage-implementation
+    risk: high
+    type: deterministic_action
+    depends_on:
+      - create-triage-work-items
+    action:
+      handler: queue_pipeline
+      pipeline: SDLC Foundry - Implement Work Item
+      output: action-result.json
+      inputs:
+        plan:
+          stage: triage-backlog
+          artifact: work-item-plan.json
+        workItems:
+          stage: create-triage-work-items
+          artifact: action-result.json
+    assurance:
+      approved_by: triage-backlog-review

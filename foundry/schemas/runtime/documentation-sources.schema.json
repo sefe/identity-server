@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Project documentation snapshots",
+  "type": "object",
+  "required": ["version", "identities", "sources"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "identities": { "type": "array", "items": { "type": "string", "pattern": "^[a-f0-9]{64}$" } },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["url", "status", "detail", "file", "sha256"], "additionalProperties": false,
+        "properties": {
+          "url": { "type": "string" },
+          "status": { "enum": ["downloaded", "unavailable"] },
+          "detail": { "type": "string" },
+          "file": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}\\.[a-z0-9]+$" },
+          "sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }
+        }
+      }
+    }
+  }
+}

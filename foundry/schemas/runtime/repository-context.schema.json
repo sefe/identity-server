@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Repository context manifest",
+  "type": "object",
+  "required": [
+    "runId",
+    "collectedAt",
+    "repositoryRoot",
+    "fileCount",
+    "files",
+    "extensionSummary",
+    "analysisInputs",
+    "contextBytes",
+    "limits",
+    "notes"
+  ],
+  "properties": {
+    "runId": { "type": "string", "minLength": 1 },
+    "collectedAt": { "type": "string", "format": "date-time" },
+    "repositoryRoot": { "type": "string", "minLength": 1 },
+    "fileCount": { "type": "integer", "minimum": 0 },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "extension", "sizeBytes"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "extension": { "type": "string" },
+          "sizeBytes": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "extensionSummary": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["extension", "count"],
+        "properties": {
+          "extension": { "type": "string" },
+          "count": { "type": "integer", "minimum": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "analysisInputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "category",
+          "path",
+          "sizeBytes",
+          "sha256",
+          "included",
+          "skipReason",
+          "content"
+        ],
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "repository",
+              "documentation",
+              "requirements",
+              "architecture",
+              "additional"
+            ]
+          },
+          "path": { "type": "string", "minLength": 1 },
+          "sizeBytes": { "type": "integer", "minimum": 0 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "included": { "type": "boolean" },
+          "skipReason": { "type": "string" },
+          "redactions": {
+            "$comment": "Which secret rules replaced a value in this file before it was sent anywhere. A redaction nobody can see is indistinguishable from a file that never held a secret, and the reader of the context needs to know the difference.",
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "content": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "contextBytes": { "type": "integer", "minimum": 0 },
+    "limits": {
+      "type": "object",
+      "required": ["maxFileBytes", "maxTotalBytes"],
+      "properties": {
+        "maxFileBytes": { "type": "integer", "minimum": 1024 },
+        "maxTotalBytes": { "type": "integer", "minimum": 1024 }
+      },
+      "additionalProperties": false
+    },
+    "notes": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Synthesized discovery result",
+  "$comment": "Stack facts are copied deterministically from repository discovery. Source artifacts are also published in workflow state and remain available to downstream agents; the reconciliation is not a replacement for their full content.",
+  "allOf": [
+    { "$ref": "../common/agent-result.schema.json" },
+    {
+      "properties": {
+        "agentId": { "const": "discovery-synthesis" },
+        "stageId": { "const": "discovery" },
+        "details": {
+          "type": "object",
+          "required": ["componentStacks", "primaryStack", "existingAutomation"],
+          "properties": {
+            "sourceArtifacts": {
+              "type": "array", "minItems": 1,
+              "items": {
+                "type": "object", "required": ["agentId", "relativePath", "sha256"],
+                "additionalProperties": false,
+                "properties": {
+                  "agentId": { "type": "string", "minLength": 1 },
+                  "relativePath": { "type": "string", "minLength": 1 },
+                  "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+                }
+              }
+            },
+            "componentStacks": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 30,
+              "items": { "$ref": "repository-discovery.schema.json#/$defs/componentStack" }
+            },
+            "primaryStack": {
+              "$ref": "repository-discovery.schema.json#/$defs/primaryStack"
+            },
+            "existingAutomation": {
+              "type": "array",
+              "maxItems": 20,
+              "description": "Test automation the repository already has. Extending one of these is the cheapest correct answer available to the architect, so it is stated as a list rather than left to be noticed among the components.",
+              "items": {
+                "type": "object",
+                "required": ["path", "language", "testFramework", "extendable", "evidence"],
+                "additionalProperties": false,
+                "properties": {
+                  "path": { "type": "string", "minLength": 1, "maxLength": 200 },
+                  "language": { "type": "string", "minLength": 1, "maxLength": 80 },
+                  "testFramework": { "type": "string", "minLength": 1, "maxLength": 120 },
+                  "coverage": { "type": "string", "minLength": 1, "maxLength": 600 },
+                  "extendable": {
+                    "type": "boolean",
+                    "description": "False only with a stated reason in gapsPreventingReuse. A suite that is merely small or old is still extendable; one that cannot reach the surface under test is not."
+                  },
+                  "gapsPreventingReuse": {
+                    "type": "array",
+                    "maxItems": 10,
+                    "items": { "type": "string", "minLength": 1, "maxLength": 400 }
+                  },
+                  "evidence": { "$ref": "repository-discovery.schema.json#/$defs/evidence" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": ["details"]
+    }
+  ]
+}

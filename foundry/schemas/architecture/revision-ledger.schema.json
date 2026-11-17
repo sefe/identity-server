@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Revision ledger",
+  "type": "object",
+  "required": [
+    "runId",
+    "stageId",
+    "revision",
+    "previousRevision",
+    "settledCritics",
+    "honouredCommitments",
+    "outstandingFindings",
+    "outstandingChanges"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stageId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 2
+    },
+    "previousRevision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "settledCritics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "criticId",
+          "approvedAtRevision"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "criticId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "approvedAtRevision": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "honouredCommitments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "criticId",
+          "revision",
+          "change"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "criticId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "change": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "outstandingFindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "criticId",
+          "severity",
+          "message",
+          "evidence"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "criticId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "error",
+              "critical"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "resolutionScope": {
+            "type": "string",
+            "enum": [
+              "blueprint_revision",
+              "external_prerequisite"
+            ]
+          }
+        }
+      }
+    },
+    "outstandingChanges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "criticId",
+          "change"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "criticId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "change": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

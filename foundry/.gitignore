@@ -1,0 +1,15 @@
+node_modules/
+.qa-foundry-artifacts/
+.sdlc-foundry/
+.foundry-target/
+TestResults/
+*.trx
+*.env
+!docs/secrets.template.env
+.migration-history/
+automation/
+.qa-foundry-secrets.*
+*.secrets.json
+*.secrets.env
+*.tmp
+*.log

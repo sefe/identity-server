@@ -1,0 +1,422 @@
+name: bootstrap-automation
+version: 2
+
+settings:
+  max_stage_iterations: 3
+  fail_on_schema_error: true
+  preserve_all_artifacts: true
+
+stages:
+  - id: discovery
+    risk: high
+    type: parallel_with_synthesis
+    depends_on: []
+    agents:
+      - id: repository-discovery
+        prompt: prompts/discovery/repository-discovery.md
+        schema: schemas/discovery/repository-discovery.schema.json
+        output: repository-discovery.json
+      - id: requirements-discovery
+        prompt: prompts/discovery/requirements-discovery.md
+        schema: schemas/discovery/requirements-discovery.schema.json
+        output: requirements-discovery.json
+      - id: delivery-environment-discovery
+        prompt: prompts/discovery/delivery-environment-discovery.md
+        schema: schemas/discovery/delivery-environment-discovery.schema.json
+        output: delivery-environment-discovery.json
+    synthesis:
+      agent: discovery-synthesis
+      prompt: prompts/discovery/discovery-synthesis.md
+      schema: schemas/discovery/discovery-decision.schema.json
+      inputs:
+        - repository-discovery.json
+        - requirements-discovery.json
+        - delivery-environment-discovery.json
+      output: discovery-decision.json
+      result_output: discovery-result.json
+
+  - id: architecture
+    risk: critical
+    type: producer_critic_loop
+    depends_on:
+      - discovery
+    producer:
+      agent: automation-architect
+      incremental_revisions: true
+      prompt: prompts/architecture/automation-architect.md
+      schema: schemas/architecture/automation-blueprint.schema.json
+      input: discovery/discovery-result.json
+      output: automation-blueprint.json
+    critics:
+      - agent: architecture-critic
+        prompt: prompts/architecture/architecture-critic.md
+        schema: schemas/architecture/architecture-review.schema.json
+        input: automation-blueprint.json
+        output: architecture-review.json
+      - agent: architecture-security-critic
+        prompt: prompts/architecture/architecture-security-critic.md
+        schema: schemas/architecture/architecture-specialist-review.schema.json
+        input: automation-blueprint.json
+        output: architecture-security-review.json
+      - agent: architecture-delivery-critic
+        prompt: prompts/architecture/architecture-delivery-critic.md
+        schema: schemas/architecture/architecture-specialist-review.schema.json
+        input: automation-blueprint.json
+        output: architecture-delivery-review.json
+    approval:
+      strategy: unanimous
+      # Preserve one convergence pass after three specialist review rounds.
+      max_iterations: 4
+      # Build 476 died here on stage 2 of 11. The security critic approved; the
+      # other two kept asking for endpoint values, credentials and CI evidence
+      # this environment cannot supply, so a fifth round would have asked again.
+      # Unanimity is still the expected outcome, and failing to reach it means
+      # something upstream is wrong — but the fourth revision is real work and a
+      # real set of objections, and both go forward together on a draft branch a
+      # person reads before anything merges. A critic that answers 'blocked'
+      # still ends the run.
+      on_exhaustion: proceed
+
+  # The architect chose a stack and proposed the packages it needs. Nothing has
+  # yet asked whether those packages exist, and "^1.2" is not a version, it is a
+  # question. Neither is a model's to answer: two runs would answer differently.
+  # This stage asks the real feed, pins every version, applies the programme's
+  # limits and writes the locked toolchain. Everything after this point builds
+  # against the lock and never against the proposal.
+  - id: toolchain-resolution
+    risk: critical
+    type: deterministic_action
+    depends_on:
+      - architecture
+    action:
+      handler: resolve_toolchain
+      output: action-result.json
+      inputs:
+        blueprint:
+          stage: architecture
+          artifact: automation-blueprint.json
+    approval:
+      on_reject:
+        # A package that does not exist, a version nothing published satisfies,
+        # or a range written in another ecosystem's notation are all faults in
+        # the design, and the architect is the only stage that can correct them.
+        # Build 972137 stopped here for the third of those - npm was handed
+        # NuGet's '[1.49.0,2.0.0)' while '^1.49.0' would have resolved - and
+        # ended a two-hour run over a proposal one revision would have fixed.
+        return_to: architecture
+      # Bounded on purpose: three attempts at proposing a stack that resolves is
+      # a signal about the design, not something more rounds will improve. A
+      # feed that did not answer is reported as 'failed' and never reaches here.
+      max_iterations: 3
+      # There is nothing to proceed with. Every later stage builds against the
+      # lock, and there is no lock.
+      on_exhaustion: block
+
+  - id: test-planning
+    risk: high
+    artifact_directory: planning
+    type: parallel_with_synthesis
+    depends_on:
+      - toolchain-resolution
+    agents:
+      - id: api-test-planner
+        prompt: prompts/planning/api-test-planner.md
+        schema: schemas/planning/api-test-plan.schema.json
+        output: api-test-plan.json
+      - id: ui-test-planner
+        prompt: prompts/planning/ui-test-planner.md
+        schema: schemas/planning/ui-test-plan.schema.json
+        output: ui-test-plan.json
+      - id: risk-test-planner
+        prompt: prompts/planning/risk-test-planner.md
+        schema: schemas/planning/risk-test-plan.schema.json
+        output: risk-test-plan.json
+    synthesis:
+      agent: coverage-synthesis
+      prompt: prompts/planning/coverage-synthesis.md
+      schema: schemas/planning/automation-plan.schema.json
+      inputs:
+        - api-test-plan.json
+        - ui-test-plan.json
+        - risk-test-plan.json
+      output: automation-plan.json
+
+  - id: implementation
+    risk: critical
+    type: sequential
+    depends_on:
+      - test-planning
+    agents:
+      - id: framework-implementation
+        prompt: prompts/implementation/framework-implementation.md
+        schema: schemas/implementation/implementation-result.schema.json
+        output: framework-implementation.json
+        # This is the agent that lays the foundation, so it is the one that has to
+        # plan the per-project record of why the stack was chosen. The file name
+        # itself lives in automation.rationale_document.
+        enforce_project_rationale: true
+        # An inventory of several dozen file contracts is longer than a stage
+        # that only carries decisions, and a rejected artifact costs six minutes.
+        max_artifact_bytes: 131072
+      - id: test-implementation
+        prompt: prompts/implementation/test-implementation.md
+        schema: schemas/implementation/implementation-result.schema.json
+        output: test-implementation.json
+        # The foundation is one agent's to specify. Build 972596 reached stage
+        # 10 of 13 with two .csproj files specified by both agents in terms that
+        # did not match, and the change generator refused the pair after three
+        # and a half hours of paid-for review. This names the owner, so the same
+        # disagreement is raised against this agent while it can still fix it.
+        defers_planned_files_to: framework-implementation
+        max_artifact_bytes: 131072
+    assurance:
+      reviewed_by: review
+      evidence_from: execution
+
+  - id: execution
+    risk: critical
+    type: sequential
+    depends_on:
+      - implementation
+    agents:
+      - id: execution
+        prompt: prompts/execution/execution.md
+        schema: schemas/execution/execution-plan.schema.json
+        output: execution-plan.json
+      - id: failure-analysis
+        prompt: prompts/execution/failure-analysis.md
+        schema: schemas/execution/failure-analysis.schema.json
+        output: failure-analysis.json
+    assurance:
+      reviewed_by: review
+      deterministic_evidence: true
+
+  - id: review
+    risk: critical
+    type: parallel_review
+    depends_on:
+      - execution
+    agents:
+      - id: code-review
+        prompt: prompts/review/code-review.md
+        schema: schemas/review/code-review.schema.json
+        output: code-review.json
+      - id: test-quality-review
+        prompt: prompts/review/test-quality-review.md
+        schema: schemas/review/test-quality-review.schema.json
+        output: test-quality-review.json
+      - id: security-resilience-review
+        prompt: prompts/review/security-resilience-review.md
+        schema: schemas/review/security-resilience-review.schema.json
+        output: security-resilience-review.json
+    approval:
+      strategy: unanimous
+      on_reject:
+        return_to: implementation
+      max_iterations: 3
+      # Unanimity is the expected outcome; failing to reach it means a stage
+      # upstream is wrong. Proceeding is a safety net so that defect does not
+      # also destroy the work that exposed it: the delivery goes out as a draft
+      # carrying every unresolved objection.
+      on_exhaustion: proceed
+
+  - id: delivery-preparation
+    artifact_directory: delivery
+    risk: high
+    type: sequential
+    depends_on:
+      - review
+    agents:
+      - id: change-summary
+        prompt: prompts/delivery/change-summary.md
+        schema: schemas/delivery/change-summary.schema.json
+        output: change-summary.json
+    assurance:
+      reviewed_by: delivery-review
+      evidence_from: execution
+
+  - id: delivery-review
+    artifact_directory: delivery
+    risk: critical
+    type: parallel_review
+    depends_on:
+      - delivery-preparation
+    agents:
+      - id: pull-request-compliance
+        prompt: prompts/delivery/pull-request-compliance.md
+        schema: schemas/delivery/pull-request-compliance.schema.json
+        output: pull-request-compliance.json
+      - id: delivery-security-review
+        prompt: prompts/delivery/delivery-security-review.md
+        schema: schemas/delivery/delivery-specialist-review.schema.json
+        output: delivery-security-review.json
+      - id: release-risk-review
+        prompt: prompts/delivery/release-risk-review.md
+        schema: schemas/delivery/delivery-specialist-review.schema.json
+        output: release-risk-review.json
+    approval:
+      strategy: unanimous
+      on_reject:
+        return_to: delivery-preparation
+      max_iterations: 3
+      on_exhaustion: proceed
+
+  - id: bootstrap-change-generation
+    risk: critical
+    type: batched_agent
+    depends_on:
+      - delivery-review
+    # Named, not searched. The implementation stages run as a critic loop and
+    # leave one inventory per iteration; the split has to be taken from the one
+    # this run carried forward, not from whichever file is newest on disk.
+    inputs:
+      frameworkInventory:
+        stage: implementation
+        artifact: framework-implementation.json
+      testInventory:
+        stage: implementation
+        artifact: test-implementation.json
+    # Build 475 asked one call for the bodies of all 47 approved files. Every
+    # answer was cut off by the model output limit before the JSON closed, so
+    # five relay legs and 170 minutes produced nothing. The work is not
+    # compressible, so it is divided instead: small, named assignments that the
+    # runtime cuts from the approved inventory and adds up again afterwards.
+    batching:
+      inventory_inputs:
+        - frameworkInventory
+        - testInventory
+      # Build 979783 spent 55 minutes repeating a three-file answer that exceeded
+      # the provider output limit. Contracts underestimate generated body size:
+      # generate independent files separately, retaining three parallel calls.
+      # Cyclic groups stay together initially and split on output truncation.
+      target_batch_bytes: 28672
+      max_files_per_batch: 1
+      # Three at a time, the same width the parallel reviews already run at on
+      # a hosted agent.
+      max_parallel_batches: 3
+      output: change-set-plan.json
+      schema: schemas/actions/change-set-plan.schema.json
+    agents:
+      - id: bootstrap-change-generator
+        role: batch_generator
+        prompt: prompts/sdlc/bootstrap-plan-generator.md
+        schema: schemas/actions/change-set-batch.schema.json
+        output: change-set-batch.json
+        # One batch, not one framework. The budget is deliberately far below the
+        # output limit so a batch that runs long still closes its JSON.
+        max_artifact_bytes: 65536
+      - id: bootstrap-materialization-planner
+        role: materialization_planner
+        prompt: prompts/sdlc/bootstrap-materialization-planner.md
+        schema: schemas/actions/materialization-plan.schema.json
+        output: materialization-plan.json
+        max_artifact_bytes: 16384
+    assurance:
+      reviewed_by: bootstrap-change-review
+      evidence_from: execution
+
+  # A lock file's integrity hashes come from a resolver, not from a model. The
+  # plan above names the manifests to resolve; this stage resolves them against
+  # the approved profile and produces the change set that will actually be
+  # applied, so the reviewers below judge something real rather than something
+  # plausible.
+  - id: bootstrap-change-materialization
+    risk: critical
+    type: deterministic_action
+    depends_on:
+      - bootstrap-change-generation
+    action:
+      handler: materialize_change_set
+      output: action-result.json
+      inputs:
+        plan:
+          stage: bootstrap-change-generation
+          artifact: change-set-plan.json
+        blueprint:
+          stage: architecture
+          artifact: automation-blueprint.json
+    approval:
+      on_reject:
+        return_to: bootstrap-change-generation
+      max_iterations: 3
+      on_exhaustion: block
+
+  # Validate verification inputs in both modes. With verification.mode=deferred,
+  # record not_attempted and deliver generated code for later execution. With
+  # mode=execute, install/build/test and run a negative probe before delivery.
+  - id: framework-verification
+    risk: critical
+    type: deterministic_action
+    depends_on:
+      - bootstrap-change-materialization
+    action:
+      handler: verify_framework
+      output: action-result.json
+      inputs:
+        changeSet:
+          stage: bootstrap-change-materialization
+          artifact: change-set.json
+    approval:
+      on_reject:
+        # A stack that will not build is repaired by regenerating the files, not
+        # by redesigning the programme: the generator reads the same blueprint
+        # and the same lock and gets the concrete failure back as evidence.
+        return_to: bootstrap-change-generation
+      # Bounded on purpose. Three attempts at the same broken choice is a signal
+      # about the choice, and an unbounded repair loop would spend a whole relay
+      # rediscovering it.
+      max_iterations: 3
+      # An agent that cannot reach a feed has not shown the design to be wrong,
+      # and the verification reports that apart as 'blocked', which ends the run
+      # here rather than delivering a change set nobody ran.
+      on_exhaustion: block
+
+  - id: bootstrap-change-review
+    risk: critical
+    type: parallel_review
+    depends_on:
+      - framework-verification
+    # Named, not searched. After a revision the run holds a plan and a review
+    # subject per attempt; approval has to attach to the pair this stage was
+    # actually given, and the run state records which that was.
+    inputs:
+      reviewSubject:
+        stage: bootstrap-change-materialization
+        artifact: change-review-subject.json
+        schema: schemas/actions/change-review-subject.schema.json
+      plan:
+        stage: bootstrap-change-generation
+        artifact: change-set-plan.json
+        schema: schemas/actions/change-set-plan.schema.json
+    context:
+      # Carried by reference through change-review-subject.json. A resolved lock
+      # is machine output that a deterministic stage has already checked against
+      # the approved profile, and no reviewer can read it usefully.
+      exclude:
+        - change-set.json
+    agents:
+      - id: bootstrap-correctness-reviewer
+        prompt: prompts/sdlc/review-correctness.md
+        schema: schemas/sdlc/change-review.schema.json
+        output: correctness-review.json
+      - id: bootstrap-quality-reviewer
+        prompt: prompts/sdlc/review-quality.md
+        schema: schemas/sdlc/change-review.schema.json
+        output: quality-review.json
+      - id: bootstrap-security-reviewer
+        prompt: prompts/sdlc/review-security.md
+        schema: schemas/sdlc/change-review.schema.json
+        output: security-review.json
+    approval:
+      strategy: unanimous
+      on_reject:
+        return_to: bootstrap-change-generation
+      max_iterations: 3
+      # Every other stage may proceed over dissent, because dissent there is
+      # recorded and carried into the next stage's evidence. This one governs
+      # whether a change set is written into the repository, and the wrapper
+      # that applies it accepts nothing short of unanimous approval. Proceeding
+      # here would spend the whole relay and then refuse the result at the last
+      # step, with a message about approval rather than about the review that
+      # never reached it.
+      on_exhaustion: block

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Planned repository change set",
+  "$comment": "What a model can honestly propose. A lock file is not on that list: its integrity hashes come from a resolver, so the plan names the manifest to resolve and a deterministic stage produces the lock. The final change-set.schema.json is what carries resolved content.",
+  "allOf": [
+    { "$ref": "../common/agent-result.schema.json" },
+    {
+      "type": "object",
+      "required": ["outcome", "changes"],
+      "properties": {
+        "outcome": { "type": "string", "enum": ["proposed", "no_action_needed", "blocked"] },
+        "changes": {
+          "type": "array",
+          "items": { "$ref": "change-item.schema.json" }
+        },
+        "materializations": {
+          "type": "array",
+          "items": { "$ref": "materialization-item.schema.json" }
+        }
+      }
+    },
+    {
+      "$comment": "A plan that reports it is blocked has nothing to apply. Letting it carry changes anyway is how a refusal still writes to the repository.",
+      "if": {
+        "required": ["status"],
+        "properties": { "status": { "const": "blocked" } }
+      },
+      "then": {
+        "properties": {
+          "outcome": { "const": "blocked" },
+          "changes": { "maxItems": 0 },
+          "materializations": { "maxItems": 0 }
+        }
+      }
+    },
+    {
+      "$comment": "A plan that proposes changes has to say what it asked the resolver to produce, even when the answer is nothing. A plan that proposes nothing has nothing to declare.",
+      "if": {
+        "required": ["outcome"],
+        "properties": { "outcome": { "const": "proposed" } }
+      },
+      "then": { "required": ["materializations"] }
+    },
+    {
+      "if": {
+        "required": ["status"],
+        "properties": { "status": { "const": "completed" } }
+      },
+      "then": {
+        "properties": {
+          "outcome": { "enum": ["proposed", "no_action_needed"] }
+        }
+      }
+    }
+  ]
+}

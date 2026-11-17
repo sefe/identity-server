@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "The manifests a change set asks a resolver to lock",
+  "$comment": "Asked for on its own rather than alongside the file bodies. The bodies are generated in batches, and a resolver instruction that depends on all of them can only be written once they exist.",
+  "allOf": [
+    { "$ref": "../common/agent-result.schema.json" },
+    {
+      "type": "object",
+      "required": ["outcome", "materializations"],
+      "properties": {
+        "outcome": { "type": "string", "enum": ["proposed", "no_action_needed", "blocked"] },
+        "materializations": {
+          "type": "array",
+          "items": { "$ref": "materialization-item.schema.json" }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["status"],
+        "properties": { "status": { "const": "blocked" } }
+      },
+      "then": {
+        "properties": {
+          "outcome": { "const": "blocked" },
+          "materializations": { "maxItems": 0 }
+        }
+      }
+    },
+    {
+      "$comment": "Nothing to resolve is a legitimate answer, and it has to be stated rather than implied by an empty array under a 'proposed' outcome.",
+      "if": {
+        "required": ["outcome"],
+        "properties": { "outcome": { "const": "no_action_needed" } }
+      },
+      "then": {
+        "properties": { "materializations": { "maxItems": 0 } }
+      }
+    },
+    {
+      "if": {
+        "required": ["outcome"],
+        "properties": { "outcome": { "const": "proposed" } }
+      },
+      "then": {
+        "properties": { "materializations": { "minItems": 1 } }
+      }
+    }
+  ]
+}

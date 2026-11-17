@@ -1,0 +1,139 @@
+name: Foundry Bootstrap
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: Copilot model (all profiles use high reasoning)
+        default: claude-opus-5.5
+        required: true
+        type: choice
+        options: [claude-opus-5.5, gpt-6.1-sol, gemini-4-argon]
+      publish:
+        description: Create a draft PR with the generated automation and report
+        default: true
+        type: boolean
+      budget_usd:
+        description: Optional estimated AI allowance in USD; empty means no Foundry spending cap
+        default: ''
+        type: string
+      resume_run_id:
+        description: Previous bootstrap run ID (same branch commit and inputs)
+        default: ''
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: foundry-bootstrap-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - name: Check required credentials and branch
+        shell: pwsh
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          FOUNDRY_GITHUB_TOKEN: ${{ secrets.FOUNDRY_GITHUB_TOKEN }}
+          PUBLISH_CHANGES: ${{ inputs.publish }}
+        run: |
+          if ($env:GITHUB_REF_TYPE -ne 'branch') { throw 'Run bootstrap on a branch, not a tag.' }
+          if (-not $env:COPILOT_GITHUB_TOKEN) { throw 'Missing Actions secret COPILOT_GITHUB_TOKEN.' }
+          if ($env:PUBLISH_CHANGES -eq 'true' -and -not $env:FOUNDRY_GITHUB_TOKEN) { throw 'Publishing requires Actions secret FOUNDRY_GITHUB_TOKEN.' }
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          path: target
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Foundry dependencies
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if (-not (Test-Path target/foundry/scripts/github/Prepare-GitHubProject.ps1)) { throw 'This commit must contain foundry/.' }
+          npm ci --prefix target/foundry --ignore-scripts --no-audit --no-fund
+          if ($LASTEXITCODE) { throw 'Foundry dependency installation failed.' }
+      - name: Read supported runtime versions
+        id: runtime
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $reader='./target/foundry/scripts/Get-EcosystemRuntimeVersion.ps1'
+          $config='./target/foundry/config/project.yaml'
+          $node=& $reader -ProjectConfigPath $config -Ecosystem npm -RuntimeKey node_major
+          $npm=& $reader -ProjectConfigPath $config -Ecosystem npm -RuntimeKey npm_version
+          $sdk=& $reader -ProjectConfigPath $config -Ecosystem nuget -RuntimeKey sdk_major
+          "node=$node" >> $env:GITHUB_OUTPUT
+          "npm=$npm" >> $env:GITHUB_OUTPUT
+          "dotnet=$sdk.0.x" >> $env:GITHUB_OUTPUT
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.runtime.outputs.node }}
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ steps.runtime.outputs.dotnet }}
+      - name: Prepare package managers and Copilot CLI
+        shell: pwsh
+        env:
+          NPM_VERSION: ${{ steps.runtime.outputs.npm }}
+        run: |
+          $ErrorActionPreference='Stop'
+          npm install -g "npm@$env:NPM_VERSION" @github/copilot
+          if ($LASTEXITCODE) { throw 'npm or Copilot CLI installation failed.' }
+          ./target/foundry/scripts/Initialize-AdditionalRuntimes.ps1 `
+            -ProjectConfigPath ./target/foundry/config/project.yaml `
+            -CacheRoot (Join-Path $env:RUNNER_TEMP 'foundry-toolchains')
+      - name: Restore saved analysis
+        if: inputs.resume_run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: foundry-evidence
+          path: target/.qa-foundry-artifacts
+          run-id: ${{ inputs.resume_run_id }}
+          github-token: ${{ github.token }}
+      - name: Prepare configuration for this repository
+        shell: pwsh
+        env:
+          COPILOT_MODEL: ${{ inputs.model }}
+          PUBLISH_CHANGES: ${{ inputs.publish }}
+        run: |
+          ./target/foundry/scripts/github/Prepare-GitHubProject.ps1 -RepositoryRoot ./target `
+            -Repository $env:GITHUB_REPOSITORY -Branch $env:GITHUB_REF_NAME -Model $env:COPILOT_MODEL `
+            -RuntimeRepository $env:GITHUB_REPOSITORY -RuntimeRef $env:GITHUB_SHA `
+            -Publish:($env:PUBLISH_CHANGES -eq 'true')
+      - name: Generate frameworks and tests, review, report and open draft PR
+        shell: pwsh
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          FOUNDRY_GITHUB_TOKEN: ${{ secrets.FOUNDRY_GITHUB_TOKEN }}
+          QA_FOUNDRY_ADDITIONAL_USD_LIMIT: ${{ inputs.budget_usd }}
+          RESUME_RUN_ID: ${{ inputs.resume_run_id }}
+        run: |
+          ./target/foundry/scripts/github/Invoke-GitHubBootstrap.ps1 -RepositoryRoot ./target `
+            -TargetBranch $env:GITHUB_REF_NAME -Resume:([bool]$env:RESUME_RUN_ID)
+      - name: Publish evidence and usage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: foundry-evidence
+          path: target/.qa-foundry-artifacts/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Publish generated automation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: foundry-output
+          path: |
+            target/automation/
+            target/.github/workflows/
+            target/.foundry/
+            target/foundry-report.html
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14

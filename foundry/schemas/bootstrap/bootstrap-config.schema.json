@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SDLC Foundry bootstrap configuration",
+  "type": "object",
+  "required": [
+    "version",
+    "target",
+    "framework",
+    "installation",
+    "pipelines"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "target": {
+      "type": "object",
+      "required": [
+        "repository_path",
+        "branch"
+      ],
+      "properties": {
+        "repository_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "branch": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "framework": {
+      "type": "object",
+      "required": [
+        "path",
+        "project_config_path",
+        "policy_path",
+        "bootstrap_workflow_path"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "project_config_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policy_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bootstrap_workflow_path": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "installation": {
+      "type": "object",
+      "required": [
+        "managed_root",
+        "artifacts_root",
+        "run_analysis"
+      ],
+      "properties": {
+        "managed_root": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+"
+        },
+        "artifacts_root": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+"
+        },
+        "run_analysis": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "azure_devops": {
+      "type": "object",
+      "required": [
+        "organization_url",
+        "project",
+        "repository_id",
+        "repository_type",
+        "auth_env",
+        "auth_scheme",
+        "pipeline_folder",
+        "dry_run",
+        "queue_smoke_run"
+      ],
+      "properties": {
+        "organization_url": {
+          "type": "string"
+        },
+        "project": {
+          "type": "string"
+        },
+        "repository_id": {
+          "type": "string"
+        },
+        "repository_type": {
+          "type": "string",
+          "enum": [
+            "azureReposGit"
+          ]
+        },
+        "auth_env": {
+          "type": "string",
+          "pattern": "^[A-Z_][A-Z0-9_]*$"
+        },
+        "auth_scheme": {
+          "type": "string",
+          "enum": [
+            "bearer",
+            "basic"
+          ]
+        },
+        "expected_user_id": {
+          "type": "string"
+        },
+        "match_build_requester": {
+          "type": "boolean"
+        },
+        "pipeline_folder": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dry_run": {
+          "type": "boolean"
+        },
+        "queue_smoke_run": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "pipelines": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "yaml_path",
+          "template_path",
+          "enabled",
+          "smoke"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "yaml_path": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+\\.ya?ml$"
+          },
+          "template_path": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "smoke": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "shared_templates": {
+      "type": "array",
+      "$comment": "Files the installer owns and keeps in step with the framework, which are included by pipelines rather than registered as one.",
+      "items": {
+        "type": "object",
+        "required": [
+          "yaml_path",
+          "template_path"
+        ],
+        "properties": {
+          "yaml_path": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+\\.ya?ml$"
+          },
+          "template_path": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+"
+          },
+          "required_in_agent_pipelines": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "agent_pipelines": {
+      "type": "object",
+      "$comment": "Pipelines authored by the agents in their approved change set. The installer registers them so their triggers become real, but never owns their contents.",
+      "required": [
+        "register_from_change_set",
+        "path_prefix",
+        "name_prefix"
+      ],
+      "properties": {
+        "register_from_change_set": {
+          "type": "boolean"
+        },
+        "path_prefix": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+"
+        },
+        "name_prefix": {
+          "type": "string"
+        },
+        "require_at_least": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "provider": {
+      "enum": [
+        "azure-devops",
+        "github"
+      ]
+    },
+    "github": {
+      "type": "object",
+      "required": [
+        "repository",
+        "auth_env",
+        "dry_run",
+        "runtime_repository",
+        "runtime_ref"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        },
+        "auth_env": {
+          "type": "string",
+          "pattern": "^[A-Z_][A-Z0-9_]*$"
+        },
+        "dry_run": {
+          "type": "boolean"
+        },
+        "runtime_repository": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        },
+        "runtime_ref": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "provider"
+        ],
+        "properties": {
+          "provider": {
+            "const": "github"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "github"
+        ]
+      },
+      "else": {
+        "required": [
+          "azure_devops"
+        ]
+      }
+    }
+  ]
+}

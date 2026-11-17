@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Compact discovery reconciliation",
+  "allOf": [
+    { "$ref": "../common/agent-result.schema.json" },
+    {
+      "properties": {
+        "agentId": { "const": "discovery-synthesis" },
+        "stageId": { "const": "discovery" },
+        "summary": { "maxLength": 3000 },
+        "details": {
+          "type": "object",
+          "required": ["existingAutomation", "disagreements", "blockingContext"],
+          "properties": {
+            "componentStacks": false,
+            "primaryStack": false,
+            "requirements": false,
+            "businessFlows": false,
+            "existingAutomation": { "$ref": "discovery-result.schema.json#/allOf/1/properties/details/properties/existingAutomation" },
+            "disagreements": {
+              "type": "array", "maxItems": 30,
+              "items": { "type": "string", "minLength": 1, "maxLength": 600 }
+            },
+            "blockingContext": {
+              "type": "array", "maxItems": 10,
+              "description": "Only evidence/access/scope problems preventing discovery itself. Future environment provisioning, unresolved product expectations and unimplemented features remain source findings, not missing discovery work.",
+              "items": { "type": "string", "minLength": 1, "maxLength": 600 }
+            }
+          }
+        }
+      },
+      "if": { "properties": { "status": { "const": "completed" } } },
+      "then": {
+        "properties": {
+          "deferrals": { "maxItems": 0 },
+          "details": { "properties": { "blockingContext": { "maxItems": 0 } } }
+        }
+      },
+      "else": {
+        "properties": { "details": { "properties": { "blockingContext": { "minItems": 1 } } } }
+      }
+    }
+  ]
+}

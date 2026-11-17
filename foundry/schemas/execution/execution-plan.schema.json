@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Execution plan",
+  "allOf": [
+    { "$ref": "../common/agent-result.schema.json" },
+    {
+      "type": "object",
+      "required": ["commands"],
+      "properties": {
+        "agentId": { "const": "execution" },
+        "stageId": { "const": "execution" },
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "executable", "arguments", "workingDirectory"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "executable": { "type": "string", "minLength": 1 },
+              "arguments": { "type": "array", "items": { "type": "string" } },
+              "workingDirectory": { "type": "string", "minLength": 1 },
+              "environment": {
+                "type": "object",
+                "additionalProperties": { "type": "string" }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  ]
+}
+

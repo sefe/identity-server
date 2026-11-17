@@ -1,0 +1,697 @@
+# One leg of a bootstrap relay.
+#
+# A live multi-agent run is measured in hours, and a single Azure DevOps job
+# cannot survive that: build 449 lost its agent after 82 minutes with no error
+# beyond "we stopped hearing from agent". The runtime already knows how to stop
+# on an agent boundary and continue later, so the pipeline runs the analysis as
+# a chain of short legs instead of one long job. Each leg gets a fresh agent,
+# which also stops memory and disk from accumulating across the whole run.
+#
+# A leg carries the evidence root forward as a pipeline artifact, so the next
+# leg resumes the same run instead of starting a new one.
+
+parameters:
+  - name: legIndex
+    type: number
+  - name: legTimeoutMinutes
+    displayName: Hard ceiling for the whole leg, including setup
+    type: number
+    default: 90
+  - name: previousLeg
+    type: string
+    default: ''
+  - name: fallbackLeg
+    displayName: Leg to resume from when the previous one never handed over, or none
+    type: string
+    default: ''
+  - name: resumeFromBuildId
+    displayName: Build whose evidence this run continues, or none
+    type: string
+    default: none
+  - name: budgetMinutes
+    type: number
+  - name: runBudgetMinutes
+    type: number
+    default: 720
+  - name: maxNoProgressLegs
+    type: number
+    default: 3
+  - name: resumeRunId
+    displayName: Explicit analysis run for importing legacy evidence
+    type: string
+    default: none
+  - name: restartStage
+    type: string
+    default: none
+  - name: frameworkPath
+    type: string
+  - name: bootstrapConfigPath
+    type: string
+  - name: documentationLinks
+    type: string
+    default: none
+  - name: phase
+    type: string
+  - name: copilotCliVersion
+    type: string
+  - name: azureDevOpsAuthEnvironment
+    type: string
+    default: AZURE_DEVOPS_TOKEN
+  - name: agentPool
+    displayName: Self-hosted pool to run this leg on, or none for the hosted image
+    type: string
+    default: none
+  - name: vmImage
+    displayName: Microsoft-hosted image, used only when no pool is named
+    type: string
+    default: ubuntu-latest
+  - name: powerShellVersion
+    displayName: PowerShell to install on an agent that has none
+    type: string
+    default: 7.4.6
+  - name: isFinalLeg
+    type: boolean
+    default: false
+
+jobs:
+  - job: leg${{ parameters.legIndex }}
+    displayName: Bootstrap relay leg ${{ parameters.legIndex }}
+    # Not unbounded. A step with no clock of its own would otherwise hold the
+    # agent for the hosted ceiling of six hours: build 500 lost leg 6 that way,
+    # stuck installing the CLI. The leg's own budget stops the analysis long
+    # before this, so reaching it means something hung outside that budget.
+    timeoutInMinutes: ${{ parameters.legTimeoutMinutes }}
+    # A leg needs an agent, and the hosted grant is a fixed number of minutes a
+    # month that a relay of twelve legs spends quickly: build 973176 lost leg 5
+    # to "your organization has no free minutes remaining", with the four legs
+    # before it green. So where a leg runs is a parameter. A named pool must
+    # provide pwsh, bash, git and outbound access to the npm registry and the
+    # Copilot endpoint, because the leg installs Node and the CLI itself.
+    pool:
+      ${{ if eq(parameters.agentPool, 'none') }}:
+        vmImage: ${{ parameters.vmImage }}
+      ${{ else }}:
+        name: ${{ parameters.agentPool }}
+    ${{ if ne(parameters.previousLeg, '') }}:
+      dependsOn: ${{ parameters.previousLeg }}
+      # Only resume an analysis that genuinely ran out of budget. Delivery
+      # failures are terminal because local Git and wrapper state are not
+      # transferred to the fresh checkout in the next job.
+      condition: >-
+        eq(dependencies.${{ parameters.previousLeg }}.outputs['bootstrap.relayStatus'], 'paused')
+    steps:
+      - checkout: self
+        fetchDepth: 0
+        persistCredentials: false
+
+      # A pool is a set of machines, not a machine. Build 973293 put legs 1 to 3
+      # on an agent that has PowerShell and leg 4 on a sibling that does not,
+      # and the leg died on its first step after the run had already paid for
+      # three legs of work. Every step of this leg that decides anything is
+      # written in PowerShell, so the agent is brought up to that rather than
+      # the relay being restricted to the machines that happen to have it. An
+      # agent that already has pwsh is left exactly as it is.
+      - bash: |
+          set -euo pipefail
+          if command -v pwsh >/dev/null 2>&1; then
+            echo "This agent already has $(pwsh --version)."
+            exit 0
+          fi
+          VERSION="${POWERSHELL_VERSION}"
+          case "$(uname -m)" in
+            x86_64) ARCH="x64" ;;
+            aarch64|arm64) ARCH="arm64" ;;
+            *) echo "##[error]No PowerShell build for $(uname -m)."; exit 1 ;;
+          esac
+          URL="https://github.com/PowerShell/PowerShell/releases/download/v$VERSION/powershell-$VERSION-linux-$ARCH.tar.gz"
+          TARGET="$HOME/.local/share/powershell-$VERSION"
+          echo "This agent has no pwsh; installing $VERSION from $URL."
+          mkdir -p "$TARGET"
+          if ! curl -fsSL --retry 3 --retry-delay 2 -o /tmp/powershell.tar.gz "$URL"; then
+            echo "##[error]This agent has no PowerShell and cannot reach $URL to install one."
+            exit 1
+          fi
+          tar -xzf /tmp/powershell.tar.gz -C "$TARGET"
+          rm -f /tmp/powershell.tar.gz
+          chmod +x "$TARGET/pwsh"
+          # Every later step of this job starts a new process, so the location
+          # is published to the agent rather than exported into this shell.
+          echo "##vso[task.prependpath]$TARGET"
+          echo "Installed $("$TARGET/pwsh" --version)."
+        displayName: Make sure this agent has PowerShell
+        timeoutInMinutes: 10
+        retryCountOnTaskFailure: 2
+        env:
+          POWERSHELL_VERSION: ${{ parameters.powerShellVersion }}
+
+      - template: setup-copilot-cli.yml
+        parameters:
+          version: ${{ parameters.copilotCliVersion }}
+
+      - template: verify-copilot-credential.yml
+        parameters:
+          legIndex: ${{ parameters.legIndex }}
+
+      - task: PowerShell@2
+        name: relayPaths
+        displayName: Resolve relay paths inside the checkout
+        env:
+          FOUNDRY_SOURCES_DIRECTORY: $(Build.SourcesDirectory)
+          FOUNDRY_FRAMEWORK_PATH_INPUT: ${{ parameters.frameworkPath }}
+          FOUNDRY_BOOTSTRAP_CONFIG_PATH_INPUT: ${{ parameters.bootstrapConfigPath }}
+        inputs:
+          pwsh: true
+          targetType: inline
+          script: |
+            $ErrorActionPreference = "Stop"
+
+            $sourceRoot = (Resolve-Path -LiteralPath $env:FOUNDRY_SOURCES_DIRECTORY `
+                -ErrorAction Stop).Path
+
+            function Resolve-CheckoutPath {
+                param(
+                    [Parameter(Mandatory)][string]$InputPath,
+                    [Parameter(Mandatory)][ValidateSet("Leaf", "Container")][string]$PathType,
+                    [Parameter(Mandatory)][string]$Label
+                )
+
+                if ([string]::IsNullOrWhiteSpace($InputPath) -or $InputPath -match "[`r`n]") {
+                    throw "$Label is empty or malformed."
+                }
+                $candidate = if ([IO.Path]::IsPathRooted($InputPath)) {
+                    [IO.Path]::GetFullPath($InputPath)
+                }
+                else {
+                    [IO.Path]::GetFullPath((Join-Path $sourceRoot $InputPath))
+                }
+                if (-not (Test-Path -LiteralPath $candidate -PathType $PathType)) {
+                    throw "$Label does not exist with the required type inside the checkout."
+                }
+                $resolved = (Resolve-Path -LiteralPath $candidate -ErrorAction Stop).Path
+                $relative = [IO.Path]::GetRelativePath($sourceRoot, $resolved)
+                $parentPrefix = "..$([IO.Path]::DirectorySeparatorChar)"
+                if ([IO.Path]::IsPathRooted($relative) -or $relative -eq ".." -or
+                    $relative.StartsWith($parentPrefix, [StringComparison]::Ordinal)) {
+                    throw "$Label must stay inside Build.SourcesDirectory."
+                }
+
+                # Lexical containment is not enough when a repository path is a
+                # symlink or junction. Reject linked segments so the resolved
+                # executable and configuration cannot escape the checkout.
+                $cursor = $sourceRoot
+                foreach ($segment in @($relative -split '[\\/]' | Where-Object { $_ -and $_ -ne "." })) {
+                    $cursor = Join-Path $cursor $segment
+                    $item = Get-Item -LiteralPath $cursor -Force -ErrorAction Stop
+                    $isLink = (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) -or
+                        (($item.PSObject.Properties.Name -contains "LinkType") -and $null -ne $item.LinkType)
+                    if ($isLink) {
+                        throw "$Label may not traverse a symbolic link or junction."
+                    }
+                }
+                return $resolved
+            }
+
+            function Set-PipelineVariable {
+                param([Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$Value)
+                $escaped = $Value.Replace("%", "%AZP25").Replace("`r", "%0D").Replace("`n", "%0A")
+                Write-Host "##vso[task.setvariable variable=$Name]$escaped"
+            }
+
+            $frameworkPath = Resolve-CheckoutPath `
+                -InputPath $env:FOUNDRY_FRAMEWORK_PATH_INPUT `
+                -PathType Container `
+                -Label "Foundry framework path"
+            $bootstrapConfigPath = Resolve-CheckoutPath `
+                -InputPath $env:FOUNDRY_BOOTSTRAP_CONFIG_PATH_INPUT `
+                -PathType Leaf `
+                -Label "Bootstrap configuration path"
+            $relayScriptPath = Resolve-CheckoutPath `
+                -InputPath (Join-Path $frameworkPath "scripts/Invoke-RelayLeg.ps1") `
+                -PathType Leaf `
+                -Label "Relay script path"
+
+            Set-PipelineVariable -Name "foundryFrameworkPath" -Value $frameworkPath
+            Set-PipelineVariable -Name "foundryBootstrapConfigPath" -Value $bootstrapConfigPath
+            Set-PipelineVariable -Name "foundryRelayScriptPath" -Value $relayScriptPath
+
+      - task: PowerShell@2
+        displayName: Prepare isolated relay directories
+        inputs:
+          pwsh: true
+          targetType: inline
+          script: |
+            $ErrorActionPreference = 'Stop'
+            $workspace = [IO.Path]::GetFullPath('$(Pipeline.Workspace)')
+            $transfer = Join-Path $workspace 'foundry-relay/$(Build.BuildId)/$(System.JobId)/$(System.JobAttempt)'
+            $evidence = Join-Path (Get-Location).Path '.qa-foundry-artifacts'
+            foreach ($entry in @(@{ path = $transfer; root = $workspace }, @{ path = $evidence; root = (Get-Location).Path })) {
+              $relative = [IO.Path]::GetRelativePath($entry.root, $entry.path)
+              if ([IO.Path]::IsPathRooted($relative) -or $relative -eq '.' -or $relative.StartsWith('..')) {
+                throw 'Relay cleanup path is outside its workspace.'
+              }
+              if (Test-Path -LiteralPath $entry.path) { Remove-Item -LiteralPath $entry.path -Recurse -Force }
+            }
+            New-Item -ItemType Directory -Path $transfer -Force | Out-Null
+            Write-Host "##vso[task.setvariable variable=foundryTransferRoot]$transfer"
+
+      - ${{ if ne(parameters.previousLeg, '') }}:
+          - task: DownloadPipelineArtifact@2
+            displayName: Fetch the evidence the previous leg produced
+            timeoutInMinutes: 15
+            retryCountOnTaskFailure: 2
+            # A leg that finished its analysis can still fail to hand it over.
+            # Failing here would throw away every earlier leg as well, so a
+            # missing handover is a fact this leg reads, not a reason to stop.
+            continueOnError: true
+            inputs:
+              buildType: current
+              artifactName: foundry-evidence-${{ parameters.previousLeg }}
+              targetPath: $(foundryTransferRoot)/${{ parameters.previousLeg }}
+
+          - task: PowerShell@2
+            displayName: Validate the previous handover
+            inputs:
+              pwsh: true
+              targetType: inline
+              script: |
+                try {
+                  & '$(foundryFrameworkPath)/scripts/Transfer-RelayEvidence.ps1' -Mode Validate `
+                    -SourceRoot '$(foundryTransferRoot)/${{ parameters.previousLeg }}' `
+                    -BuildId '$(Build.BuildId)' -Leg '${{ parameters.previousLeg }}'
+                  Write-Host '##vso[task.setvariable variable=foundryHandoverMissing]false'
+                }
+                catch {
+                  Write-Host "##vso[task.logissue type=warning]Previous handover is unusable: $($_.Exception.Message)"
+                  Write-Host '##vso[task.setvariable variable=foundryHandoverMissing]true'
+                }
+
+          - ${{ if ne(parameters.fallbackLeg, '') }}:
+              # Evidence is cumulative, so the leg before last is the same run,
+              # one leg older. Build 972526 lost leg 6 to a stalled upload and
+              # ended there, with leg 5 sitting complete in the same build and
+              # nothing willing to look at it. Fetched only when the newer
+              # handover is genuinely absent, so a healthy relay pays nothing.
+              - task: DownloadPipelineArtifact@2
+                displayName: Fetch the evidence of ${{ parameters.fallbackLeg }} instead
+                timeoutInMinutes: 15
+                retryCountOnTaskFailure: 2
+                condition: and(succeeded(), eq(variables['foundryHandoverMissing'], 'true'))
+                inputs:
+                  buildType: current
+                  artifactName: foundry-evidence-${{ parameters.fallbackLeg }}
+                  targetPath: $(foundryTransferRoot)/${{ parameters.fallbackLeg }}
+
+          - task: PowerShell@2
+            displayName: Restore verified evidence into an empty directory
+            inputs:
+              pwsh: true
+              targetType: inline
+              script: |
+                $leg = '${{ parameters.previousLeg }}'
+                if ('$(foundryHandoverMissing)' -eq 'true') { $leg = '${{ parameters.fallbackLeg }}' }
+                if (-not $leg) { throw 'No valid handover is available to resume.' }
+                & '$(foundryFrameworkPath)/scripts/Transfer-RelayEvidence.ps1' -Mode Restore `
+                  -SourceRoot "$(foundryTransferRoot)/$leg" -BuildId '$(Build.BuildId)' -Leg $leg
+
+      # A self-hosted agent keeps its working directory between builds, and the
+      # evidence root is not tracked by Git, so what an earlier build left there
+      # is still there when the next one starts. A leg publishes the whole root,
+      # so every build inherited the runs of every build before it: leg 3 of
+      # build 973304 shipped five runs, four of them finished work belonging to
+      # other builds. Leg 4 then continued one of those instead of its own and
+      # crashed on an artifact that run had already written.
+      #
+      # This leg starts the run, so nothing on disk belongs to it. The evidence
+      # of a build that is genuinely being continued arrives through the step
+      # below, from that build's published artifact, and is not affected.
+
+      # Continuing a run that a previous build left behind. Build 972449 stopped
+      # at stage 10 of 13 on a spending ceiling set too low, with every finished
+      # stage sitting in its published evidence; without this the only way
+      # forward was to buy all of that work a second time. The evidence of a
+      # relay is cumulative, so the highest-numbered leg holds the whole run.
+      #
+      # Seeding only happens on the first leg, because every later leg is fed by
+      # the one before it. What may then be continued is not decided here: the
+      # leg reads why the carried run stopped, and a run blocked on a judgement
+      # is carried forward blocked exactly as before.
+      - ${{ if and(eq(parameters.previousLeg, ''), ne(parameters.resumeFromBuildId, 'none'), ne(parameters.resumeFromBuildId, '')) }}:
+          - task: DownloadPipelineArtifact@2
+            displayName: Fetch the evidence of build ${{ parameters.resumeFromBuildId }}
+            timeoutInMinutes: 20
+            retryCountOnTaskFailure: 2
+            inputs:
+              buildType: specific
+              project: $(System.TeamProjectId)
+              definition: $(System.DefinitionId)
+              buildVersionToDownload: specific
+              pipelineId: ${{ parameters.resumeFromBuildId }}
+              targetPath: $(foundryTransferRoot)/resumed-evidence
+
+          - task: PowerShell@2
+            displayName: Restore the evidence of the run being continued
+            env:
+              FOUNDRY_RESUME_RUN_ID: ${{ parameters.resumeRunId }}
+            inputs:
+              pwsh: true
+              targetType: inline
+              script: |
+                $source = Get-ChildItem -LiteralPath '$(foundryTransferRoot)/resumed-evidence' -Directory |
+                  Where-Object { $_.Name -match '^foundry-evidence-leg[0-9]+$' } |
+                  Sort-Object { [int]($_.Name -replace '^foundry-evidence-leg', '') } -Descending |
+                  Select-Object -First 1
+                if ($null -eq $source) { throw 'The selected build has no relay evidence.' }
+                $leg = $source.Name -replace '^foundry-evidence-', ''
+                $transfer = '$(foundryFrameworkPath)/scripts/Transfer-RelayEvidence.ps1'
+                if (-not (Test-Path -LiteralPath (Join-Path $source.FullName 'relay-manifest.json'))) {
+                  if (-not $env:FOUNDRY_RESUME_RUN_ID -or $env:FOUNDRY_RESUME_RUN_ID -eq 'none') {
+                    throw 'Legacy evidence requires resumeRunId; select the analysis run explicitly.'
+                  }
+                  Write-Host '##vso[task.logissue type=warning]Importing explicitly selected legacy evidence without an original integrity manifest.'
+                  & $transfer -Mode Seal -SourceRoot $source.FullName -BuildId '${{ parameters.resumeFromBuildId }}' `
+                    -Leg $leg -RunId $env:FOUNDRY_RESUME_RUN_ID
+                }
+                & $transfer -Mode Restore -SourceRoot $source.FullName -BuildId '${{ parameters.resumeFromBuildId }}' -Leg $leg
+
+      - script: npm ci
+        workingDirectory: $(foundryFrameworkPath)
+        displayName: Prepare deterministic Foundry dependencies
+        timeoutInMinutes: 10
+        retryCountOnTaskFailure: 2
+
+      # The configured ecosystem decides which npm resolves a lock, and a hosted
+      # image brings whichever npm it happens to bundle: build 469 reached the
+      # resolver and stopped because the image had moved to 10.9.8 while the
+      # configuration pins 10.9.4. The agent is brought to the configuration
+      # rather than the configuration to the agent. This reads the configuration
+      # through the Foundry helpers, so it has to follow the install above that
+      # provides them.
+      - task: PowerShell@2
+        name: approvedNpm
+        displayName: Read the configured npm version
+        env:
+          FOUNDRY_FRAMEWORK_PATH: $(foundryFrameworkPath)
+          FOUNDRY_BOOTSTRAP_CONFIG_PATH: $(foundryBootstrapConfigPath)
+        inputs:
+          pwsh: true
+          targetType: inline
+          script: |
+            $ErrorActionPreference = "Stop"
+            $scriptPath = Join-Path $env:FOUNDRY_FRAMEWORK_PATH "scripts/Get-EcosystemRuntimeVersion.ps1"
+            $output = @(& $scriptPath -BootstrapConfigPath $env:FOUNDRY_BOOTSTRAP_CONFIG_PATH `
+                -Ecosystem "npm" -RuntimeKey "npm_version")
+            if ($output.Count -ne 1 -or [string]$output[0] -notmatch "^[0-9]+\.[0-9]+\.[0-9]+$") {
+                throw "The configured npm version could not be resolved unambiguously."
+            }
+            Write-Host "##vso[task.setvariable variable=foundryApprovedNpmVersion]$([string]$output[0])"
+
+      - bash: |
+          set -euo pipefail
+          npm install --global "npm@$APPROVED_NPM_VERSION" --ignore-scripts --no-audit --no-fund
+          # A successful install is not proof that PATH now reaches it, and the
+          # shell caches the location of the command it already ran.
+          hash -r
+          ACTUAL_NPM_VERSION="$(npm --version | tr -d '\r\n')"
+          if [ "$ACTUAL_NPM_VERSION" != "$APPROVED_NPM_VERSION" ]; then
+            echo "##[error]This agent runs npm $ACTUAL_NPM_VERSION after installing the approved $APPROVED_NPM_VERSION."
+            exit 1
+          fi
+          echo "Using approved npm $ACTUAL_NPM_VERSION."
+        displayName: Install and verify the approved npm
+        timeoutInMinutes: 6
+        retryCountOnTaskFailure: 2
+        env:
+          APPROVED_NPM_VERSION: $(foundryApprovedNpmVersion)
+
+      # What this agent can actually reach decides what any command can prove.
+      #
+      # The repository restores packages from an internal feed on a private
+      # address. A Microsoft-hosted agent has no route to it, so every
+      # 'dotnet restore' opens a socket that never answers and dies on its
+      # timeout: build 500 spent leg 3 entirely that way, ten restores of five
+      # minutes each, and recorded ten failures that said nothing about the
+      # code. The feed is probed once here instead. An agent that can reach it
+      # is left completely alone, so running inside the corporate network needs
+      # no change and no undoing.
+      - task: PowerShell@2
+        displayName: Check which package feeds this agent can reach
+        timeoutInMinutes: 5
+        env:
+          FOUNDRY_SOURCES_DIRECTORY: $(Build.SourcesDirectory)
+        inputs:
+          pwsh: true
+          targetType: inline
+          script: |
+            $ErrorActionPreference = "Stop"
+            $configPath = Join-Path $env:FOUNDRY_SOURCES_DIRECTORY "NuGet.Config"
+            if (-not (Test-Path -LiteralPath $configPath)) {
+                Write-Host "No NuGet.Config in the checkout, so the default sources apply."
+                return
+            }
+            [xml]$config = Get-Content -LiteralPath $configPath -Raw
+            $sources = @($config.configuration.packageSources.add)
+            if ($sources.Count -eq 0) {
+                Write-Host "NuGet.Config names no package source."
+                return
+            }
+            $reachable = @()
+            $unreachable = @()
+            foreach ($source in $sources) {
+                $value = [string]$source.value
+                $uri = $null
+                if (-not [Uri]::TryCreate($value, [UriKind]::Absolute, [ref]$uri)) { continue }
+                if ($uri.Scheme -notin @("http", "https")) { continue }
+                $client = [System.Net.Sockets.TcpClient]::new()
+                try {
+                    $connect = $client.ConnectAsync($uri.Host, $uri.Port)
+                    if ($connect.Wait(10000) -and $client.Connected) {
+                        $reachable += "$($source.key) ($($uri.Host):$($uri.Port))"
+                    }
+                    else {
+                        $unreachable += "$($source.key) ($($uri.Host):$($uri.Port))"
+                    }
+                }
+                catch { $unreachable += "$($source.key) ($($uri.Host):$($uri.Port))" }
+                finally { $client.Dispose() }
+            }
+            foreach ($name in $reachable) { Write-Host "Reachable: $name" }
+            foreach ($name in $unreachable) { Write-Host "Unreachable: $name" }
+            if ($reachable.Count -gt 0) {
+                Write-Host "At least one configured feed answers, so the repository configuration is left as it is."
+                return
+            }
+            Write-Host ("##vso[task.logissue type=warning]No configured package feed answers from this agent: " +
+                (@($unreachable) -join ", ") + ". Product builds that require these feeds are unavailable. " +
+                "Foundry keeps the product configuration unchanged and resolves Automation dependencies " +
+                "in its own isolated workspace using the approved registry.")
+
+      # A .NET SDK that is not installed is not a fact about the product, but
+      # discovery cannot tell the difference: in build 973266 the agent found no
+      # dotnet on this agent and designed TypeScript automation for a net10.0
+      # service, which is the one thing the architecture prompt exists to
+      # prevent. The machine is brought up to the repository instead. The
+      # version comes from the repository itself, so nothing here has to be
+      # changed when the product moves on, and an agent that already has a
+      # matching SDK is left alone.
+      - task: PowerShell@2
+        name: dotnetNeed
+        displayName: Decide whether this agent needs a .NET SDK
+        timeoutInMinutes: 5
+        env:
+          FOUNDRY_SOURCES_DIRECTORY: $(Build.SourcesDirectory)
+        inputs:
+          pwsh: true
+          targetType: inline
+          script: |
+            $ErrorActionPreference = "Stop"
+            $root = $env:FOUNDRY_SOURCES_DIRECTORY
+
+            # global.json is the repository's own answer when it has one.
+            $wanted = ""
+            $globalJson = Join-Path $root "global.json"
+            if (Test-Path -LiteralPath $globalJson) {
+                $sdk = (Get-Content -LiteralPath $globalJson -Raw | ConvertFrom-Json).sdk
+                if ($null -ne $sdk -and $sdk.PSObject.Properties.Name -contains "version") {
+                    $wanted = [string]$sdk.version
+                }
+            }
+
+            # Otherwise the highest framework any project targets: an SDK builds
+            # the versions below it, so the highest one covers the repository.
+            if ([string]::IsNullOrWhiteSpace($wanted)) {
+                $highest = $null
+                foreach ($project in Get-ChildItem -LiteralPath $root -Recurse -Filter "*.csproj" -File -ErrorAction SilentlyContinue) {
+                    foreach ($match in [regex]::Matches((Get-Content -LiteralPath $project.FullName -Raw), "<TargetFrameworks?>([^<]+)<")) {
+                        foreach ($moniker in $match.Groups[1].Value.Split(";")) {
+                            if ($moniker.Trim() -match "^net(\d+)\.(\d+)$") {
+                                $version = [version]"$($Matches[1]).$($Matches[2])"
+                                if ($null -eq $highest -or $version -gt $highest) { $highest = $version }
+                            }
+                        }
+                    }
+                }
+                if ($null -ne $highest) { $wanted = "$($highest.Major).$($highest.Minor).x" }
+            }
+
+            if ([string]::IsNullOrWhiteSpace($wanted)) {
+                Write-Host "No .NET project in this checkout, so no SDK is installed."
+                Write-Host "##vso[task.setvariable variable=install;isOutput=true]false"
+                return
+            }
+            Write-Host "This repository builds on .NET $wanted."
+
+            $installed = @()
+            if (Get-Command dotnet -ErrorAction SilentlyContinue) {
+                $installed = @(& dotnet --list-sdks 2>$null | ForEach-Object { ($_ -split " ")[0] })
+            }
+            $prefix = $wanted.Substring(0, $wanted.Length - 1)
+            if (@($installed | Where-Object {
+                if ($wanted.EndsWith('.x')) { $_.StartsWith($prefix) } else { $_ -eq $wanted }
+            }).Count -gt 0) {
+                Write-Host "An SDK for $wanted is already installed, so nothing is fetched."
+                Write-Host "##vso[task.setvariable variable=install;isOutput=true]false"
+                return
+            }
+            if ($installed.Count -gt 0) {
+                Write-Host ("This agent has " + (@($installed) -join ", ") + ", none of which builds $wanted.")
+            }
+            else { Write-Host "This agent has no .NET SDK." }
+            Write-Host "##vso[task.setvariable variable=install;isOutput=true]true"
+            Write-Host "##vso[task.setvariable variable=version;isOutput=true]$wanted"
+
+      # Missing build tooling stops here, before paying for architecture and code
+      # generation that this agent cannot verify.
+      - task: UseDotNet@2
+        displayName: Install the .NET SDK this repository builds on
+        condition: and(succeeded(), eq(variables['dotnetNeed.install'], 'true'))
+        timeoutInMinutes: 15
+        retryCountOnTaskFailure: 2
+        inputs:
+          packageType: sdk
+          version: $(dotnetNeed.version)
+
+      - task: PowerShell@2
+        displayName: Report the .NET SDK the agents will see
+        condition: and(succeeded(), eq(variables['dotnetNeed.install'], 'true'))
+        timeoutInMinutes: 3
+        inputs:
+          pwsh: true
+          targetType: inline
+          script: |
+            $ErrorActionPreference = "Continue"
+            if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
+                Write-Host ("##vso[task.logissue type=warning]No .NET SDK could be installed on this agent. " +
+                    "Every .NET command this run proposes will be reported as unrunnable, and the design stages " +
+                    "will see an agent without a .NET toolchain.")
+                return
+            }
+            Write-Host "dotnet $(& dotnet --version) is on PATH."
+            & dotnet --list-sdks
+
+      - task: PowerShell@2
+        displayName: Prepare configured Python, Java and Go runtimes
+        timeoutInMinutes: 15
+        env:
+          FOUNDRY_FRAMEWORK_PATH: $(foundryFrameworkPath)
+          FOUNDRY_BOOTSTRAP_CONFIG_PATH: $(foundryBootstrapConfigPath)
+        inputs:
+          pwsh: true
+          targetType: inline
+          script: |
+            $ErrorActionPreference = 'Stop'
+            & (Join-Path $env:FOUNDRY_FRAMEWORK_PATH 'scripts/Initialize-AdditionalRuntimes.ps1') `
+                -BootstrapConfigPath $env:FOUNDRY_BOOTSTRAP_CONFIG_PATH `
+                -CacheRoot (Join-Path '$(Agent.ToolsDirectory)' 'foundry-runtimes')
+
+      - task: PowerShell@2
+        name: bootstrap
+        displayName: Run bootstrap leg ${{ parameters.legIndex }}
+        env:
+          ${{ parameters.azureDevOpsAuthEnvironment }}: $(${{ parameters.azureDevOpsAuthEnvironment }})
+          COPILOT_GITHUB_TOKEN: $(COPILOT_GITHUB_TOKEN)
+          GH_TOKEN: $(GH_TOKEN)
+          GITHUB_TOKEN: $(GITHUB_TOKEN)
+          FOUNDRY_RELAY_SCRIPT_PATH: $(foundryRelayScriptPath)
+          FOUNDRY_RESTART_STAGE: ${{ parameters.restartStage }}
+          QA_FOUNDRY_ADDITIONAL_USD_LIMIT: $(QA_FOUNDRY_ADDITIONAL_USD_LIMIT)
+          QA_FOUNDRY_CALL_CREDIT_LIMIT: $(QA_FOUNDRY_CALL_CREDIT_LIMIT)
+          QA_FOUNDRY_RECOVERY_CANDIDATE: $(QA_FOUNDRY_RECOVERY_CANDIDATE)
+          FOUNDRY_BOOTSTRAP_CONFIG_PATH: $(foundryBootstrapConfigPath)
+          FOUNDRY_DOCUMENTATION_LINKS: ${{ parameters.documentationLinks }}
+          FOUNDRY_LOG_STYLE: summary
+          FOUNDRY_DOCUMENTATION_AUTH: $(FOUNDRY_DOCUMENTATION_AUTH)
+          FOUNDRY_CONFLUENCE_TOKEN: $(FOUNDRY_CONFLUENCE_TOKEN)
+          FOUNDRY_SHAREPOINT_TOKEN: $(FOUNDRY_SHAREPOINT_TOKEN)
+          FOUNDRY_WEB_TOKEN: $(FOUNDRY_WEB_TOKEN)
+        inputs:
+          pwsh: true
+          targetType: inline
+          script: |
+            $ErrorActionPreference = "Stop"
+            $recoveryArguments = @{}
+            if ($env:FOUNDRY_RESTART_STAGE -and $env:FOUNDRY_RESTART_STAGE -ne 'none') {
+                $recoveryArguments.RestartStage = $env:FOUNDRY_RESTART_STAGE
+            }
+            & $env:FOUNDRY_RELAY_SCRIPT_PATH `
+                -LegIndex ${{ parameters.legIndex }} `
+                -BootstrapConfigPath $env:FOUNDRY_BOOTSTRAP_CONFIG_PATH `
+                -DocumentationLinks $env:FOUNDRY_DOCUMENTATION_LINKS `
+                -Phase "${{ parameters.phase }}" `
+                -BudgetMinutes ${{ parameters.budgetMinutes }} `
+                -RunBudgetMinutes ${{ parameters.runBudgetMinutes }} `
+                -MaxNoProgressLegs ${{ parameters.maxNoProgressLegs }} `
+                -IsFinalLeg:$${{ parameters.isFinalLeg }} @recoveryArguments
+            exit $LASTEXITCODE
+
+      - pwsh: |
+          $summary = Join-Path '$(Build.SourcesDirectory)' '.qa-foundry-artifacts/relay-progress.md'
+          if (Test-Path -LiteralPath $summary) { Write-Host "##vso[task.uploadsummary]$summary" }
+        displayName: Publish relay progress and continuation instructions
+        condition: always()
+
+      # The evidence root doubles as the sandbox HOME and TMPDIR of every command
+      # an agent runs, so it collects things that are not evidence: package
+      # caches, and the Unix socket a dotnet process leaves behind when it is
+      # killed on its timeout. The artifact upload does not reject a file it
+      # cannot hash - it stalls. Build 972526 sat at "0 out of 35,960,234 bytes"
+      # for twenty minutes until the step timed out, published nothing, and cost
+      # the run everything leg 6 had just finished. What a leg resumes from is
+      # run-<id> state, never that scratch, so the scratch is excluded from the
+      # upload rather than cleaned up after it. The second line is insurance:
+      # the failure is silent and terminal, so nothing that cannot be hashed is
+      # left anywhere the walker will reach.
+      - bash: |
+          set -euo pipefail
+          ROOT=".qa-foundry-artifacts"
+          if [ ! -d "$ROOT" ]; then
+            echo "This leg produced no evidence root, so there is nothing to prepare."
+            exit 0
+          fi
+          printf '%s\n' 'command-home/**' '.scratch/**' > "$ROOT/.artifactignore"
+          UNHASHABLE=$(find "$ROOT" \( -type s -o -type p -o -type b -o -type c -o -xtype l \) \
+            -print -delete | wc -l)
+          echo "Excluded the command scratch home and dropped $UNHASHABLE entry(ies) that cannot be hashed."
+        displayName: Keep the command scratch out of the published evidence
+        condition: always()
+
+      - task: PowerShell@2
+        displayName: Seal the evidence with run identity and content hashes
+        condition: always()
+        inputs:
+          pwsh: true
+          targetType: inline
+          script: |
+            & '$(foundryFrameworkPath)/scripts/Transfer-RelayEvidence.ps1' -Mode Seal `
+              -SourceRoot '.qa-foundry-artifacts' -BuildId '$(Build.BuildId)' -Leg 'leg${{ parameters.legIndex }}'
+
+      - task: PublishPipelineArtifact@1
+        displayName: Publish the evidence this leg produced
+        condition: always()
+        timeoutInMinutes: 20
+        retryCountOnTaskFailure: 2
+        inputs:
+          # The whole evidence root retains diagnostics and resumable run-<id>
+          # analysis state. It does not transfer .git, repository mutations,
+          # .sdlc-foundry, or bootstrap wrapper state.
+          targetPath: .qa-foundry-artifacts
+          artifact: foundry-evidence-leg${{ parameters.legIndex }}

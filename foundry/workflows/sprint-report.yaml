@@ -1,0 +1,40 @@
+name: sprint-report
+version: 1
+settings: { max_stage_iterations: 3, fail_on_schema_error: true, preserve_all_artifacts: true }
+stages:
+  - id: sprint-report-generation
+    risk: high
+    type: sequential
+    depends_on: []
+    agents:
+      - { id: sprint-report-generator, prompt: prompts/delivery/sprint-report.md, schema: schemas/actions/change-set.schema.json, output: change-set.json }
+    assurance: { reviewed_by: sprint-report-review, deterministic_evidence: true }
+  - id: sprint-report-review
+    risk: high
+    type: parallel_review
+    depends_on: [sprint-report-generation]
+    agents:
+      - { id: sprint-report-correctness-reviewer, prompt: prompts/sdlc/review-correctness.md, schema: schemas/sdlc/review.schema.json, output: correctness-review.json }
+      - { id: sprint-report-quality-reviewer, prompt: prompts/sdlc/review-quality.md, schema: schemas/sdlc/review.schema.json, output: quality-review.json }
+      - { id: sprint-report-security-reviewer, prompt: prompts/sdlc/review-security.md, schema: schemas/sdlc/review.schema.json, output: security-review.json }
+    approval: { strategy: unanimous, on_reject: { return_to: sprint-report-generation }, max_iterations: 3 }
+  - id: apply-sprint-report
+    risk: high
+    type: deterministic_action
+    depends_on: [sprint-report-review]
+    action: { handler: apply_change_set, input: change-set.json, output: action-result.json }
+    assurance: { approved_by: sprint-report-review }
+  - id: publish-sprint-report
+    risk: high
+    type: deterministic_action
+    depends_on: [apply-sprint-report]
+    action:
+      handler: deliver_changes
+      # Named, not searched for: the reviewers approved this document, and a
+      # critic loop leaves earlier drafts of the same name behind it.
+      inputs:
+        changeSet:
+          stage: sprint-report-generation
+          artifact: change-set.json
+      output: action-result.json
+    assurance: { approved_by: sprint-report-review }

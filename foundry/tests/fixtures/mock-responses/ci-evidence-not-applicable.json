@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "runId": "run-example",
+  "collectedAt": "2026-08-03T10:00:01Z",
+  "provider": "local",
+  "status": "not_applicable",
+  "source": {
+    "eventId": "local:manual:example",
+    "buildId": "",
+    "ciRunId": ""
+  },
+  "build": {
+    "id": "",
+    "pipeline": "",
+    "status": "",
+    "result": "",
+    "branch": "",
+    "commitSha": "",
+    "url": "",
+    "startedAt": "",
+    "finishedAt": ""
+  },
+  "jobs": [],
+  "failedTests": [],
+  "summary": {
+    "jobCount": 0,
+    "failedJobCount": 0,
+    "testRunCount": 0,
+    "failedTestCount": 0,
+    "truncated": false
+  },
+  "warnings": []
+}

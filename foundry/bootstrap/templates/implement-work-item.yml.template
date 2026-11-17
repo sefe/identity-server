@@ -1,0 +1,220 @@
+# Implements one work item. Started by another pipeline rather than by a commit: nothing in the
+# repository changes when an item becomes ready, so there is no push to trigger on. The analyser
+# that filed the item queues this run and names the item it filed.
+trigger: none
+pr: none
+
+parameters:
+  - name: workItemId
+    displayName: Work item to implement
+    type: string
+  # The run that queued this one names the hand-off it made. Carrying it through
+  # means the started run is identifiable as that hand-off and not merely as a
+  # run about the same work item, which is what tells two runs of the same item
+  # apart when one of them was started twice.
+  - name: handoffKey
+    displayName: Hand-off this run implements
+    type: string
+    default: ""
+  - name: copilotCliVersion
+    displayName: GitHub Copilot CLI npm version
+    type: string
+    default: latest
+
+variables:
+  - group: sdlc-foundry-secrets
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - checkout: self
+    fetchDepth: 0
+  - template: /{{FRAMEWORK_PATH}}/pipelines/azure-devops/templates/setup-copilot-cli.yml
+    parameters:
+      version: ${{ parameters.copilotCliVersion }}
+  - script: npm ci
+    workingDirectory: "{{FRAMEWORK_PATH}}"
+    displayName: Prepare deterministic Foundry dependencies
+  - pwsh: |
+      # The values arrive as environment variables rather than as text pasted into
+      # this script. Azure DevOps expands a template parameter reference into the
+      # script body before PowerShell ever sees it, so a value carrying a quote
+      # and a statement would run here as source - under the identity that holds
+      # this pipeline's credential. As a variable it is data, and it stays data.
+      $workItemId = "$env:SDLC_WORK_ITEM_ID".Trim()
+      if (-not $workItemId) {
+        throw "This pipeline implements one work item and was started without naming one."
+      }
+      # Anyone who may queue this pipeline may choose these values, so their shape
+      # is checked rather than assumed. Both are generated, and both have exactly
+      # one legal form.
+      if ($workItemId -notmatch '^[0-9]+$') {
+        throw "A work item is named by its numeric id, and '$workItemId' is not one."
+      }
+      $handoffKey = "$env:SDLC_HANDOFF_KEY".Trim()
+      if ($handoffKey -and $handoffKey -notmatch '^[0-9a-f]{64}$') {
+        throw "A hand-off is named by a SHA-256 digest, and this run was given something else."
+      }
+      $event = [ordered]@{
+        type = 'work_item.ready'
+        correlation = [ordered]@{ workItemId = $workItemId }
+        metadata = [ordered]@{ handoffKey = $handoffKey }
+      }
+      $directory = Join-Path "$env:AGENT_TEMPDIRECTORY" 'sdlc-foundry'
+      New-Item -ItemType Directory -Force -Path $directory | Out-Null
+      $path = Join-Path $directory 'work-item-ready.json'
+      $event | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $path -Encoding utf8
+      Write-Host "##vso[task.setvariable variable=sdlcEventPath]$path"
+      Write-Host "##vso[task.setvariable variable=sdlcWorkItemId]$workItemId"
+      Write-Host "##vso[build.addbuildtag]work-item-$workItemId"
+      if ($handoffKey) {
+        # Tagging the build with the hand-off makes a duplicate start visible in
+        # Azure DevOps itself: two runs carrying one hand-off tag are two runs
+        # implementing one task, which no amount of reading logs would show.
+        Write-Host "##vso[build.addbuildtag]sdlc-foundry-handoff-$handoffKey"
+      }
+    displayName: Describe the work item as an SDLC event
+    env:
+      SDLC_WORK_ITEM_ID: ${{ parameters.workItemId }}
+      SDLC_HANDOFF_KEY: ${{ parameters.handoffKey }}
+  - pwsh: |
+      # Two runs can exist for one work item: the run that queued the first may
+      # have died before recording it, and the run that noticed re-queued it. Both
+      # then arrive here, and exactly one of them may implement the task - two
+      # would open two pull requests for one piece of work.
+      #
+      # Which one is decided by a write, not by a comparison. Deciding by build id
+      # from tags each run adds to itself cannot work: a build is only findable by
+      # its tag once it reaches this point, and builds do not reach it in the order
+      # they were created, so both runs can look and both can find nothing. A
+      # revision-guarded write to the work item has no such window - Azure DevOps
+      # accepts exactly one of two writes made against the same revision.
+      $workItemId = "$env:SDLC_WORK_ITEM_ID_VALIDATED".Trim()
+      $buildId = "$env:BUILD_BUILDID".Trim()
+      $credential = $env:{{AZURE_DEVOPS_AUTH_ENV}}
+      if (-not $credential) {
+        # Proceeding without the check is what makes a duplicate possible, and a
+        # duplicate is worse than a run that stops: the credential this needs is
+        # the same one the implementation itself uses, so nothing is lost by
+        # refusing here that would not be lost a step later.
+        throw "No credential is available to elect one run for work item $workItemId."
+      }
+      $authorization = if ('{{AZURE_DEVOPS_AUTH_SCHEME}}' -eq 'bearer') { "Bearer $credential" }
+        else { "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$credential")) }
+      $headers = @{ Authorization = $authorization }
+      $base = "{{WORK_ITEM_ORGANIZATION_URL}}/" + [Uri]::EscapeDataString('{{WORK_ITEM_PROJECT}}')
+      $uri = "$base/_apis/wit/workitems/$workItemId" + "?api-version=7.1"
+      # The build this run may have to displace lives in the collection and
+      # project this build is running in, which Azure DevOps states directly.
+      $buildBase = "$env:SYSTEM_COLLECTIONURI".TrimEnd("/") + "/" +
+        [Uri]::EscapeDataString("$env:SYSTEM_TEAMPROJECT")
+      # A holder tag names a build. Whether it still holds anything is a question
+      # about that build, so it is asked rather than assumed: a run that failed
+      # or was cancelled left work nobody is doing, and treating its tag as
+      # permanent is what kept a task from ever being implemented again.
+      function Test-HolderStillOwnsTheWork {
+        param([string]$HolderBuildId)
+        $holderUri = "$buildBase/_apis/build/builds/$HolderBuildId" + "?api-version=7.1"
+        try {
+          $holder = Invoke-RestMethod -Method Get -Uri $holderUri -Headers $headers
+        } catch {
+          $code = 0
+          if ($null -ne $_.Exception.PSObject.Properties['Response'] -and $_.Exception.Response) {
+            $code = [int]$_.Exception.Response.StatusCode
+          }
+          # A build that no longer exists cannot be implementing anything; the
+          # work it was doing was either merged long ago or lost with it, and
+          # either way the tag is stale. Any other unreadable answer is not a
+          # licence to proceed.
+          if ($code -eq 404) { return $false }
+          throw ("Work item $workItemId names build $HolderBuildId as its implementer and that " +
+            "build could not be read, so this run stops rather than risk a second pull request: " +
+            $_.Exception.Message)
+        }
+        $holderStatus = "$($holder.status)".Trim().ToLowerInvariant()
+        $holderResult = "$($holder.result)".Trim().ToLowerInvariant()
+        if ($holderStatus -ne 'completed') { return $true }
+        # A partial success opened a pull request as surely as a full one did.
+        if ($holderResult -in @('succeeded', 'partiallysucceeded')) { return $true }
+        # Completed with no result stated is not something this can call dead.
+        if (-not $holderResult -or $holderResult -eq 'none') { return $true }
+        return $false
+      }
+      $mine = "sdlc-foundry-implementing-$buildId"
+      $attempts = 4
+      for ($attempt = 1; $attempt -le $attempts; $attempt++) {
+        $failure = ""
+        try {
+          $item = Invoke-RestMethod -Method Get -Uri "$uri&`$expand=none" -Headers $headers
+          $revision = [int]$item.rev
+          $tags = @(([string]$item.fields.'System.Tags').Split(";") |
+            ForEach-Object { $_.Trim() } | Where-Object { $_ })
+          $holders = @($tags | Where-Object { $_ -match '^sdlc-foundry-implementing-[0-9]+$' })
+          if ($holders -contains $mine) { break }
+          if ($holders.Count -gt 0) {
+            $living = @($holders | Where-Object {
+              Test-HolderStillOwnsTheWork -HolderBuildId ($_ -replace '^sdlc-foundry-implementing-','')
+            })
+            if ($living.Count -gt 0) {
+              throw ("Build $($living[0] -replace '^sdlc-foundry-implementing-','') is already " +
+                "implementing work item $workItemId. Implementing it twice would open two pull " +
+                "requests for one task, so this run stops.")
+            }
+            # Every build that claimed this task is finished without having done
+            # it. Their tags are dropped in the same conditional write that adds
+            # this run's, so two survivors cannot both take over.
+            $tags = @($tags | Where-Object { $_ -notmatch '^sdlc-foundry-implementing-[0-9]+$' })
+            Write-Host ("Work item $workItemId was left tagged by " +
+              "$($holders.Count) build(s) that failed or were cancelled. Taking it over.")
+          }
+          $patch = @(
+            @{ op = "test"; path = "/rev"; value = $revision },
+            @{ op = "add"; path = "/fields/System.Tags"
+               value = ((@($tags) + @($mine) | Select-Object -Unique) -join "; ") }
+          )
+          $null = Invoke-RestMethod -Method Patch -Uri $uri -Headers $headers `
+            -ContentType "application/json-patch+json" `
+            -Body ($patch | ConvertTo-Json -Depth 10 -AsArray)
+          break
+        } catch {
+          # A refused write means the item moved, and the next read says whether
+          # it moved because another run won. Anything else - an unreadable
+          # answer, a broken credential - is not a reason to assume this run may
+          # proceed, so running out of attempts stops the run.
+          $failure = $_.Exception.Message
+          if ($failure -match 'is already implementing work item') { throw }
+          if ($attempt -eq $attempts) {
+            throw ("Could not establish which run implements work item $workItemId, so this run " +
+              "stops rather than risk a second pull request for one task: $failure")
+          }
+          Start-Sleep -Seconds ($attempt * 2)
+        }
+      }
+    displayName: Elect the one run that implements this work item
+    env:
+      SDLC_WORK_ITEM_ID_VALIDATED: $(sdlcWorkItemId)
+      {{AZURE_DEVOPS_AUTH_ENV}}: $({{AZURE_DEVOPS_AUTH_ENV}})
+  - task: PowerShell@2
+    displayName: Implement the work item with SDLC Foundry
+    env:
+      {{AZURE_DEVOPS_AUTH_ENV}}: $({{AZURE_DEVOPS_AUTH_ENV}})
+      COPILOT_GITHUB_TOKEN: $(COPILOT_GITHUB_TOKEN)
+      GH_TOKEN: $(GH_TOKEN)
+      GITHUB_TOKEN: $(GITHUB_TOKEN)
+    inputs:
+      pwsh: true
+      targetType: filePath
+      filePath: "{{FRAMEWORK_PATH}}/scripts/ci/AzureDevOps.ps1"
+      arguments: >
+        -ConfigPath "{{PROJECT_CONFIG_PATH}}"
+        -PolicyPath "{{POLICY_PATH}}"
+        -WorkflowPath "{{FRAMEWORK_PATH}}/workflows/implement-work-item.yaml"
+        -EventType work_item.ready
+        -EventPath "$(sdlcEventPath)"
+  - task: PublishPipelineArtifact@1
+    displayName: Publish implementation evidence
+    condition: always()
+    inputs:
+      targetPath: .qa-foundry-artifacts
+      artifact: sdlc-foundry-implementation-$(Build.BuildId)

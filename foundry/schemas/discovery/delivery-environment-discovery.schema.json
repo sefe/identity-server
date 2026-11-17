@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Delivery environment discovery",
+  "allOf": [
+    { "$ref": "../common/agent-result.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "agentId": { "const": "delivery-environment-discovery" },
+        "stageId": { "const": "discovery" }
+      }
+    }
+  ]
+}

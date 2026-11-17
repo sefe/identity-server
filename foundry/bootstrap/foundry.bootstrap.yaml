@@ -1,0 +1,44 @@
+version: 1
+target:
+  repository_path: ../..
+  branch: main
+framework:
+  path: foundry
+  project_config_path: foundry/config/project.yaml
+  policy_path: foundry/policies/bootstrap-policy.yaml
+  bootstrap_workflow_path: foundry/workflows/bootstrap-automation.yaml
+installation:
+  managed_root: .foundry
+  artifacts_root: .qa-foundry-artifacts/bootstrap
+  run_analysis: true
+pipelines:
+  - key: sdlc-router
+    name: Foundry Router
+    yaml_path: .github/workflows/foundry-router.yml
+    template_path: bootstrap/github/sdlc-router.yml.template
+    enabled: true
+    smoke: false
+  - key: failed-build-triage
+    name: Foundry Failure Triage
+    yaml_path: .github/workflows/foundry-triage.yml
+    template_path: bootstrap/github/failed-build-triage.yml.template
+    enabled: true
+    smoke: false
+  - key: finalize
+    name: Foundry Finalize
+    yaml_path: .github/workflows/foundry-finalize.yml
+    template_path: bootstrap/github/finalize.yml.template
+    enabled: true
+    smoke: false
+agent_pipelines:
+  register_from_change_set: true
+  path_prefix: .github/workflows
+  name_prefix: "Automation - "
+  require_at_least: 2
+provider: github
+github:
+  repository: OWNER/REPOSITORY
+  auth_env: FOUNDRY_GITHUB_TOKEN
+  dry_run: true
+  runtime_repository: OWNER/FOUNDRY
+  runtime_ref: "0000000000000000000000000000000000000000"

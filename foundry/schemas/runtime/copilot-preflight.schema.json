@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Copilot CLI preflight",
+  "type": "object",
+  "required": [
+    "checkedAt",
+    "commandMode",
+    "package",
+    "packageVersion",
+    "cliVersion",
+    "model",
+    "authenticationMode",
+    "authenticationSource",
+    "ci"
+  ],
+  "properties": {
+    "checkedAt": { "type": "string", "format": "date-time" },
+    "commandMode": {
+      "type": "string",
+      "enum": ["installed", "npx", "npm-exec"]
+    },
+    "package": { "type": "string" },
+    "packageVersion": { "type": "string" },
+    "cliVersion": { "type": "string", "minLength": 1 },
+    "model": { "type": "string", "minLength": 1 },
+    "authenticationMode": {
+      "type": "string",
+      "enum": ["auto", "environment"]
+    },
+    "authenticationSource": {
+      "type": "string",
+      "enum": [
+        "COPILOT_GITHUB_TOKEN",
+        "GH_TOKEN",
+        "GITHUB_TOKEN",
+        "stored-oauth-or-gh-cli"
+      ]
+    },
+    "ci": { "type": "boolean" }
+  },
+  "additionalProperties": false
+}

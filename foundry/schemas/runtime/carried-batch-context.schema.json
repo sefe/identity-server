@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Carried batch context",
+  "$comment": "The final text of the files a batch has to keep agreeing with but must not rewrite: its dependencies and the callers a targeted repair left alone. Held apart from the assignment so a helper with many callers cannot push the instructions themselves out of the request.",
+  "type": "object",
+  "required": ["batchId", "files"],
+  "properties": {
+    "batchId": { "type": "string", "minLength": 1 },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["path", "content"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "content": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

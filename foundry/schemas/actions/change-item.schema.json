@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "One authored file in a planned change set",
+  "$comment": "Shared by the per-batch artifact and the merged plan so a batch cannot describe a change the plan would refuse. A lock file is not on this list: its integrity hashes come from a resolver, so the plan names the manifest to resolve under materializations instead.",
+  "type": "object",
+  "required": ["operation", "path", "expectedSha256", "content", "reason", "sourceRefs"],
+  "properties": {
+    "operation": { "type": "string", "enum": ["create", "update", "delete"] },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "(^|[\\\\/])(composer\\.lock|dependency-lock\\.txt|Gemfile\\.lock|go\\.sum|package-lock\\.json|packages\\.lock\\.json|requirements\\.lock)$" },
+      "description": "A lock file written from literal content is an invented lock file: only a resolver can state the exact version, origin URL and content hash of every package in a tree. Name the manifest under materializations instead. One name per ecosystem this installation ships an adapter for, and a test keeps this list and the adapters in step. Both separators are refused because path scoping normalises backslashes to forward slashes later."
+    },
+    "expectedSha256": { "type": "string", "pattern": "^$|^[a-f0-9]{64}$" },
+    "content": { "type": "string" },
+    "reason": { "type": "string", "minLength": 1 },
+    "sourceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+  },
+  "additionalProperties": false
+}
