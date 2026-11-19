@@ -19,7 +19,9 @@ function Invoke-FoundryGitHub {
     param([Parameter(Mandatory)][object]$Context, [ValidateSet('GET','POST','PATCH')][string]$Method='GET',
           [Parameter(Mandatory)][AllowEmptyString()][string]$Path, [object]$Body, [switch]$AllowNotFound)
     if ($Path -match '(^/|://|\\|(?:^|/)\.\.(?:/|$))') { throw 'GitHub API path must stay repository-relative.' }
-    $args = @{Method=$Method; Uri="https://api.github.com/repos/$($Context.repository)/$Path";
+    $uri = "https://api.github.com/repos/$($Context.repository)"
+    if ($Path) { $uri += "/$Path" }
+    $args = @{Method=$Method; Uri=$uri;
               Headers=$Context.headers; TimeoutSec=60; MaximumRedirection=0; ErrorAction='Stop'}
     if ($PSBoundParameters.ContainsKey('Body')) { $args.ContentType='application/json'; $args.Body=$Body | ConvertTo-Json -Depth 50 -Compress }
     try { return Invoke-RestMethod @args }

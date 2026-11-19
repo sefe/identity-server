@@ -114,6 +114,7 @@ $global:FoundryTestExistingRemote=$true
 function Invoke-RestMethod {
     param($Method,$Uri,$Headers,$TimeoutSec,$MaximumRedirection,$ErrorAction,$ContentType,$Body)
     $global:FoundryTestRequests.Add(@{method=$Method;uri=$Uri;body=$Body;redirects=$MaximumRedirection})
+    if ($Uri -eq 'https://api.github.com/repos/example/product' -and $Method -eq 'GET') {return @{archived=$false}}
     if ($Uri -match '/git/ref/') {if ($global:FoundryTestExistingRemote) {return @{object=@{sha=('b'*40)}}} else {return $null}}
     if ($Uri -match '/pulls\?') {if ($global:FoundryTestExistingRemote) {return @(@{number=42;state='open';head=@{ref='sdlc-foundry/test'};base=@{ref='main'}})} else {return @()}}
     if ($Uri -match '/pulls$' -and $Method -eq 'POST') {return @{number=43}}
@@ -121,6 +122,14 @@ function Invoke-RestMethod {
     if ($Uri -match '/actions/runs/123$') {return @{id=123;name='Automation api';status='completed';conclusion='failure';head_branch='main';head_sha=('b'*40);html_url='https://github.com/example/product/actions/runs/123';created_at='2026-11-10T00:00:00Z';updated_at='2026-11-10T00:01:00Z'}}
     throw "Unexpected network request in offline test: $Uri"
 }
+$prerequisiteConfig=[pscustomobject]@{delivery=[pscustomobject]@{
+    provider='github';dry_run=$false;push_branch=$true;create_draft_pull_request=$true;github=$settings
+}}
+$prerequisitePath=Join-Path $runRoot 'prerequisites.json'
+$null=& (Join-Path $runtime 'scripts/Test-RunPrerequisites.ps1') -Config $prerequisiteConfig `
+    -RepositoryRoot $target -OutputPath $prerequisitePath -ActionEnvironment @{TEST_GITHUB_TOKEN='fixture-token'}
+$prerequisites=Get-Content -LiteralPath $prerequisitePath -Raw | ConvertFrom-Json
+Assert-True ($prerequisites.status -eq 'completed' -and @($prerequisites.checks | Where-Object name -eq 'github.repository').Count -eq 1) 'Publishing prerequisites verify the repository root endpoint without a trailing slash.'
 $remote=Get-FoundryGitHubDeliveryState -Context $context -Branch sdlc-foundry/test -Base main
 Assert-True ($remote.branchExists -and $remote.pullRequestId -eq '42') 'Remote discovery reuses an existing branch and PR.'
 Assert-True (@($global:FoundryTestRequests | Where-Object redirects -ne 0).Count -eq 0) 'GitHub credentials must not follow redirects.'
