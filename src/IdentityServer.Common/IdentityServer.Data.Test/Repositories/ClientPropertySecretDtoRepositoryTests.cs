@@ -27,7 +27,7 @@ public class ClientPropertySecretDtoRepositoryTests
     private IPermissionChecker _permissionChecker;
     private ISecretGeneratorService _secretGenerator;
     private IParentAccessor<ClientSecretExt, ClientExt> _parentAccessor;
-    private ICache<Duende.IdentityServer.EntityFramework.Entities.Client> _clientCache;
+    private IConfigurationCacheInvalidator<Duende.IdentityServer.EntityFramework.Entities.Client> _clientCache;
     private IOptions<SecretExpirationConfig> _expirationConfig;
     private ClientPropertySecretDtoRepository _sut;
     private ClaimsPrincipal _user;
@@ -41,7 +41,7 @@ public class ClientPropertySecretDtoRepositoryTests
         _permissionChecker = Substitute.For<IPermissionChecker>();
         _secretGenerator = Substitute.For<ISecretGeneratorService>();
         _parentAccessor = Substitute.For<IParentAccessor<ClientSecretExt, ClientExt>>();
-        _clientCache = Substitute.For<ICache<Duende.IdentityServer.EntityFramework.Entities.Client>>();
+        _clientCache = Substitute.For<IConfigurationCacheInvalidator<Duende.IdentityServer.EntityFramework.Entities.Client>>();
         _expirationConfig = Options.Create(new SecretExpirationConfig { MaxValidityYears = 2 });
 
         _sut = new ClientPropertySecretDtoRepository(

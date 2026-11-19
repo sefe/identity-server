@@ -27,7 +27,7 @@ public class ApiResourcePropertySecretDtoRepositoryTests
     private IPermissionChecker _permissionChecker;
     private ISecretGeneratorService _secretGenerator;
     private IParentAccessor<ApiResourceSecretExt, ApiResourceExt> _parentAccessor;
-    private ICache<Duende.IdentityServer.EntityFramework.Entities.ApiResource> _apiCache;
+    private IConfigurationCacheInvalidator<Duende.IdentityServer.EntityFramework.Entities.ApiResource> _apiCache;
     private IOptions<SecretExpirationConfig> _expirationConfig;
     private ApiResourcePropertySecretDtoRepository _sut;
     private ClaimsPrincipal _user;
@@ -41,7 +41,7 @@ public class ApiResourcePropertySecretDtoRepositoryTests
         _permissionChecker = Substitute.For<IPermissionChecker>();
         _secretGenerator = Substitute.For<ISecretGeneratorService>();
         _parentAccessor = Substitute.For<IParentAccessor<ApiResourceSecretExt, ApiResourceExt>>();
-        _apiCache = Substitute.For<ICache<Duende.IdentityServer.EntityFramework.Entities.ApiResource>>();
+        _apiCache = Substitute.For<IConfigurationCacheInvalidator<Duende.IdentityServer.EntityFramework.Entities.ApiResource>>();
         _expirationConfig = Options.Create(new SecretExpirationConfig { MaxValidityYears = 2 });
 
         _sut = new ApiResourcePropertySecretDtoRepository(

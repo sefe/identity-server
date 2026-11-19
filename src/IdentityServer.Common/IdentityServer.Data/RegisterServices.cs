@@ -27,6 +27,8 @@ using IdentityServer.Data.Repositories.DtoRepositories.SystemPermissions;
 using IdentityServer.Data.Repositories.Storage;
 using IdentityServer.Data.Security;
 using IdentityServer.Data.Services;
+using IdentityServer.Data.Caching;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace IdentityServer.Data;
 
@@ -72,6 +74,7 @@ public static class RegisterServices
 
     public static IServiceCollection AddDataLayerForUi(this IServiceCollection services)
     {
+        services.TryAddSingleton(typeof(IConfigurationCacheInvalidator<>), typeof(NoOpConfigurationCacheInvalidator<>));
         services.AddSingleton<ISecretGeneratorService, SecretGeneratorService>();
         services.AddSingleton(_ =>
         {

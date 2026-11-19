@@ -193,10 +193,10 @@ public class CustomProfileService : IProfileService
             return;
         }
 
-        var clientId = context.Subject?.FindFirst(JwtClaimTypes.ClientId)?.Value;
+        var clientId = context.Application?.Identifier;
         if (string.IsNullOrEmpty(clientId))
         {
-            _logger.LogWarning("Unable to load client role claims because client_id claim is missing");
+            _logger.LogWarning("Unable to load client role claims because the requesting application identifier is missing");
             return;
         }
 

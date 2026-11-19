@@ -20,12 +20,12 @@ public class ApiResourceSecretControllerTests : ControllerTestBase
     private ApiResourceController _apiResourceController;
     private ApiResourcePropertySecretController _secretController;
     private IStorage<ApiResourceSecretExt> _apiResourceSecretStorage;
-    private ICache<DataEntities.ApiResource> _apiCache;
+    private IConfigurationCacheInvalidator<DataEntities.ApiResource> _apiCache;
 
     [SetUp]
     public async Task Setup()
     {
-        _apiCache = Substitute.For<ICache<DataEntities.ApiResource>>();
+        _apiCache = Substitute.For<IConfigurationCacheInvalidator<DataEntities.ApiResource>>();
 
         var provider = IoC.GetProvider(sc =>
         {
@@ -113,6 +113,7 @@ public class ApiResourceSecretControllerTests : ControllerTestBase
         var createdApiResource = await _apiResourceController.Call_CreateApiResourceAsync(ApiResourceControllerExtensions.GetDefaultApiResource(1), Admin);
         var newSecret = ApiResourceSecretControllerExtensions.GetDefaultApiResourceSecretFor(createdApiResource.Id);
 
+        _apiCache.ClearReceivedCalls();
         // Act
         await _secretController.Call_CreateSecretAsync(newSecret, Admin);
 

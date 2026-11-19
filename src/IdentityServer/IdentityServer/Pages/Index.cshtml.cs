@@ -14,7 +14,7 @@ public class Index : PageModel
 {
     public Index(LicenseInformation? license = null)
     {
-        License = license;
+        License = license is { IsConfigured: true } ? license : null;
     }
 
     public static string GetVersion()

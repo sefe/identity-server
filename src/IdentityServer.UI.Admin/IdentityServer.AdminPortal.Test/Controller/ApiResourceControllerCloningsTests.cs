@@ -8,6 +8,9 @@ using IdentityServer.Abstraction.Exceptions;
 using IdentityServer.AdminPortal.Server.Controllers;
 using IdentityServer.AdminPortal.Test.Extensions;
 using IdentityServer.Tests.Common;
+using IdentityServer.Abstraction.Contracts;
+using NSubstitute;
+using DataEntities = Duende.IdentityServer.EntityFramework.Entities;
 
 namespace IdentityServer.AdminPortal.Test.Controller;
 
@@ -17,10 +20,12 @@ public class ApiResourceControllerCloningsTests : ControllerTestBase
     private ApiResourcePropertyScopeController _apiResourceScopeController;
     private ApiResourcePropertySecretController _apiResourceSecretController;
     private ApiResourcePropertyRoleController _apiResourceRoleController;
+    private IConfigurationCacheInvalidator<DataEntities.ApiResource> _apiCache;
 
     [SetUp]
     public async Task Setup()
     {
+        _apiCache = Substitute.For<IConfigurationCacheInvalidator<DataEntities.ApiResource>>();
         var provider = IoC.GetProvider(sc =>
         {
             sc.AddScoped<ApiResourceController>();
@@ -28,6 +33,7 @@ public class ApiResourceControllerCloningsTests : ControllerTestBase
             sc.AddScoped<ApiResourcePropertySecretController>();
             sc.AddScoped<ApiResourcePropertyRoleController>();
             sc.ReplaceWithInstance(EverythingIsAllowed);
+            sc.ReplaceWithInstance(_apiCache);
         });
 
         await Setup(provider);
@@ -55,6 +61,7 @@ public class ApiResourceControllerCloningsTests : ControllerTestBase
 
         // Act
         var clonedApiResource = await _apiResourceController.Call_CloneApiResourceAsync(cloneRequest, Admin);
+        await _apiCache.Received(1).RemoveAsync(clonedApiResource.Name);
 
         // Assert
         using (Assert.EnterMultipleScope())

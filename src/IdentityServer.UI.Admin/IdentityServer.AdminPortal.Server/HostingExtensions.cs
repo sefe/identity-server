@@ -19,6 +19,7 @@ using IdentityServer.Core.Extensions;
 using IdentityServer.Core.Infrastructure;
 using IdentityServer.Core.Serilog.Extensions;
 using IdentityServer.MicrosoftGraph.Extensions;
+using IdentityServer.Data.Caching;
 using static IdentityServer.Abstraction.Constants;
 using static IdentityServer.Data.RegisterServices;
 
@@ -135,6 +136,7 @@ public static class HostingExtensions
                     var redisOptions = RedisConnectionStringBuilder.BuildFrom(identityServerCachingOptions.Provider);
                     builder.Services.AddRedisConnection(redisOptions);
                     builder.Services.AddSingleton(typeof(ICache<>), typeof(RedisCache<>));
+                    builder.Services.AddSharedConfigurationCache();
                     break;
                 default:
                     throw new InvalidOperationException($"Unsupported caching provider: '{identityServerCachingOptions.Provider}'");

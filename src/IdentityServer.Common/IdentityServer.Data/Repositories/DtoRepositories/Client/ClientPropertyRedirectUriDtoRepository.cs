@@ -27,7 +27,7 @@ internal class ClientPropertyRedirectUriDtoRepository :
         IMapper mapper,
         IPermissionChecker permissionChecker,
         IParentAccessor<ClientRedirectUriExt, ClientExt> parentAccessor,
-        ICache<DataEntities.Client> clientCache,
+        IConfigurationCacheInvalidator<DataEntities.Client> clientCache,
         ILogger<ClientPropertyRedirectUriDtoRepository> logger
         ) : base(clientStorage, propertyStorage, mapper, permissionChecker, parentAccessor, clientCache)
     {

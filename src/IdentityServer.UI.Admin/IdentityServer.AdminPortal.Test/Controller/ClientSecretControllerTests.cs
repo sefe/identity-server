@@ -20,12 +20,12 @@ public class ClientSecretControllerTests : ControllerTestBase
     private ClientController _clientController;
     private ClientPropertySecretController _secretController;
     private IStorage<ClientSecretExt> _clientSecretStorage;
-    private ICache<DataEntities.Client> _clientCache;
+    private IConfigurationCacheInvalidator<DataEntities.Client> _clientCache;
 
     [SetUp]
     public async Task Setup()
     {
-        _clientCache = Substitute.For<ICache<DataEntities.Client>>();
+        _clientCache = Substitute.For<IConfigurationCacheInvalidator<DataEntities.Client>>();
 
         var provider = IoC.GetProvider(sc =>
         {

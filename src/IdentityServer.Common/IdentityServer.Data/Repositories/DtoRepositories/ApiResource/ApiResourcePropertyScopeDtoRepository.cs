@@ -24,8 +24,8 @@ internal class ApiResourcePropertyScopeDtoRepository :
     private readonly IStorage<ClientScopeExt> _clientStorage;
     private readonly IMapper _mapper;
     private readonly IPermissionChecker _permissionChecker;
-    private readonly ICache<DataEntities.ApiResource> _apiCache;
-    private readonly ICache<ApiScope> _scopeCache;
+    private readonly IConfigurationCacheInvalidator<DataEntities.ApiResource> _apiCache;
+    private readonly IConfigurationCacheInvalidator<ApiScope> _scopeCache;
 
 #pragma warning disable IDE0079 // Remove unnecessary suppression
 #pragma warning disable S107 // Reduce the number of parameters
@@ -36,8 +36,8 @@ internal class ApiResourcePropertyScopeDtoRepository :
         IMapper mapper,
         IPermissionChecker permissionChecker,
         IStorage<ClientScopeExt> clientStorage,
-        ICache<DataEntities.ApiResource> apiCache,
-        ICache<ApiScope> scopeCache
+        IConfigurationCacheInvalidator<DataEntities.ApiResource> apiCache,
+        IConfigurationCacheInvalidator<ApiScope> scopeCache
         )
 #pragma warning restore S107 // Reduce the number of parameters
 #pragma warning restore IDE0079 // Remove unnecessary suppression

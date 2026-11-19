@@ -13,6 +13,7 @@ using IdentityServer.Data.DuendeEntityExtensions;
 using IdentityServer.Data.Entities.Roles;
 using IdentityServer.Data.Repositories.DtoRepositories.Client;
 using IdentityServer.Tests.Common.Builders;
+using CorsCacheEntry = Duende.IdentityServer.Stores.CachingCorsPolicyService<Duende.IdentityServer.EntityFramework.Services.CorsPolicyService>.CorsCacheEntry;
 
 namespace IdentityServer.Data.Test.Repositories;
 
@@ -28,7 +29,8 @@ public class ClientDtoRepositoryTests
     private IStorage<ApiResourceRole> _apiResourceRoleStorageMock;
     private IMapper _mapperMock;
     private IPermissionChecker _permissionCheckerMock;
-    private ICache<Client> _cache;
+    private IConfigurationCacheInvalidator<Client> _cache;
+    private IConfigurationCacheInvalidator<CorsCacheEntry> _corsCache;
     private IClientAuditService _auditServiceMock;
     private ClientDtoRepository _sut;
     private ClaimsPrincipal _user;
@@ -42,7 +44,8 @@ public class ClientDtoRepositoryTests
         _apiResourceRoleStorageMock = Substitute.For<IStorage<ApiResourceRole>>();
         _mapperMock = Substitute.For<IMapper>();
         _permissionCheckerMock = Substitute.For<IPermissionChecker>();
-        _cache = Substitute.For<ICache<Client>>();
+        _cache = Substitute.For<IConfigurationCacheInvalidator<Client>>();
+        _corsCache = Substitute.For<IConfigurationCacheInvalidator<CorsCacheEntry>>();
     _auditServiceMock = Substitute.For<IClientAuditService>();
 
         _sut = new ClientDtoRepository(
@@ -53,7 +56,8 @@ public class ClientDtoRepositoryTests
             _apiResourceStorageMock,
             _apiResourceRoleStorageMock,
             _cache,
-            _auditServiceMock);
+            _auditServiceMock,
+            _corsCache);
 
         _user = new ClaimsPrincipal();
     }
@@ -87,6 +91,8 @@ public class ClientDtoRepositoryTests
 
         // Act
         var result = await _sut.DeleteAsync(_user, 1);
+        await _cache.Received(1).RemoveAsync(testClient.ClientId);
+        await _corsCache.Received(1).RemoveAsync("https://test.com");
 
         // Assert
         await _clientStorageMock.Received(1).UpdateAsync(Arg.Is<ClientExt>(entity =>

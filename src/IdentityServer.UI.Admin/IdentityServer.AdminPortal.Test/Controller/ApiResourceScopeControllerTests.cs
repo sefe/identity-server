@@ -20,16 +20,16 @@ public class ApiResourceScopeControllerTests : ControllerTestBase
     private ApiResourcePropertyScopeController _apiResourceScopeController;
     private ClientController _clientController;
     private ClientPropertyScopeController _clientScopeController;
-    private ICache<DataEntities.ApiResource> _apiCache;
-    private ICache<DataEntities.ApiScope> _scopeCache;
-    private ICache<DataEntities.Client> _clientCache;
+    private IConfigurationCacheInvalidator<DataEntities.ApiResource> _apiCache;
+    private IConfigurationCacheInvalidator<DataEntities.ApiScope> _scopeCache;
+    private IConfigurationCacheInvalidator<DataEntities.Client> _clientCache;
 
     [SetUp]
     public async Task Setup()
     {
-        _apiCache = Substitute.For<ICache<DataEntities.ApiResource>>();
-        _scopeCache = Substitute.For<ICache<DataEntities.ApiScope>>();
-        _clientCache = Substitute.For<ICache<DataEntities.Client>>();
+        _apiCache = Substitute.For<IConfigurationCacheInvalidator<DataEntities.ApiResource>>();
+        _scopeCache = Substitute.For<IConfigurationCacheInvalidator<DataEntities.ApiScope>>();
+        _clientCache = Substitute.For<IConfigurationCacheInvalidator<DataEntities.Client>>();
 
         var provider = IoC.GetProvider(sc =>
         {
@@ -131,6 +131,7 @@ public class ApiResourceScopeControllerTests : ControllerTestBase
         var createdApiResource = await _apiResourceController.Call_CreateApiResourceAsync(ApiResourceControllerExtensions.GetDefaultApiResource(1), Admin);
         var newScope = ApiResourceScopeControllerExtensions.NewScopeFor(createdApiResource.Id, Guid.NewGuid().ToString());
 
+        _apiCache.ClearReceivedCalls();
         // Act
         await _apiResourceScopeController.Call_AddApiResourceScopeAsync(newScope, Admin);
 

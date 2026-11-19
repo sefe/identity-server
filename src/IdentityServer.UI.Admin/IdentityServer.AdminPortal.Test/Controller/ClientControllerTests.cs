@@ -28,7 +28,7 @@ public class ClientControllerTests : ControllerTestBase
     private ClientPropertySecretController _clientSecretController;
     private ClientPropertyScopeController _clientScopeController;
     private ApiResourcePropertyScopeController _apiResourceScopeController;
-    private ICache<DataEntities.Client> _clientCache;
+    private IConfigurationCacheInvalidator<DataEntities.Client> _clientCache;
     private IClientAuditService _clientAuditService;
 
     private readonly IEntraGroupService _entraGroupService = Substitute.For<IEntraGroupService>();
@@ -37,7 +37,7 @@ public class ClientControllerTests : ControllerTestBase
     [SetUp]
     public async Task Setup()
     {
-        _clientCache = Substitute.For<ICache<DataEntities.Client>>();
+        _clientCache = Substitute.For<IConfigurationCacheInvalidator<DataEntities.Client>>();
 
         var provider = IoC.GetProvider(sc =>
         {

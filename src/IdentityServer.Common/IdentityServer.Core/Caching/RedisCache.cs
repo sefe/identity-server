@@ -14,7 +14,7 @@ using IdentityServer.Abstraction.Extensions;
 namespace IdentityServer.Core.Caching;
 
 /// <summary>
-/// Redis-based cache implementation signature-compatible with ICache of Duende Identity Server.
+/// Redis-based application cache. Duende configuration-store caching is registered separately.
 /// </summary>
 /// <typeparam name="T">The type of data to cache.</typeparam>
 public class RedisCache<T> : ICache<T> where T : class

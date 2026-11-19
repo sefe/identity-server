@@ -96,7 +96,7 @@ internal static class HostingExtensions
                     // cache for own code purposes
                     builder.Services.AddSingleton(typeof(Abstraction.Contracts.ICache<>), typeof(RedisCache<>));
                     // Duende cache
-                    idsBuilder.AddConfigurationStoreCache(typeof(DuendeRedisCache<>));
+                    idsBuilder.AddSharedConfigurationStoreCache();
                     break;
                 default:
                     throw new InvalidOperationException($"Unsupported caching provider: '{customIdentityServerOptions.CachingOptions.Provider}'");
@@ -161,7 +161,7 @@ internal static class HostingExtensions
         return builder.Build();
     }
 
-    private static void AddSwagger(this WebApplicationBuilder builder)
+    internal static void AddSwagger(this WebApplicationBuilder builder)
     {
         builder.Services.AddSwaggerGen(options =>
         {
@@ -182,6 +182,13 @@ internal static class HostingExtensions
                 BearerFormat = "JWT"
             });
 
+            options.AddSecurityRequirement(document => new Microsoft.OpenApi.OpenApiSecurityRequirement
+            {
+                {
+                    new Microsoft.OpenApi.OpenApiSecuritySchemeReference("Bearer", document),
+                    new List<string>()
+                }
+            });
         });
     }
 
