@@ -14,7 +14,7 @@ using IdentityServer.Abstraction.Extensions;
 namespace IdentityServer.Core.Caching;
 
 /// <summary>
-/// Redis-based cache implementation signature-compatible with ICache of Duende Identity Server.
+/// Redis-based application cache. Duende configuration-store caching is registered separately.
 /// </summary>
 /// <typeparam name="T">The type of data to cache.</typeparam>
 public class RedisCache<T> : ICache<T> where T : class
@@ -177,7 +177,7 @@ public class RedisCache<T> : ICache<T> where T : class
         try
         {
             var json = JsonSerializer.Serialize(item, _jsonOptions);
-            await _database.StringSetAsync(normalizedKey, json, expiration);
+            await _database.StringSetAsync(normalizedKey, json, expiration, false, When.Always, CommandFlags.None);
 
             var elapsedMs = CommonHelpers.GetElapsedMilliseconds(startTimestamp);
             _logger.CacheSet(_cacheTypeName, normalizedKey, expiration.TotalSeconds, elapsedMs);
@@ -211,7 +211,7 @@ public class RedisCache<T> : ICache<T> where T : class
             {
                 var normalizedKey = NormalizeKey(kvp.Key);
                 var json = JsonSerializer.Serialize(kvp.Value, _jsonOptions);
-                tasks.Add(batch.StringSetAsync(normalizedKey, json, expiration));
+                tasks.Add(batch.StringSetAsync(normalizedKey, json, expiration, false, When.Always, CommandFlags.None));
             }
 
             // Execute all commands in the batch
@@ -263,7 +263,7 @@ public class RedisCache<T> : ICache<T> where T : class
         {
             try
             {
-                var item = JsonSerializer.Deserialize<T>(value!, _jsonOptions);
+                var item = JsonSerializer.Deserialize<T>((string)value!, _jsonOptions);
                 if (item != null)
                 {
                     _logger.CacheHit(nameof(GetManyAsync), _cacheTypeName, normalizedKey, 0);
@@ -303,7 +303,7 @@ public class RedisCache<T> : ICache<T> where T : class
 
         try
         {
-            var result = JsonSerializer.Deserialize<T>(value!, _jsonOptions);
+            var result = JsonSerializer.Deserialize<T>((string)value!, _jsonOptions);
             var elapsedMs = CommonHelpers.GetElapsedMilliseconds(startTimestamp);
 
             if (result != null)

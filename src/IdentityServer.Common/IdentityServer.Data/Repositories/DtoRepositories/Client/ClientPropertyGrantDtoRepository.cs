@@ -23,7 +23,7 @@ internal class ClientPropertyGrantDtoRepository :
         IMapper mapper,
         IPermissionChecker permissionChecker,
         IParentAccessor<ClientGrantTypeExt, ClientExt> parentAccessor,
-        ICache<DataEntities.Client> clientCache
+        IConfigurationCacheInvalidator<DataEntities.Client> clientCache
         ) : base(clientStorage, propertyStorage, mapper, permissionChecker, parentAccessor, clientCache)
     {
     }

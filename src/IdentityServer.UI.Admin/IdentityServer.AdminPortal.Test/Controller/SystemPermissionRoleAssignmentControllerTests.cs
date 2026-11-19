@@ -105,7 +105,7 @@ public class SystemPermissionRoleAssignmentControllerTests : ControllerTestBase
     }
 
     [Test]
-    public void GetEligibleUserAssignmentsPagedAsync_ThrowsArgumentException_ForUnsupportedRoleType()
+    public async Task GetEligibleUserAssignmentsPagedAsync_ThrowsArgumentException_ForUnsupportedRoleType()
     {
         // Arrange
         var user = TestUser.SuperUser;
@@ -113,6 +113,6 @@ public class SystemPermissionRoleAssignmentControllerTests : ControllerTestBase
         var envId = 3;
         var gridRequest = new DataSourceRequest { Page = 1, PageSize = 10 };
         // Act & Assert
-        Assert.ThrowsAsync<ArgumentException>(() => _controller.GetEligibleUserAssignmentsPagedAsync(gridRequest, envId, (SystemPermissionRoleType)99));
+        await Assert.ThrowsAsync<ArgumentException>(() => _controller.GetEligibleUserAssignmentsPagedAsync(gridRequest, envId, (SystemPermissionRoleType)99));
     }
 }

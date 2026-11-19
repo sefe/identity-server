@@ -15,7 +15,7 @@ namespace IdentityServer.Test.Services;
 [TestFixture]
 public class CustomTokenResponseGeneratorTests
 {
-    private IClock _clock;
+    private TimeProvider _timeProvider;
     private ITokenService _tokenService;
     private IRefreshTokenService _refreshTokenService;
     private IScopeParser _scopeParser;
@@ -27,7 +27,7 @@ public class CustomTokenResponseGeneratorTests
     [SetUp]
     public void SetUp()
     {
-        _clock = Substitute.For<IClock>();
+        _timeProvider = TimeProvider.System;
         _tokenService = Substitute.For<ITokenService>();
         _refreshTokenService = Substitute.For<IRefreshTokenService>();
         _scopeParser = Substitute.For<IScopeParser>();
@@ -35,23 +35,23 @@ public class CustomTokenResponseGeneratorTests
         _clientStore = Substitute.For<IClientStore>();
         _logger = Substitute.For<ILogger<CustomTokenResponseGenerator>>();
         _generator = new CustomTokenResponseGenerator(
-            _clock, _tokenService, _refreshTokenService, _scopeParser, _resourceStore, _clientStore, _logger);
+            _timeProvider, _tokenService, _refreshTokenService, _scopeParser, _resourceStore, _clientStore, _logger);
     }
 
     private sealed class TestableCustomTokenResponseGenerator : CustomTokenResponseGenerator
     {
         public TestableCustomTokenResponseGenerator(
-            IClock clock,
+            TimeProvider timeProvider,
             ITokenService tokenService,
             IRefreshTokenService refreshTokenService,
             IScopeParser scopeParser,
             IResourceStore resources,
             IClientStore clients,
             ILogger<CustomTokenResponseGenerator> logger)
-            : base(clock, tokenService, refreshTokenService, scopeParser, resources, clients, logger) { }
+            : base(timeProvider, tokenService, refreshTokenService, scopeParser, resources, clients, logger) { }
 
-        public new Task<TokenResponse> ProcessTokenRequestAsync(TokenRequestValidationResult validationResult)
-            => base.ProcessTokenRequestAsync(validationResult);
+        public new Task<TokenResponse> ProcessTokenRequestAsync(TokenRequestValidationResult validationResult, CancellationToken cancellationToken = default)
+            => base.ProcessTokenRequestAsync(validationResult, cancellationToken);
     }
 
     private static ValidatedTokenRequest CreateValidatedTokenRequest()
@@ -76,7 +76,7 @@ public class CustomTokenResponseGeneratorTests
         };
         var validationResult = new TokenRequestValidationResult(validatedRequest, customResponse);
         var generator = new TestableCustomTokenResponseGenerator(
-            _clock, _tokenService, _refreshTokenService, _scopeParser, _resourceStore, _clientStore, _logger);
+            _timeProvider, _tokenService, _refreshTokenService, _scopeParser, _resourceStore, _clientStore, _logger);
         var result = await generator.ProcessTokenRequestAsync(validationResult);
         using (Assert.EnterMultipleScope())
         {
@@ -91,7 +91,7 @@ public class CustomTokenResponseGeneratorTests
         var validatedRequest = CreateValidatedTokenRequest();
         var validationResult = new TokenRequestValidationResult(validatedRequest, null);
         var generator = new TestableCustomTokenResponseGenerator(
-            _clock, _tokenService, _refreshTokenService, _scopeParser, _resourceStore, _clientStore, _logger);
+            _timeProvider, _tokenService, _refreshTokenService, _scopeParser, _resourceStore, _clientStore, _logger);
         var result = await generator.ProcessTokenRequestAsync(validationResult);
         using (Assert.EnterMultipleScope())
         {
@@ -107,7 +107,7 @@ public class CustomTokenResponseGeneratorTests
         var customResponse = new Dictionary<string, object> { { "other", 999 } };
         var validationResult = new TokenRequestValidationResult(validatedRequest, customResponse);
         var generator = new TestableCustomTokenResponseGenerator(
-            _clock, _tokenService, _refreshTokenService, _scopeParser, _resourceStore, _clientStore, _logger);
+            _timeProvider, _tokenService, _refreshTokenService, _scopeParser, _resourceStore, _clientStore, _logger);
         var result = await generator.ProcessTokenRequestAsync(validationResult);
         using (Assert.EnterMultipleScope())
         {

@@ -28,12 +28,12 @@ public class CopyToClipboardButtonTests
         ctx.Services.AddSingleton(Substitute.For<ILogger<CopyToClipboardButton>>());
 
         // Act
-        var cut = ctx.RenderComponent<CopyToClipboardButton>(parameters => parameters
+        var cut = ctx.Render<CopyToClipboardButton>(parameters => parameters
             .Add(p => p.ValueToCopy, "test value"));
 
         // Assert
         var btn = cut.Find("button");
-        Assert.That(cut.Markup, Does.Contain("k-button-clear-secondary").And.Contain("k-svg-i-copy")); // simple way check
+        Assert.That(cut.Markup, Does.Contain("k-button-clear").And.Contain("k-button-secondary").And.Contain("k-svg-i-copy")); // simple way check
     }
 
     [Test]
@@ -46,7 +46,7 @@ public class CopyToClipboardButtonTests
         ctx.Services.AddSingleton(Substitute.For<NotificationService>());
         ctx.Services.AddSingleton(Substitute.For<ILogger<CopyToClipboardButton>>());
 
-        var cut = ctx.RenderComponent<CopyToClipboardButton>(parameters => parameters
+        var cut = ctx.Render<CopyToClipboardButton>(parameters => parameters
             .Add(p => p.ValueToCopy, ""));
 
         // Act
@@ -63,7 +63,7 @@ public class CopyToClipboardButtonTests
         using var ctx = new Bunit.TestContext();
         var clipboardService = SetupDependencies(ctx);
         var value = "copy me";
-        var cut = ctx.RenderComponent<CopyToClipboardButton>(parameters => parameters
+        var cut = ctx.Render<CopyToClipboardButton>(parameters => parameters
             .Add(p => p.ValueToCopy, value));
 
         // Act
@@ -80,16 +80,16 @@ public class CopyToClipboardButtonTests
         using var ctx = new TestContext();
         var clipboardService = SetupDependencies(ctx);
         var value = "copy me";
-        var cut = ctx.RenderComponent<CopyToClipboardButton>(parameters => parameters
+        var cut = ctx.Render<CopyToClipboardButton>(parameters => parameters
             .Add(p => p.ValueToCopy, value));
 
         // Act
         cut.Find("button").Click();
 
         // Assert
-        CheckMarkup(cut, "k-button-solid-success", "k-svg-i-check"); // changes to success state
+        CheckMarkup(cut, "k-button-solid.k-button-success", "k-svg-i-check"); // changes to success state
         await Task.Delay(2300);
-        CheckMarkup(cut, "k-button-clear-secondary", "k-svg-i-copy"); // ...and back to default after delay
+        CheckMarkup(cut, "k-button-clear.k-button-secondary", "k-svg-i-copy"); // ...and back to default after delay
     }
 
     [Test]
@@ -100,14 +100,14 @@ public class CopyToClipboardButtonTests
         var clipboardService = SetupDependencies(ctx);
         clipboardService.CopyToClipboard(Arg.Any<string>()).ThrowsAsync<ArgumentException>();
         var value = "copy me";
-        var cut = ctx.RenderComponent<CopyToClipboardButton>(parameters => parameters
+        var cut = ctx.Render<CopyToClipboardButton>(parameters => parameters
             .Add(p => p.ValueToCopy, value));
 
         // Act
         cut.Find("button").Click();
 
         // Assert
-        CheckMarkup(cut, "k-button-solid-error", "k-svg-i-x-circle");
+        CheckMarkup(cut, "k-button-solid.k-button-error", "k-svg-i-x-circle");
     }
 
     private static void CheckMarkup(IRenderedComponent<CopyToClipboardButton> cut, string btnStyleSelector, string spanStyleSelector)
@@ -127,3 +127,4 @@ public class CopyToClipboardButtonTests
         return clipboardService;
     }
 }
+

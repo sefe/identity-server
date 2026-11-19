@@ -104,6 +104,8 @@ steps:
         $(CommonTestPath)/IdentityServer.MicrosoftGraph.Tests/*.csproj
         $(CommonTestPath)/IdentityServer.Core.Serilog.Test/*.csproj
       arguments: '--configuration $(BuildConfiguration) --collect "Code Coverage" --settings "$(Build.SourcesDirectory)/src/code_coverage.runsettings"'
+    env:
+      TELERIK_LICENSE: $(Telerik_License_Key)
 
   - task: DotNetCoreCLI@2
     displayName: Build MSI

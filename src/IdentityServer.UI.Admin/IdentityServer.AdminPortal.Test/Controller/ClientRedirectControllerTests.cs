@@ -21,13 +21,13 @@ public class ClientRedirectControllerTests : ControllerTestBase
     private ClientPropertyRedirectController _clientRedirectController;
     private ClientController _clientController;
     private MockLogger<ClientPropertyRedirectUriDtoRepository> _mockLogger;
-    private ICache<DataEntities.Client> _clientCache;
+    private IConfigurationCacheInvalidator<DataEntities.Client> _clientCache;
 
     [SetUp]
     public async Task Setup()
     {
         _mockLogger = new MockLogger<ClientPropertyRedirectUriDtoRepository>();
-        _clientCache = Substitute.For<ICache<DataEntities.Client>>();
+        _clientCache = Substitute.For<IConfigurationCacheInvalidator<DataEntities.Client>>();
 
         var provider = IoC.GetProvider(sc =>
         {
@@ -71,7 +71,7 @@ public class ClientRedirectControllerTests : ControllerTestBase
         await _clientRedirectController.Call_AddClientRedirectAsync(client.Id, originalUri, Contributor);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientRedirectController.Call_AddClientRedirectAsync(client.Id, caseDifferentUri, Contributor));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientRedirectController.Call_AddClientRedirectAsync(client.Id, caseDifferentUri, Contributor));
     }
 
     [Test]

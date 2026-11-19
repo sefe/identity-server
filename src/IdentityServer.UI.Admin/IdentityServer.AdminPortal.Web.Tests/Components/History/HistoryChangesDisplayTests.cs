@@ -14,7 +14,7 @@ public class HistoryChangesDisplayTests : Bunit.TestContext
     public void RendersNoFieldChangesMessage_WhenChangesIsNull()
     {
         // Arrange & Act
-        var cut = RenderComponent<HistoryChangesDisplay>(parameters => parameters
+        var cut = Render<HistoryChangesDisplay>(parameters => parameters
             .Add(p => p.Changes, null));
 
         // Assert
@@ -26,7 +26,7 @@ public class HistoryChangesDisplayTests : Bunit.TestContext
     public void RendersNoFieldChangesMessage_WhenChangesIsEmpty()
     {
         // Arrange & Act
-        var cut = RenderComponent<HistoryChangesDisplay>(parameters => parameters
+        var cut = Render<HistoryChangesDisplay>(parameters => parameters
             .Add(p => p.Changes, new List<FieldChangeDto>()));
 
         // Assert
@@ -44,7 +44,7 @@ public class HistoryChangesDisplayTests : Bunit.TestContext
         };
 
         // Act
-        var cut = RenderComponent<HistoryChangesDisplay>(parameters => parameters
+        var cut = Render<HistoryChangesDisplay>(parameters => parameters
             .Add(p => p.Changes, changes)
             .Add(p => p.EventType, HistoryEventType.Deleted));
 
@@ -74,7 +74,7 @@ public class HistoryChangesDisplayTests : Bunit.TestContext
         };
 
         // Act
-        var cut = RenderComponent<HistoryChangesDisplay>(parameters => parameters
+        var cut = Render<HistoryChangesDisplay>(parameters => parameters
             .Add(p => p.Changes, changes)
             .Add(p => p.EventType, HistoryEventType.Deleted));
 
@@ -100,7 +100,7 @@ public class HistoryChangesDisplayTests : Bunit.TestContext
         };
 
         // Act
-        var cut = RenderComponent<HistoryChangesDisplay>(parameters => parameters
+        var cut = Render<HistoryChangesDisplay>(parameters => parameters
             .Add(p => p.Changes, changes)
             .Add(p => p.EventType, HistoryEventType.Updated));
 
@@ -130,7 +130,7 @@ public class HistoryChangesDisplayTests : Bunit.TestContext
         };
 
         // Act
-        var cut = RenderComponent<HistoryChangesDisplay>(parameters => parameters
+        var cut = Render<HistoryChangesDisplay>(parameters => parameters
             .Add(p => p.Changes, changes)
             .Add(p => p.EventType, HistoryEventType.Created));
 
@@ -161,7 +161,7 @@ public class HistoryChangesDisplayTests : Bunit.TestContext
         };
 
         // Act
-        var cut = RenderComponent<HistoryChangesDisplay>(parameters => parameters
+        var cut = Render<HistoryChangesDisplay>(parameters => parameters
             .Add(p => p.Changes, changes)
             .Add(p => p.EventType, HistoryEventType.Updated));
 
@@ -193,7 +193,7 @@ public class HistoryChangesDisplayTests : Bunit.TestContext
         };
 
         // Act
-        var cut = RenderComponent<HistoryChangesDisplay>(parameters => parameters
+        var cut = Render<HistoryChangesDisplay>(parameters => parameters
             .Add(p => p.Changes, changes)
             .Add(p => p.EventType, HistoryEventType.Updated));
 
@@ -237,10 +237,11 @@ public class HistoryChangesDisplayTests : Bunit.TestContext
         };
 
         // Act
-        var cut = RenderComponent<HistoryChangesDisplay>(parameters => parameters
+        var cut = Render<HistoryChangesDisplay>(parameters => parameters
             .Add(p => p.Changes, changes));
 
         // Assert
         Assert.That(cut.Find(".field-changes"), Is.Not.Null);
     }
 }
+

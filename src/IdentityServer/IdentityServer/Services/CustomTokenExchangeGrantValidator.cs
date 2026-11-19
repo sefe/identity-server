@@ -35,7 +35,7 @@ public class CustomTokenExchangeGrantValidator : IExtensionGrantValidator
 
     public string GrantType => ClientGrantTypeNames.Grant_TokenExchange;
 
-    public async Task ValidateAsync(ExtensionGrantValidationContext context)
+    public async Task ValidateAsync(ExtensionGrantValidationContext context, CancellationToken cancellationToken)
     {
         _logger.LogInformation("ValidateAsync called with GrantType: {GrantType}", GrantType);
 
@@ -46,7 +46,7 @@ public class CustomTokenExchangeGrantValidator : IExtensionGrantValidator
         }
 
         // --- ACTOR TOKEN PROCESSING (RFC8693) ---
-        Claim? actorClaim = await ProcessActorToken(context);
+        Claim? actorClaim = await ProcessActorToken(context, cancellationToken);
         if (!string.IsNullOrEmpty(context.Result.ErrorDescription))
         {
             // Error already set in context by actor token processing
@@ -54,14 +54,14 @@ public class CustomTokenExchangeGrantValidator : IExtensionGrantValidator
         }
         // --- END ACTOR TOKEN PROCESSING ---
 
-        bool isRequestAuthenticated = await EnsureRequestAuthentication(context, actorClaim);
+        bool isRequestAuthenticated = await EnsureRequestAuthentication(context, actorClaim, cancellationToken);
         if (!isRequestAuthenticated)
         {
             // Error already set in context by EnsureRequestAuthentication
             return;
         }
 
-        var subjectTokenResult = await ValidateSubjectTokenAsync(subjectToken, context);
+        var subjectTokenResult = await ValidateSubjectTokenAsync(subjectToken, context, cancellationToken);
         if (!string.IsNullOrEmpty(context.Result.ErrorDescription))
         {
             return;
@@ -105,7 +105,7 @@ public class CustomTokenExchangeGrantValidator : IExtensionGrantValidator
             customResponse: CreateCustomResponse(reducedAccessTokenLifetime));
     }
 
-    private async Task<bool> EnsureRequestAuthentication(ExtensionGrantValidationContext context, Claim? actorClaim)
+    private async Task<bool> EnsureRequestAuthentication(ExtensionGrantValidationContext context, Claim? actorClaim, CancellationToken cancellationToken)
     {
         // the token exchange reqquest must be authenticated either by client authentication or by actor token
         bool isAuthenticated = false;
@@ -116,7 +116,7 @@ public class CustomTokenExchangeGrantValidator : IExtensionGrantValidator
         }
         else if (context.Request.Client != null && context.Request.Secret != null)
         {
-            var secretValidationResult = await _clientSecretValidator.ValidateAsync(context.Request.Client.ClientSecrets, context.Request.Secret);
+            var secretValidationResult = await _clientSecretValidator.ValidateAsync(context.Request.Client.ClientSecrets, context.Request.Secret, cancellationToken);
             if (secretValidationResult?.Success == true)
             {
                 isAuthenticated = true; // Client authentication succeeded
@@ -165,11 +165,11 @@ public class CustomTokenExchangeGrantValidator : IExtensionGrantValidator
         return actorToken;
     }
 
-    internal async Task<TokenValidationResult?> ValidateActorTokenAsync(string actorToken, ExtensionGrantValidationContext context)
+    internal async Task<TokenValidationResult?> ValidateActorTokenAsync(string actorToken, ExtensionGrantValidationContext context, CancellationToken cancellationToken)
     {
         _logger.LogDebug("ValidateActorTokenAsync called with actorToken length: {Length}", actorToken.Length);
         var actorValidator = _validatorSelector.SelectValidator(actorToken);
-        var actorValidationResult = await actorValidator.ValidateAccessTokenAsync(actorToken);
+        var actorValidationResult = await actorValidator.ValidateAccessTokenAsync(actorToken, string.Empty, cancellationToken);
         if (actorValidationResult.IsError)
         {
             _logger.LogWarning("actor_token validation failed: {Error}", actorValidationResult.Error);
@@ -186,7 +186,7 @@ public class CustomTokenExchangeGrantValidator : IExtensionGrantValidator
         return actorValidationResult;
     }
 
-    internal async Task<Claim?> ProcessActorToken(ExtensionGrantValidationContext context)
+    internal async Task<Claim?> ProcessActorToken(ExtensionGrantValidationContext context, CancellationToken cancellationToken)
     {
         _logger.LogDebug("ProcessActorToken called");
         var actorToken = ExtractAndValidateActorTokenParameters(context);
@@ -195,7 +195,7 @@ public class CustomTokenExchangeGrantValidator : IExtensionGrantValidator
             _logger.LogDebug("No valid actor_token to process");
             return null;
         }
-        var actorValidationResult = await ValidateActorTokenAsync(actorToken, context);
+        var actorValidationResult = await ValidateActorTokenAsync(actorToken, context, cancellationToken);
         if (actorValidationResult == null)
         {
             _logger.LogDebug("Actor token validation failed");
@@ -336,11 +336,11 @@ public class CustomTokenExchangeGrantValidator : IExtensionGrantValidator
         }
     }
 
-    internal async Task<TokenValidationResult> ValidateSubjectTokenAsync(string subjectToken, ExtensionGrantValidationContext context)
+    internal async Task<TokenValidationResult> ValidateSubjectTokenAsync(string subjectToken, ExtensionGrantValidationContext context, CancellationToken cancellationToken)
     {
         _logger.LogDebug("ValidateSubjectTokenAsync called with subjectToken length: {Length}", subjectToken.Length);
         var validator = _validatorSelector.SelectValidator(subjectToken);
-        var validationResult = await validator.ValidateAccessTokenAsync(subjectToken);
+        var validationResult = await validator.ValidateAccessTokenAsync(subjectToken, string.Empty, cancellationToken);
         if (validationResult.IsError)
         {
             _logger.LogWarning("subject_token validation failed: {Error}", validationResult.Error);

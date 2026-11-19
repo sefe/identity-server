@@ -17,7 +17,7 @@ public class PillButtonTests : Bunit.TestContext
         var text = "Test Pill";
 
         // Act
-        var cut = RenderComponent<PillButton>(parameters => parameters
+        var cut = Render<PillButton>(parameters => parameters
             .Add(p => p.Text, text)
             .Add(p => p.IsAdd, true)
         );
@@ -32,7 +32,7 @@ public class PillButtonTests : Bunit.TestContext
     {
         // Arrange & Act
         var text = "Test Pill";
-        var cut = RenderComponent<PillButton>(parameters => parameters
+        var cut = Render<PillButton>(parameters => parameters
                     .Add(p => p.Text, text)
                     .Add(p => p.IsAdd, false));
 
@@ -47,7 +47,7 @@ public class PillButtonTests : Bunit.TestContext
     {
         // Arrange
         var clicked = false;
-        var cut = RenderComponent<PillButton>(parameters => parameters
+        var cut = Render<PillButton>(parameters => parameters
             .Add(p => p.Text, "Add")
             .Add(p => p.IsAdd, isAdd)
             .Add(p => p.OnClick, EventCallback.Factory.Create(this, () => clicked = true))
@@ -64,7 +64,7 @@ public class PillButtonTests : Bunit.TestContext
     public void RendersOnlyText_WhenReadonly()
     {
         // Act
-        var cut = RenderComponent<PillButton>(parameters => parameters
+        var cut = Render<PillButton>(parameters => parameters
             .Add(p => p.Text, "Add")
             .Add(p => p.IsReadonly, true)
         );
@@ -74,3 +74,4 @@ public class PillButtonTests : Bunit.TestContext
         div.MarkupMatches("<div diff:ignoreAttributes><button type=\"button\" class=\"btn btn-light border-dark\" disabled>Add</button></div>");
     }
 }
+

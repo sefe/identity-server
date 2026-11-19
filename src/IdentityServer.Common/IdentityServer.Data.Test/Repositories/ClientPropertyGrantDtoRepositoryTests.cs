@@ -27,7 +27,7 @@ public class ClientPropertyGrantDtoRepositoryTests
     private ClientPropertyGrantDtoRepository _sut;
     private ClaimsPrincipal _user;
     private ClientExt _client;
-    private ICache<Client> _cache;
+    private IConfigurationCacheInvalidator<Client> _cache;
 
     private const int _clientId = 99;
 
@@ -39,7 +39,7 @@ public class ClientPropertyGrantDtoRepositoryTests
         _mapper = Substitute.For<IMapper>();
         _permissionChecker = Substitute.For<IPermissionChecker>();
         _parentAccessor = Substitute.For<IParentAccessor<ClientGrantTypeExt, ClientExt>>();
-        _cache = Substitute.For<ICache<Client>>();
+        _cache = Substitute.For<IConfigurationCacheInvalidator<Client>>();
         _sut = new ClientPropertyGrantDtoRepository(
             _clientStorage,
             _propertyStorage,
@@ -130,7 +130,7 @@ public class ClientPropertyGrantDtoRepositoryTests
     }
 
     [Test]
-    public void DeleteAsync_WithLastGrant_ThrowsException()
+    public async Task DeleteAsync_WithLastGrant_ThrowsException()
     {
         // Arrange
         _client.AllowAccessTokensViaBrowser = true;
@@ -159,6 +159,6 @@ public class ClientPropertyGrantDtoRepositoryTests
         _clientStorage.UpdateAsync(_client).Returns(_client);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityReferenceException>(async () => await _sut.DeleteAsync(_user, deleteDto.Id));
+        await Assert.ThrowsAsync<EntityReferenceException>(async () => await _sut.DeleteAsync(_user, deleteDto.Id));
     }
 }

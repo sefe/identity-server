@@ -57,7 +57,7 @@ public class ApplicationRoleImportPageTests
         // Don't setup any HTTP response, which will cause Application to remain null
 
         // Act
-        var cut = _ctx.RenderComponent<ApplicationRoleImportPage>(parameters => parameters
+        var cut = _ctx.Render<ApplicationRoleImportPage>(parameters => parameters
             .Add(p => p.ApplicationId, 1));
 
         // Assert
@@ -72,7 +72,7 @@ public class ApplicationRoleImportPageTests
         SetupGetClientResponse(HttpStatusCode.OK, testClient);
 
         // Act
-        var cut = _ctx.RenderComponent<ApplicationRoleImportPage>(parameters => parameters
+        var cut = _ctx.Render<ApplicationRoleImportPage>(parameters => parameters
             .Add(p => p.ApplicationId, testClient.Id));
 
         // Assert
@@ -94,7 +94,7 @@ public class ApplicationRoleImportPageTests
 
         SetupMultipleHttpResponses(testClient, successOperationStatus);
 
-        var cut = _ctx.RenderComponent<ApplicationRoleImportPage>(parameters => parameters
+        var cut = _ctx.Render<ApplicationRoleImportPage>(parameters => parameters
             .Add(p => p.ApplicationId, testClient.Id));
 
         // Wait for the component to load the application
@@ -127,7 +127,7 @@ public class ApplicationRoleImportPageTests
 
         SetupMultipleHttpResponses(testClient, errorOperationStatus);
 
-        var cut = _ctx.RenderComponent<ApplicationRoleImportPage>(parameters => parameters
+        var cut = _ctx.Render<ApplicationRoleImportPage>(parameters => parameters
             .Add(p => p.ApplicationId, testClient.Id));
 
         // Wait for the component to load the application
@@ -171,7 +171,7 @@ public class ApplicationRoleImportPageTests
 
         SetupMultipleHttpResponses(testClient, errorOperationStatus, HttpStatusCode.BadRequest);
 
-        var cut = _ctx.RenderComponent<ApplicationRoleImportPage>(parameters => parameters
+        var cut = _ctx.Render<ApplicationRoleImportPage>(parameters => parameters
             .Add(p => p.ApplicationId, testClient.Id));
 
         // Wait for the component to load the application
@@ -213,7 +213,7 @@ public class ApplicationRoleImportPageTests
 
         SetupMultipleHttpResponses(testClient, errorOperationStatus, HttpStatusCode.BadRequest);
 
-        var cut = _ctx.RenderComponent<ApplicationRoleImportPage>(parameters => parameters
+        var cut = _ctx.Render<ApplicationRoleImportPage>(parameters => parameters
             .Add(p => p.ApplicationId, testClient.Id));
 
         // Wait for the component to load the application
@@ -360,3 +360,4 @@ public class ApplicationRoleImportPageTests
         };
     }
 }
+

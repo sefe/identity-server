@@ -75,7 +75,7 @@ public class RoleImportComparerTests
     }
 
     [Test]
-    public void CompareWithAsync_WithUnsupportedStrategy_ThrowsInvalidOperationException()
+    public async Task CompareWithAsync_WithUnsupportedStrategy_ThrowsInvalidOperationException()
     {
         // Arrange
         var existingRoles = new List<ApiResourcePropertyRoleDtoRead>();
@@ -83,7 +83,7 @@ public class RoleImportComparerTests
         var importDto = CreateApiResourceImportDto(ImportStrategy.Replace);
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<InvalidOperationException>(() =>
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             comparer.CompareWithAsync(importDto, (ImportStrategy)999));
 
         using (Assert.EnterMultipleScope())

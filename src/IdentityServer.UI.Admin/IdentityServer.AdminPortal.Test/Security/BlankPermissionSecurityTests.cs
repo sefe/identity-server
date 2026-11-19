@@ -57,7 +57,7 @@ public class BlankPermissionSecurityTests : PermissionSecurityTestBase
         }
         else
         {
-            Assert.ThrowsAsync<EntityAccessException>(() => _sysController.Call_CreateSystemPermissionAsync(blank, user));
+            await Assert.ThrowsAsync<EntityAccessException>(() => _sysController.Call_CreateSystemPermissionAsync(blank, user));
         }
     }
 
@@ -85,7 +85,7 @@ public class BlankPermissionSecurityTests : PermissionSecurityTestBase
         }
         else
         {
-            Assert.ThrowsAsync<EntityAccessException>(() => _sysController.Call_DeleteSystemPermissionByIdAsync(blank.Id, user));
+            await Assert.ThrowsAsync<EntityAccessException>(() => _sysController.Call_DeleteSystemPermissionByIdAsync(blank.Id, user));
         }
     }
 
@@ -121,7 +121,7 @@ public class BlankPermissionSecurityTests : PermissionSecurityTestBase
         }
         else
         {
-            Assert.ThrowsAsync<EntityAccessException>(() => _sysController.Call_UpdateSystemPermissionAsync(updateDto, user));
+            await Assert.ThrowsAsync<EntityAccessException>(() => _sysController.Call_UpdateSystemPermissionAsync(updateDto, user));
         }
     }
 
@@ -154,7 +154,7 @@ public class BlankPermissionSecurityTests : PermissionSecurityTestBase
         }
         else
         {
-            Assert.ThrowsAsync<EntityAccessException>(() => _sysController.Call_GetSystemPermissionByIdAsync(blank.Id, user));
+            await Assert.ThrowsAsync<EntityAccessException>(() => _sysController.Call_GetSystemPermissionByIdAsync(blank.Id, user));
         }
     }
 
@@ -232,7 +232,7 @@ public class BlankPermissionSecurityTests : PermissionSecurityTestBase
         }
         else
         {
-            Assert.ThrowsAsync<EntityAccessException>(() => _envController.Call_CreateSystemPermissionEnvironmentAsync(newEnvironment, user));
+            await Assert.ThrowsAsync<EntityAccessException>(() => _envController.Call_CreateSystemPermissionEnvironmentAsync(newEnvironment, user));
         }
     }
 }

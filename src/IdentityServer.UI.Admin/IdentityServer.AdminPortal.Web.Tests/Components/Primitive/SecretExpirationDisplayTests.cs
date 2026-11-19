@@ -17,7 +17,7 @@ public class SecretExpirationDisplayTests : TestContext
         const int daysBeforeNotification = 60;
 
         // Act
-        var cut = RenderComponent<SecretExpirationDisplay>(parameters => parameters
+        var cut = Render<SecretExpirationDisplay>(parameters => parameters
             .Add(p => p.Expiration, null)
             .Add(p => p.DaysBeforeExpirationNotification, daysBeforeNotification));
 
@@ -37,7 +37,7 @@ public class SecretExpirationDisplayTests : TestContext
         const int daysBeforeNotification = 60;
 
         // Act
-        var cut = RenderComponent<SecretExpirationDisplay>(parameters => parameters
+        var cut = Render<SecretExpirationDisplay>(parameters => parameters
             .Add(p => p.Expiration, null)
             .Add(p => p.DaysBeforeExpirationNotification, daysBeforeNotification));
 
@@ -54,7 +54,7 @@ public class SecretExpirationDisplayTests : TestContext
         const int daysBeforeNotification = 60;
 
         // Act
-        var cut = RenderComponent<SecretExpirationDisplay>(parameters => parameters
+        var cut = Render<SecretExpirationDisplay>(parameters => parameters
             .Add(p => p.Expiration, expiredDate)
             .Add(p => p.DaysBeforeExpirationNotification, daysBeforeNotification));
 
@@ -77,7 +77,7 @@ public class SecretExpirationDisplayTests : TestContext
         const int daysBeforeNotification = 60;
 
         // Act
-        var cut = RenderComponent<SecretExpirationDisplay>(parameters => parameters
+        var cut = Render<SecretExpirationDisplay>(parameters => parameters
             .Add(p => p.Expiration, expiredDate)
             .Add(p => p.DaysBeforeExpirationNotification, daysBeforeNotification));
 
@@ -98,7 +98,7 @@ public class SecretExpirationDisplayTests : TestContext
         const int daysBeforeNotification = 60;
 
         // Act
-        var cut = RenderComponent<SecretExpirationDisplay>(parameters => parameters
+        var cut = Render<SecretExpirationDisplay>(parameters => parameters
             .Add(p => p.Expiration, expiringDate)
             .Add(p => p.DaysBeforeExpirationNotification, daysBeforeNotification));
 
@@ -122,7 +122,7 @@ public class SecretExpirationDisplayTests : TestContext
         const int daysBeforeNotification = 60;
 
         // Act
-        var cut = RenderComponent<SecretExpirationDisplay>(parameters => parameters
+        var cut = Render<SecretExpirationDisplay>(parameters => parameters
             .Add(p => p.Expiration, futureDate)
             .Add(p => p.DaysBeforeExpirationNotification, daysBeforeNotification));
 
@@ -146,7 +146,7 @@ public class SecretExpirationDisplayTests : TestContext
         var boundaryDate = DateTime.UtcNow.AddDays(daysBeforeNotification - 1);
 
         // Act
-        var cut = RenderComponent<SecretExpirationDisplay>(parameters => parameters
+        var cut = Render<SecretExpirationDisplay>(parameters => parameters
             .Add(p => p.Expiration, boundaryDate)
             .Add(p => p.DaysBeforeExpirationNotification, daysBeforeNotification));
 
@@ -167,7 +167,7 @@ public class SecretExpirationDisplayTests : TestContext
         var justPastBoundaryDate = DateTime.UtcNow.AddDays(daysBeforeNotification + 1);
 
         // Act
-        var cut = RenderComponent<SecretExpirationDisplay>(parameters => parameters
+        var cut = Render<SecretExpirationDisplay>(parameters => parameters
             .Add(p => p.Expiration, justPastBoundaryDate)
             .Add(p => p.DaysBeforeExpirationNotification, daysBeforeNotification));
 
@@ -188,7 +188,7 @@ public class SecretExpirationDisplayTests : TestContext
         const int daysBeforeNotification = 60;
 
         // Act
-        var cut = RenderComponent<SecretExpirationDisplay>(parameters => parameters
+        var cut = Render<SecretExpirationDisplay>(parameters => parameters
             .Add(p => p.Expiration, yesterday)
             .Add(p => p.DaysBeforeExpirationNotification, daysBeforeNotification));
 
@@ -210,7 +210,7 @@ public class SecretExpirationDisplayTests : TestContext
         const int daysBeforeNotification = 60;
 
         // Act
-        var cut = RenderComponent<SecretExpirationDisplay>(parameters => parameters
+        var cut = Render<SecretExpirationDisplay>(parameters => parameters
             .Add(p => p.Expiration, tomorrow)
             .Add(p => p.DaysBeforeExpirationNotification, daysBeforeNotification));
 
@@ -233,11 +233,11 @@ public class SecretExpirationDisplayTests : TestContext
         const int longThreshold = 60;
 
         // Act
-        var cutShortThreshold = RenderComponent<SecretExpirationDisplay>(parameters => parameters
+        var cutShortThreshold = Render<SecretExpirationDisplay>(parameters => parameters
             .Add(p => p.Expiration, expirationDate)
             .Add(p => p.DaysBeforeExpirationNotification, shortThreshold));
 
-        var cutLongThreshold = RenderComponent<SecretExpirationDisplay>(parameters => parameters
+        var cutLongThreshold = Render<SecretExpirationDisplay>(parameters => parameters
             .Add(p => p.Expiration, expirationDate)
             .Add(p => p.DaysBeforeExpirationNotification, longThreshold));
 
@@ -262,7 +262,7 @@ public class SecretExpirationDisplayTests : TestContext
         const int daysBeforeNotification = 60;
 
         // Act
-        var cut = RenderComponent<SecretExpirationDisplay>(parameters => parameters
+        var cut = Render<SecretExpirationDisplay>(parameters => parameters
             .Add(p => p.Expiration, localDate)
             .Add(p => p.DaysBeforeExpirationNotification, daysBeforeNotification));
 
@@ -279,7 +279,7 @@ public class SecretExpirationDisplayTests : TestContext
         const int daysBeforeNotification = 60;
 
         // Act
-        var cut = RenderComponent<SecretExpirationDisplay>(parameters => parameters
+        var cut = Render<SecretExpirationDisplay>(parameters => parameters
             .Add(p => p.Expiration, today)
             .Add(p => p.DaysBeforeExpirationNotification, daysBeforeNotification));
 
@@ -296,21 +296,21 @@ public class SecretExpirationDisplayTests : TestContext
         const int daysBeforeNotification = 60;
 
         // Act & Assert - Never expires
-        var cutNeverExpires = RenderComponent<SecretExpirationDisplay>(parameters => parameters
+        var cutNeverExpires = Render<SecretExpirationDisplay>(parameters => parameters
             .Add(p => p.Expiration, null)
             .Add(p => p.DaysBeforeExpirationNotification, daysBeforeNotification));
         var neverExpiresBadge = cutNeverExpires.Find("span.badge.bg-warning");
         Assert.That(neverExpiresBadge, Is.Not.Null);
 
         // Act & Assert - Expired
-        var cutExpired = RenderComponent<SecretExpirationDisplay>(parameters => parameters
+        var cutExpired = Render<SecretExpirationDisplay>(parameters => parameters
             .Add(p => p.Expiration, DateTime.UtcNow.AddDays(-10))
             .Add(p => p.DaysBeforeExpirationNotification, daysBeforeNotification));
         var expiredBadge = cutExpired.Find("span.badge.bg-danger");
         Assert.That(expiredBadge, Is.Not.Null);
 
         // Act & Assert - Expiring soon
-        var cutExpiringSoon = RenderComponent<SecretExpirationDisplay>(parameters => parameters
+        var cutExpiringSoon = Render<SecretExpirationDisplay>(parameters => parameters
             .Add(p => p.Expiration, DateTime.UtcNow.AddDays(30))
             .Add(p => p.DaysBeforeExpirationNotification, daysBeforeNotification));
         var expiringSoonBadge = cutExpiringSoon.Find("span.badge.bg-warning");
@@ -325,7 +325,7 @@ public class SecretExpirationDisplayTests : TestContext
         const int daysBeforeNotification = 60;
 
         // Act
-        var cut = RenderComponent<SecretExpirationDisplay>(parameters => parameters
+        var cut = Render<SecretExpirationDisplay>(parameters => parameters
             .Add(p => p.Expiration, expiredDate)
             .Add(p => p.DaysBeforeExpirationNotification, daysBeforeNotification));
 
@@ -334,3 +334,4 @@ public class SecretExpirationDisplayTests : TestContext
         Assert.That(badge.ClassList, Does.Contain("ms-1"), "Badge should have left margin spacing");
     }
 }
+

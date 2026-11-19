@@ -58,13 +58,13 @@ public class ClientRoleMappingControllerTests : ControllerTestBase
     }
 
     [Test]
-    public void CreateRoleMapping_WithMissingClient_Fails()
+    public async Task CreateRoleMapping_WithMissingClient_Fails()
     {
         // Arrange
         var newRoleMapping = ClientRoleMappingControllerExtensions.NewRoleMappingFor(999, 1, ClientRoleMapType.SecurityGroup, Guid.NewGuid().ToString());
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityNotFoundException>(() => _clientRoleMappingController.Call_AddClientRoleMappingAsync(newRoleMapping, Admin));
+        await Assert.ThrowsAsync<EntityNotFoundException>(() => _clientRoleMappingController.Call_AddClientRoleMappingAsync(newRoleMapping, Admin));
     }
 
     [Test]
@@ -112,7 +112,7 @@ public class ClientRoleMappingControllerTests : ControllerTestBase
         await _clientRoleMappingController.Call_AddClientRoleMappingAsync(newRoleMapping, Admin);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientRoleMappingController.Call_AddClientRoleMappingAsync(newRoleMapping, Admin));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientRoleMappingController.Call_AddClientRoleMappingAsync(newRoleMapping, Admin));
     }
 
     [Test]
@@ -126,7 +126,7 @@ public class ClientRoleMappingControllerTests : ControllerTestBase
         var createdRole = await _clientRoleController.Call_AddClientRoleAsync(ClientRoleControllerExtensions.NewRoleFor(createdClient.Id, "TestRole"), Admin);
         var newRoleMapping = ClientRoleMappingControllerExtensions.NewRoleMappingFor(createdClient.Id, createdRole.Id, ClientRoleMapType.SecurityGroup, groupObjectId);
 
-        Assert.ThrowsAsync<EntityValidationException>(() => _clientRoleMappingController.Call_AddClientRoleMappingAsync(newRoleMapping, Admin));
+        await Assert.ThrowsAsync<EntityValidationException>(() => _clientRoleMappingController.Call_AddClientRoleMappingAsync(newRoleMapping, Admin));
     }
 
     [Test]
@@ -163,7 +163,7 @@ public class ClientRoleMappingControllerTests : ControllerTestBase
         var createdRole = await _clientRoleController.Call_AddClientRoleAsync(ClientRoleControllerExtensions.NewRoleFor(createdClient.Id, "TestRole"), Admin);
         var newRoleMapping = ClientRoleMappingControllerExtensions.NewRoleMappingFor(createdClient.Id, createdRole.Id, ClientRoleMapType.UserObjectId, userObjectId);
 
-        Assert.ThrowsAsync<EntityValidationException>(() => _clientRoleMappingController.Call_AddClientRoleMappingAsync(newRoleMapping, Admin));
+        await Assert.ThrowsAsync<EntityValidationException>(() => _clientRoleMappingController.Call_AddClientRoleMappingAsync(newRoleMapping, Admin));
     }
 
     [Test]
@@ -200,7 +200,7 @@ public class ClientRoleMappingControllerTests : ControllerTestBase
         await _clientRoleMappingController.Call_AddClientRoleMappingAsync(newRoleMapping, Admin);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientRoleMappingController.Call_AddClientRoleMappingAsync(newRoleMapping, Admin));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientRoleMappingController.Call_AddClientRoleMappingAsync(newRoleMapping, Admin));
     }
 
     [Test]

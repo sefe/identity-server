@@ -30,6 +30,8 @@ public class Index : PageModel
 
     public async Task<IActionResult> OnGet(string? logoutId)
     {
+        var ct = HttpContext.RequestAborted;
+
         LogoutId = logoutId;
 
         var showLogoutPrompt = LogoutOptions.ShowLogoutPrompt;
@@ -41,7 +43,7 @@ public class Index : PageModel
         }
         else
         {
-            var context = await _interaction.GetLogoutContextAsync(LogoutId);
+            var context = await _interaction.GetLogoutContextAsync(LogoutId, ct);
             if (context?.ShowSignoutPrompt == false)
             {
                 // it's safe to automatically sign-out
@@ -61,19 +63,21 @@ public class Index : PageModel
 
     public async Task<IActionResult> OnPost()
     {
+        var ct = HttpContext.RequestAborted;
+
         if (User.Identity?.IsAuthenticated == true)
         {
             // if there's no current logout context, we need to create one
             // this captures necessary info from the current logged in user
             // this can still return null if there is no context needed
-            LogoutId ??= await _interaction.CreateLogoutContextAsync();
+            LogoutId ??= await _interaction.CreateLogoutContextAsync(ct);
 
             // delete local authentication cookie
             await HttpContext.SignOutAsync();
 
             // raise the logout event
             var idp = User.FindFirst(JwtClaimTypes.IdentityProvider)?.Value;
-            await _events.RaiseAsync(new UserLogoutSuccessEvent(User.GetSubjectId(), User.GetDisplayName()));
+            await _events.RaiseAsync(new UserLogoutSuccessEvent(User.GetSubjectId(), User.GetDisplayName()), ct);
             Telemetry.Metrics.TrackUserLogout(idp);
         }
 

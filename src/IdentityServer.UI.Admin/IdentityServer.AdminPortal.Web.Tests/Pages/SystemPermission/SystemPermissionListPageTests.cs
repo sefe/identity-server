@@ -63,7 +63,7 @@ public class SystemPermissionListPageTests
             .Returns(Task.FromResult(apiCallResult));
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<SystemPermissionListPage>()
         );
 
@@ -93,7 +93,7 @@ public class SystemPermissionListPageTests
             .Returns(Task.FromResult(apiCallResult));
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<SystemPermissionListPage>()
         );
 
@@ -138,7 +138,7 @@ public class SystemPermissionListPageTests
                 return Task.FromResult(apiCallResult);
             });
 
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<SystemPermissionListPage>()
         );
 
@@ -184,3 +184,4 @@ public class SystemPermissionListPageTests
         ctx.JSInterop.SetupVoid("TelerikBlazor.initColumnResizable", _ => true);
     }
 }
+

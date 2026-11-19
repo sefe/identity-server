@@ -28,7 +28,7 @@ public class ApiResourceRoleEditorTests : Bunit.TestContext
     public void Component_WithApiResource_InitializesCorrectly()
     {
         // Arrange & Act
-        var component = RenderComponent<ApiResourceRoleEditor>(parameters => parameters
+        var component = Render<ApiResourceRoleEditor>(parameters => parameters
             .Add(p => p.ApiResource, _apiResource));
 
         // Assert
@@ -43,7 +43,7 @@ public class ApiResourceRoleEditorTests : Bunit.TestContext
     public void Component_WhenClosed_DoesNotRenderOffcanvas()
     {
         // Arrange & Act
-        var component = RenderComponent<ApiResourceRoleEditor>(parameters => parameters
+        var component = Render<ApiResourceRoleEditor>(parameters => parameters
             .Add(p => p.ApiResource, _apiResource));
 
         // Assert
@@ -59,7 +59,7 @@ public class ApiResourceRoleEditorTests : Bunit.TestContext
     {
         // Arrange
         ComponentFactories.AddStub<ApiResourceRoleInfoNew>();
-        var component = RenderComponent<ApiResourceRoleEditor>(parameters => parameters
+        var component = Render<ApiResourceRoleEditor>(parameters => parameters
             .Add(p => p.ApiResource, _apiResource));
 
         // Act
@@ -76,7 +76,7 @@ public class ApiResourceRoleEditorTests : Bunit.TestContext
     {
         // Arrange
         ComponentFactories.AddStub<ApiResourceRoleInfoNew>();
-        var component = RenderComponent<ApiResourceRoleEditor>(parameters => parameters
+        var component = Render<ApiResourceRoleEditor>(parameters => parameters
             .Add(p => p.ApiResource, _apiResource));
 
         // Act
@@ -93,7 +93,7 @@ public class ApiResourceRoleEditorTests : Bunit.TestContext
     {
         // Arrange
         ComponentFactories.AddStub<ApiResourceRoleInfoNew>();
-        var component = RenderComponent<ApiResourceRoleEditor>(parameters => parameters
+        var component = Render<ApiResourceRoleEditor>(parameters => parameters
             .Add(p => p.ApiResource, _apiResource));
 
         await OpenDrawerAsync(component);
@@ -112,7 +112,7 @@ public class ApiResourceRoleEditorTests : Bunit.TestContext
         // Arrange
         var callbackInvoked = false;
         ComponentFactories.Add<ApiResourceRoleInfoNew, StubApiResourceRoleInfoNew>();
-        var component = RenderComponent<ApiResourceRoleEditor>(parameters => parameters
+        var component = Render<ApiResourceRoleEditor>(parameters => parameters
             .Add(p => p.ApiResource, _apiResource)
             .Add(p => p.OnApiResourceUpdate, () => { callbackInvoked = true; return Task.CompletedTask; })
             .Add(p => p.IsReadonly, true));
@@ -135,7 +135,7 @@ public class ApiResourceRoleEditorTests : Bunit.TestContext
         var callbackInvoked = false;
         ComponentFactories.Add<ApiResourceRoleInfoNew, StubApiResourceRoleInfoNew>();
 
-        var component = RenderComponent<ApiResourceRoleEditor>(parameters => parameters
+        var component = Render<ApiResourceRoleEditor>(parameters => parameters
             .Add(p => p.ApiResource, _apiResource)
             .Add(p => p.OnApiResourceUpdate, () => { callbackInvoked = true; return Task.CompletedTask; }));
 
@@ -162,7 +162,7 @@ public class ApiResourceRoleEditorTests : Bunit.TestContext
         var callbackInvoked = false;
         ComponentFactories.Add<ApiResourceRoleInfoNew, StubApiResourceRoleInfoNew>();
 
-        var component = RenderComponent<ApiResourceRoleEditor>(parameters => parameters
+        var component = Render<ApiResourceRoleEditor>(parameters => parameters
             .Add(p => p.ApiResource, _apiResource)
             .Add(p => p.OnApiResourceUpdate, () => { callbackInvoked = true; return Task.CompletedTask; }));
 
@@ -213,3 +213,4 @@ public class StubApiResourceRoleInfoNew : ComponentBase
         builder.CloseElement();
     }
 }
+

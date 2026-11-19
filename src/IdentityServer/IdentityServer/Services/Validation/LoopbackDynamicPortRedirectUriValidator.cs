@@ -12,21 +12,28 @@ namespace IdentityServer.Services.Validation;
 /// <summary>
 /// Allow any port on loopback URIs, but strict validation for other URIs.
 /// </summary>
-public class LoopbackDynamicPortRedirectUriValidator : StrictRedirectUriValidator
+public class LoopbackDynamicPortRedirectUriValidator : StrictRedirectUriValidatorAppAuth
 {
     private readonly ILogger _logger;
 
-    public LoopbackDynamicPortRedirectUriValidator(ILogger<LoopbackDynamicPortRedirectUriValidator> logger, IdentityServerOptions options) : base(options)
+    public LoopbackDynamicPortRedirectUriValidator(ILogger<LoopbackDynamicPortRedirectUriValidator> logger, IdentityServerOptions options) : base(logger, options)
     {
         _logger = logger;
     }
 
-    public override Task<bool> IsRedirectUriValidAsync(string requestedUri, Client client)
+    public override Task<bool> IsRedirectUriValidAsync(RedirectUriValidationContext context, CancellationToken cancellationToken)
     {
+        var requestedUri = context?.RequestedUri;
+        var client = context?.Client;
+        if (string.IsNullOrWhiteSpace(requestedUri) || client == null)
+        {
+            return Task.FromResult(false);
+        }
+
         return Task.FromResult(IsRedirectUriValidSharedImpl(requestedUri, client.RedirectUris, client.ClientId, false));
     }
 
-    public override Task<bool> IsPostLogoutRedirectUriValidAsync(string requestedUri, Client client)
+    public override Task<bool> IsPostLogoutRedirectUriValidAsync(string requestedUri, Client client, CancellationToken cancellationToken)
     {
         return Task.FromResult(IsRedirectUriValidSharedImpl(requestedUri, client.PostLogoutRedirectUris, client.ClientId, true));
     }
@@ -71,9 +78,12 @@ public class LoopbackDynamicPortRedirectUriValidator : StrictRedirectUriValidato
 
     protected new bool StringCollectionContainsString(IEnumerable<string> uris, string requestedUri)
     {
-        if (IEnumerableExtensions.IsNullOrEmpty(uris)) { return false; }
+        if (uris == null)
+        {
+            return false;
+        }
 
-        return uris.Contains(requestedUri);
+        return uris.Contains(requestedUri, StringComparer.Ordinal);
     }
 
     /// <summary>

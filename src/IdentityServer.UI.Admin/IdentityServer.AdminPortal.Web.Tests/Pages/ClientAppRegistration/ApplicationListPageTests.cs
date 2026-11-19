@@ -66,7 +66,7 @@ public class ApplicationListPageTests
             .Returns(Task.FromResult(apiCallResult));
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ApplicationListPage>()
         );
 
@@ -96,7 +96,7 @@ public class ApplicationListPageTests
             .Returns(Task.FromResult(apiCallResult));
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ApplicationListPage>()
         );
 
@@ -141,7 +141,7 @@ public class ApplicationListPageTests
                 return Task.FromResult(apiCallResult);
             });
 
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ApplicationListPage>()
         );
 
@@ -187,3 +187,4 @@ public class ApplicationListPageTests
         ctx.JSInterop.SetupVoid("TelerikBlazor.initColumnResizable", _ => true);
     }
 }
+

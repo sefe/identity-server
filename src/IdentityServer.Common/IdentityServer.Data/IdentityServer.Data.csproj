@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
@@ -11,6 +11,7 @@
         <PackageReference Include="Duende.IdentityServer.EntityFramework" />
         <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+        <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
     </ItemGroup>
 
     <ItemGroup>

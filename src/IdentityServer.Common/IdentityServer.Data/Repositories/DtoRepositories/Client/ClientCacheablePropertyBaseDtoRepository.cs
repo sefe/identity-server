@@ -21,7 +21,7 @@ internal abstract class ClientCacheablePropertyBaseDtoRepository<TRead, TCreate,
 {
 #pragma warning restore S2436 // Reduce the number of generic parameters
 #pragma warning restore IDE0079 // Remove unnecessary suppression
-    protected readonly ICache<DataEntities.Client> _clientCache;
+    protected readonly IConfigurationCacheInvalidator<DataEntities.Client> _clientCache;
 
     protected ClientCacheablePropertyBaseDtoRepository(
         IStorage<ClientExt> parentStorage,
@@ -29,7 +29,7 @@ internal abstract class ClientCacheablePropertyBaseDtoRepository<TRead, TCreate,
         IMapper mapper,
         IPermissionChecker permissionChecker,
         IParentAccessor<TProperty, ClientExt> parentAccessor,
-        ICache<DataEntities.Client> clientCache
+        IConfigurationCacheInvalidator<DataEntities.Client> clientCache
         ) : base(parentStorage, propertyStorage, mapper, permissionChecker, parentAccessor)
     {
         _clientCache = clientCache;

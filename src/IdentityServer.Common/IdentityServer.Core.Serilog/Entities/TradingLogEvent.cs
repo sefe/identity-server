@@ -5,7 +5,7 @@ using Elastic.CommonSchema;
 using System.Runtime.Serialization;
 
 namespace IdentityServer.Core.Serilog.Entities;
-public class TradingLogEvent : Base
+public class TradingLogEvent : EcsDocument
 {
     public const string TopLevelProperty = "trading";
 

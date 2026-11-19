@@ -61,19 +61,13 @@ internal class MicrosoftGraphGroupApiClient : MicrosoftGraphApiClientBase, IMicr
     public async Task<UserResponse> GetUsersByGroupIdAsync(Guid groupId, string? continuationToken = null)
     {
         var client = CreateClient();
-        var requestUrlBuilder = new UriBuilder(new Uri(client.BaseAddress ?? Constants.MicrosoftGraphUri, $"/v1.0/groups/{groupId}/members"));
+        var query = BuildQueryString(
+            ("$select", "displayName,id,accountEnabled"),
+            ("$top", "999"),
+            ("$skiptoken", continuationToken));
+        var requestUri = new Uri(client.BaseAddress ?? Constants.MicrosoftGraphUri, $"/v1.0/groups/{groupId}/members?{query}");
 
-        var query = HttpUtility.ParseQueryString(string.Empty);
-        query["$select"] = "displayName,id,accountEnabled";
-        query["$top"] = "999";
-
-        if (!string.IsNullOrEmpty(continuationToken))
-        {
-            query["$skiptoken"] = continuationToken;
-        }
-        requestUrlBuilder.Query = query.ToString();
-
-        using var request = new HttpRequestMessage(HttpMethod.Get, requestUrlBuilder.Uri);
+        using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
         using var response = await client.SendAsync(request);
 
         if (response.IsSuccessStatusCode)
@@ -90,18 +84,13 @@ internal class MicrosoftGraphGroupApiClient : MicrosoftGraphApiClientBase, IMicr
     public async Task<GroupResponse> SearchGroupsByDisplayNameAsync(string displayName, string? continuationToken = null)
     {
         var client = CreateClient();
-        var requestUrlBuilder = new UriBuilder(new Uri(client.BaseAddress ?? Constants.MicrosoftGraphUri, "/v1.0/groups"));
-
         displayName = displayName.Replace("\\", "\\\\").Replace("\"", "\\\"");
 
-        var query = HttpUtility.ParseQueryString(string.Empty);
-        query["$search"] = $"\"displayName:{displayName}\"";
-        if (!string.IsNullOrEmpty(continuationToken))
-        {
-            query["$skiptoken"] = continuationToken;
-        }
-        requestUrlBuilder.Query = query.ToString();
+        var query = BuildQueryString(
+            ("$search", $"\"displayName:{displayName}\""),
+            ("$skiptoken", continuationToken));
+        var requestUri = new Uri(client.BaseAddress ?? Constants.MicrosoftGraphUri, $"/v1.0/groups?{query}");
 
-        return await GetByIdAsync<GroupResponse?>(client, requestUrlBuilder.Uri, PreferModernSearchHeaders) ?? new GroupResponse();
+        return await GetByIdAsync<GroupResponse?>(client, requestUri, PreferModernSearchHeaders) ?? new GroupResponse();
     }
 }

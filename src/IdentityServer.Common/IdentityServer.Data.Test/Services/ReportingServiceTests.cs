@@ -128,26 +128,26 @@ public class ReportingServiceTests
     }
 
     [Test]
-    public void BuildReportAsync_ApiResourceNotFound_ThrowsEntityReferenceException()
+    public async Task BuildReportAsync_ApiResourceNotFound_ThrowsEntityReferenceException()
     {
         // Arrange
         var request = new ApiRolesReportRequest { ApiResourceName = "TestApi" };
         _apiStorage.FirstOrDefaultAsync(Arg.Any<Expression<Func<ApiResourceExt, bool>>>()).Returns((ApiResourceExt)null);
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<EntityReferenceException>(() => _service.BuildReportAsync(request));
+        var ex = await Assert.ThrowsAsync<EntityReferenceException>(() => _service.BuildReportAsync(request));
         Assert.That(ex.Message, Does.Contain("API resource with name"));
     }
 
     [Test]
-    public void BuildReportAsync_RoleNotFound_ThrowsEntityReferenceException()
+    public async Task BuildReportAsync_RoleNotFound_ThrowsEntityReferenceException()
     {
         // Arrange
         var request = new ApiRolesReportRequest { ApiResourceName = "TestApi", Role = "non-existent" };
         _apiStorage.FirstOrDefaultAsync(Arg.Any<Expression<Func<ApiResourceExt, bool>>>()).Returns(_testResource);
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<EntityReferenceException>(() => _service.BuildReportAsync(request));
+        var ex = await Assert.ThrowsAsync<EntityReferenceException>(() => _service.BuildReportAsync(request));
         Assert.That(ex.Message, Does.Contain("No roles found for API resource"));
     }
 

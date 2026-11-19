@@ -30,7 +30,7 @@ internal class ClientPropertyScopeDtoRepository :
         IMapper mapper,
         IPermissionChecker permissionChecker,
         IParentAccessor<ClientScopeExt, ClientExt> parentAccessor,
-        ICache<DataEntities.Client> clientCache
+        IConfigurationCacheInvalidator<DataEntities.Client> clientCache
         ) : base(clientStorage, propertyStorage, mapper, permissionChecker, parentAccessor, clientCache)
     {
         _apiScopeStorage = apiScopeStorage;

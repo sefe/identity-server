@@ -17,7 +17,7 @@ public class AccessLevelLinkTests : Bunit.TestContext
         var text = "Some Text";
 
         // Act
-        var cut = RenderComponent<AccessLevelLink>(parameters => parameters
+        var cut = Render<AccessLevelLink>(parameters => parameters
             .Add(p => p.AccessLevel, SystemPermissionRoleType.None)
             .Add(p => p.Text, text)
             .Add(p => p.Href, "https://example.com")
@@ -32,7 +32,7 @@ public class AccessLevelLinkTests : Bunit.TestContext
     public void RendersLink_WhenAccessLevelIsNotNone(SystemPermissionRoleType accessLevel, string text, string href)
     {
         // Act
-        var cut = RenderComponent<AccessLevelLink>(parameters => parameters
+        var cut = Render<AccessLevelLink>(parameters => parameters
             .Add(p => p.AccessLevel, accessLevel)
             .Add(p => p.Text, text)
             .Add(p => p.Href, href)
@@ -46,7 +46,7 @@ public class AccessLevelLinkTests : Bunit.TestContext
     public void RendersEmptyText_WhenTextIsNotProvided()
     {
         // Act
-        var cut = RenderComponent<AccessLevelLink>(parameters => parameters
+        var cut = Render<AccessLevelLink>(parameters => parameters
             .Add(p => p.AccessLevel, SystemPermissionRoleType.None)
         );
 
@@ -54,3 +54,4 @@ public class AccessLevelLinkTests : Bunit.TestContext
         Assert.That(cut.Markup, Is.EqualTo("<span class=\"text-break\"></span>"));
     }
 }
+

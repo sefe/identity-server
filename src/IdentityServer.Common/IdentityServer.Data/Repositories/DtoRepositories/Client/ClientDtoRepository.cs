@@ -13,6 +13,7 @@ using IdentityServer.Abstraction.Exceptions;
 using IdentityServer.Data.DuendeEntityExtensions;
 using IdentityServer.Data.Entities.Roles;
 using DataEntities = Duende.IdentityServer.EntityFramework.Entities;
+using CorsCacheEntry = Duende.IdentityServer.Stores.CachingCorsPolicyService<Duende.IdentityServer.EntityFramework.Services.CorsPolicyService>.CorsCacheEntry;
 
 namespace IdentityServer.Data.Repositories.DtoRepositories.Client;
 
@@ -31,7 +32,8 @@ internal class ClientDtoRepository :
     private readonly IPermissionChecker _permissionChecker;
     private readonly IStorage<ApiResourceExt> _apiResourceRepo;
     private readonly IStorage<ApiResourceRole> _apiResourceRoleRepo;
-    private readonly ICache<DataEntities.Client> _clientCache;
+    private readonly IConfigurationCacheInvalidator<DataEntities.Client> _clientCache;
+    private readonly IConfigurationCacheInvalidator<CorsCacheEntry> _corsCache;
     private readonly IClientAuditService _auditService;
 
 #pragma warning disable IDE0079 // Remove unnecessary suppression
@@ -43,8 +45,9 @@ internal class ClientDtoRepository :
         IPermissionChecker permissionChecker,
         IStorage<ApiResourceExt> apiResourceRepo,
         IStorage<ApiResourceRole> apiResourceRoleRepo,
-        ICache<DataEntities.Client> clientCache,
-        IClientAuditService auditService)
+        IConfigurationCacheInvalidator<DataEntities.Client> clientCache,
+        IClientAuditService auditService,
+        IConfigurationCacheInvalidator<CorsCacheEntry> corsCache)
 #pragma warning restore S107 // Method has too many parameters
 #pragma warning restore IDE0079 // Remove unnecessary suppression
     {
@@ -55,6 +58,7 @@ internal class ClientDtoRepository :
         _apiResourceRepo = apiResourceRepo;
         _apiResourceRoleRepo = apiResourceRoleRepo;
         _clientCache = clientCache;
+        _corsCache = corsCache;
         _auditService = auditService;
     }
 
@@ -97,6 +101,10 @@ internal class ClientDtoRepository :
         var removedId = await _clientStorage.DeleteAsync(entity);
 
         await _clientCache.RemoveAsync(entity.ClientId);
+        foreach (var origin in entity.AllowedCorsOrigins)
+        {
+            await _corsCache.RemoveAsync(origin.Origin);
+        }
 
         return removedId;
     }

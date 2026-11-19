@@ -20,12 +20,12 @@ public class ApiResourceSecretControllerTests : ControllerTestBase
     private ApiResourceController _apiResourceController;
     private ApiResourcePropertySecretController _secretController;
     private IStorage<ApiResourceSecretExt> _apiResourceSecretStorage;
-    private ICache<DataEntities.ApiResource> _apiCache;
+    private IConfigurationCacheInvalidator<DataEntities.ApiResource> _apiCache;
 
     [SetUp]
     public async Task Setup()
     {
-        _apiCache = Substitute.For<ICache<DataEntities.ApiResource>>();
+        _apiCache = Substitute.For<IConfigurationCacheInvalidator<DataEntities.ApiResource>>();
 
         var provider = IoC.GetProvider(sc =>
         {
@@ -53,11 +53,11 @@ public class ApiResourceSecretControllerTests : ControllerTestBase
     }
 
     [Test]
-    public void Create_Secret_Missing_ApiResource_Fail()
+    public async Task Create_Secret_Missing_ApiResource_Fail()
     {
         var newSecret = ApiResourceSecretControllerExtensions.GetDefaultApiResourceSecretFor(999);
 
-        Assert.ThrowsAsync<EntityNotFoundException>(() => _secretController.Call_CreateSecretAsync(newSecret, Admin));
+        await Assert.ThrowsAsync<EntityNotFoundException>(() => _secretController.Call_CreateSecretAsync(newSecret, Admin));
     }
 
     [Test]
@@ -103,7 +103,7 @@ public class ApiResourceSecretControllerTests : ControllerTestBase
         var newSecret = ApiResourceSecretControllerExtensions.GetDefaultApiResourceSecretFor(createdApiResource.Id);
         _ = await _secretController.Call_CreateSecretAsync(newSecret, Admin);
 
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _secretController.Call_CreateSecretAsync(newSecret, Admin));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _secretController.Call_CreateSecretAsync(newSecret, Admin));
     }
 
     [Test]
@@ -113,6 +113,7 @@ public class ApiResourceSecretControllerTests : ControllerTestBase
         var createdApiResource = await _apiResourceController.Call_CreateApiResourceAsync(ApiResourceControllerExtensions.GetDefaultApiResource(1), Admin);
         var newSecret = ApiResourceSecretControllerExtensions.GetDefaultApiResourceSecretFor(createdApiResource.Id);
 
+        _apiCache.ClearReceivedCalls();
         // Act
         await _secretController.Call_CreateSecretAsync(newSecret, Admin);
 

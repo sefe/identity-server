@@ -3,7 +3,7 @@
 
 using Duende.IdentityServer.EntityFramework.Services;
 using Duende.IdentityServer.EntityFramework.Stores;
-using Duende.IdentityServer.Services;
+using IdentityServer.Data.Caching;
 using System.Diagnostics.CodeAnalysis;
 
 namespace IdentityServer.Extensions;
@@ -15,13 +15,11 @@ public static class IdentityServerBuilderExtensions
     /// Adds Redis-based caching for Duende IdentityServer using Valkey/Redis.
     /// </summary>
     /// <param name="builder">The IdentityServer builder.</param>
-    /// <param name="connectionString">The Redis/Valkey connection string.</param>
     /// <returns>The IdentityServer builder for chaining.</returns>
-    public static IIdentityServerBuilder AddConfigurationStoreCache(
-        this IIdentityServerBuilder builder,
-        Type cacheImplementation)
+    public static IIdentityServerBuilder AddSharedConfigurationStoreCache(
+        this IIdentityServerBuilder builder)
     {
-        builder.Services.AddSingleton(typeof(ICache<>), cacheImplementation);
+        builder.Services.AddSharedConfigurationCache();
 
         builder.AddConfigurationStoreCachingDecorators();
 
@@ -30,7 +28,7 @@ public static class IdentityServerBuilderExtensions
 
     /// <summary>
     /// Configures caching for IClientStore, IResourceStore, and ICorsPolicyService with IdentityServer.
-    /// Must be registered together with a cache implementation.
+    /// Must be registered after the shared configuration cache.
     /// </summary>
     /// <param name="builder">The builder.</param>
     /// <returns></returns>
