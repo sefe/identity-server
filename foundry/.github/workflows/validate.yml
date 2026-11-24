@@ -21,3 +21,6 @@ jobs:
       - name: Offline GitHub integration checks
         shell: pwsh
         run: ./foundry/scripts/github/Test-GitHubIntegration.ps1
+      - name: Bootstrap completion and pause status checks
+        shell: pwsh
+        run: ./foundry/scripts/github/Test-GitHubBootstrapStatus.ps1

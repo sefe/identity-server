@@ -81,9 +81,36 @@ refused by budget admission until their rates are configured and verified. An
 arbitrary model ID is not automatically a supported billing model.
 
 Bootstrap pauses at an agent boundary after its 280-minute working budget, before
-the job's 350-minute limit. Resume by running the **same engine commit**, with
-`resume_run_id` pointing to the previous Actions run, and unchanged target commit,
-model, publish setting and allowance. Artifacts are retained for 14 days.
+the job's 350-minute limit. A green paused job means it saved its work; **the
+bootstrap is not complete and that segment has not published a PR**. Its summary
+states this explicitly. Only `pull_request_created` confirms draft PR publication;
+`plan_applied` completes generation without a published PR.
+
+`auto_resume=true` (default) queues the next segment after the evidence upload
+finishes. `max_continuations=3` allows at most three automatic continuations after
+the first segment (accepted range 0–10). The saved counter and spending ledger
+follow the chain; neither resets on the next segment. The same model, publish
+setting and `budget_usd` are forwarded. An empty budget still means no monetary
+cap; the continuation count bounds the automatic chain, not its dollar cost.
+
+The controller uses the built-in `GITHUB_TOKEN` with Actions write permission in
+a separate short job. Generation retains Actions read permission; no PAT changes
+are required. See [GitHub's workflow dispatch documentation](https://docs.github.com/en/rest/actions/workflows#create-a-workflow-dispatch-event).
+The paused segment's continuation summary links to the successor when GitHub
+returns its ID. Final delivery, failures and `blocked` results never auto-resume.
+
+If automatic continuation is disabled, exhausted, or the branch moved, the summary
+explains the required manual action. Rerunning the same Actions run never dispatches
+automatically again, avoiding a second successor after an uncertain API response.
+Check Actions before manually retrying a failed dispatch. The controller does not
+retry a POST whose outcome may be unknown.
+
+Manual fallback: use **Run workflow** with `resume_run_id` pointing to the most
+recent segment, on the **same engine and target commit**, with unchanged model,
+publish setting and allowance. The successor checks its commit before model work,
+including a branch move between dispatch and startup. Older checkpoints without
+continuation metadata can be resumed manually; Foundry's existing input validation
+still applies. Artifacts are retained for 14 days.
 Saved-input fingerprints still reject incompatible changes. Delivery failure is
 not a successful resumable analysis: inspect the remote branch/PR before retrying.
 
