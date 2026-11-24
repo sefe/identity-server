@@ -794,7 +794,23 @@ if ($Config.PSObject.Properties.Name -contains "automation" -and
     $rationaleDocumentName = ([string]$Config.automation.rationale_document).Trim()
 }
 $rationaleSection = ""
+$rationaleProjects = @()
 if ($EnforceProjectRationale -and $rationaleDocumentName -ne "") {
+    # ContextPaths contains the workflow's selected artifacts, not a recursive
+    # search that could pick a rejected or superseded architecture revision.
+    $rationaleBlueprints = @($ContextPaths | Select-Object -Unique | Where-Object {
+        (Split-Path $_ -Leaf) -eq 'automation-blueprint.json'
+    })
+    if ($rationaleBlueprints.Count -gt 1) {
+        throw 'Project rationale validation requires one selected automation blueprint.'
+    }
+    if ($rationaleBlueprints.Count -eq 1) {
+        $rationaleBlueprint = Get-Content -LiteralPath $rationaleBlueprints[0] -Raw | ConvertFrom-Json -Depth 100
+        $rationaleProjects = @($rationaleBlueprint.details.automationProjects)
+        if ($rationaleProjects.Count -eq 0) {
+            throw 'The selected automation blueprint contains no automation projects.'
+        }
+    }
     $rationaleSection = @"
 # Recording why the stack was chosen
 
@@ -824,6 +840,13 @@ for.
 Write it for someone who arrives in a year with no access to this run and wants to know whether the
 decision still holds.
 "@
+    if ($rationaleProjects.Count -gt 0) {
+        $rationaleSection += "`nRequired document paths from the selected blueprint:`n" +
+            (@($rationaleProjects | ForEach-Object {
+                '- ' + ([string]$_.path).Replace('\', '/').TrimEnd('/') + '/' + $rationaleDocumentName
+            }) -join "`n") +
+            "`nInventory ownership labels such as shared or ci do not create additional projects."
+    }
 }
 
 function Assert-AgentArtifactSemantics {
@@ -907,7 +930,8 @@ function Assert-AgentArtifactSemantics {
         $artifactFields -contains "plannedFiles") {
         $rationaleFindings = @(& (Join-Path $PSScriptRoot "Test-ProjectRationale.ps1") `
             -PlannedFiles @($Artifact.plannedFiles) `
-            -DocumentName $rationaleDocumentName)
+            -DocumentName $rationaleDocumentName `
+            -AutomationProjects $rationaleProjects)
         if ($rationaleFindings.Count -gt 0) {
             throw ($rationaleFindings -join " ")
         }
