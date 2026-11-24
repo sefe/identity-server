@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][AllowEmptyCollection()][object[]]$PlannedFiles,
-    [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$DocumentName
+    [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$DocumentName,
+    [AllowEmptyCollection()][object[]]$AutomationProjects = @()
 )
 
 Set-StrictMode -Version Latest
@@ -27,6 +28,34 @@ function Get-RationalePathLeaf {
 $findings = [System.Collections.Generic.List[string]]::new()
 $expected = $DocumentName.Trim()
 
+# The blueprint owns project identity. Inventory labels such as 'shared' and
+# 'ci' describe file ownership, not additional automation projects. Check the
+# exact root path as well, so a shared or nested document cannot cover a project.
+if ($AutomationProjects.Count -gt 0) {
+    foreach ($project in $AutomationProjects) {
+        $projectRoot = ([string]$project.path).Replace("\", "/").TrimEnd("/")
+        if ([string]::IsNullOrWhiteSpace($projectRoot) -or
+            [string]::IsNullOrWhiteSpace([string]$project.name)) {
+            throw "Approved automation projects must have a name and root path."
+        }
+        $documentPath = "$projectRoot/$expected"
+        $matches = @($PlannedFiles | Where-Object {
+            $null -ne $_ -and
+            (Get-QaFoundryPropertyNames -InputObject $_) -contains 'path' -and
+            ([string]$_.path).Replace("\", "/") -ceq $documentPath -and
+            ((Get-QaFoundryPropertyNames -InputObject $_) -notcontains 'operation' -or
+                [string]$_.operation -ne 'delete')
+        })
+        if ($matches.Count -eq 0) {
+            $findings.Add("Automation project '$($project.name)' must plan $documentPath, recording " +
+                "its language, runtime, test runner, libraries, rejected alternatives and fixed blueprint decisions.")
+        }
+    }
+    return @($findings)
+}
+
+# Compatibility for callers without a blueprint. Never silently waive the
+# existing requirement when authoritative project metadata is unavailable.
 # Ordered so the message names projects in the order the inventory introduced
 # them, which is the order the agent is reading its own output in.
 $carriesDocument = [ordered]@{}
