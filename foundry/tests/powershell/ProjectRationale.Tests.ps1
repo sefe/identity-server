@@ -69,4 +69,36 @@ Describe 'Project rationale follows the approved blueprint' {
         $findings = @(& $script:RationaleCheck -PlannedFiles @($files[0], $files[1]) -DocumentName 'technology-choices.md')
         $findings.Count | Should -Be 1
     }
+
+    It 'passes selected blueprint projects through agent validation when resuming an artifact' {
+        $root = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
+        . (Join-Path $root 'scripts/Common.ps1')
+        $config = Import-QaFoundryYaml -Path (Join-Path $root 'tests/fixtures/sample-project-config.yaml') -Root $root
+        $profile = & (Join-Path $root 'scripts/Resolve-AiProfile.ps1') -Config $config -ProfileName mock
+        foreach ($property in $profile.PSObject.Properties) {
+            if ($property.Name -notin @('name', 'required_secret_env', 'secret_env')) {
+                $config.ai | Add-Member -NotePropertyName $property.Name -NotePropertyValue $property.Value -Force
+            }
+        }
+        $config.automation | Add-Member -NotePropertyName rationale_document -NotePropertyValue 'technology-choices.md' -Force
+        $output = Join-Path $TestDrive 'agent/framework-implementation.json'
+        $invoke = @{
+            AgentId = 'framework-implementation'; StageId = 'implementation'; RunId = 'rationale-regression'
+            PromptPath = Join-Path $root 'prompts/implementation/framework-implementation.md'
+            SchemaPath = Join-Path $root 'schemas/implementation/implementation-result.schema.json'
+            OutputPath = $output; Config = $config; ContextPaths = @()
+        }
+        $artifact = & (Join-Path $root 'scripts/Invoke-Agent.ps1') @invoke
+        $artifact.plannedFiles += [pscustomobject]@{
+            path = 'automation/shared/README.md'; project = 'shared'; operation = 'create'
+            purpose = 'Document shared configuration.'; contentContract = 'Explain configuration shared by the projects.'
+        }
+        $artifact | ConvertTo-Json -Depth 100 | Set-Content -LiteralPath $output -Encoding utf8
+        $blueprint = Join-Path $TestDrive 'automation-blueprint.json'
+        @{ details = @{ automationProjects = @(@{ name = 'automation-api'; path = 'automation' }) } } |
+            ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $blueprint -Encoding utf8
+        $invoke.ContextPaths = @($blueprint)
+        $resumed = & (Join-Path $root 'scripts/Invoke-Agent.ps1') @invoke -AllowExistingArtifact -EnforceProjectRationale
+        @($resumed.plannedFiles | Where-Object project -eq 'shared').Count | Should -Be 1
+    }
 }

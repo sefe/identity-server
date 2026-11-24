@@ -1,4 +1,5 @@
 name: Foundry Bootstrap
+run-name: Foundry Bootstrap · ${{ inputs.resume_run_id && format('resume {0}', inputs.resume_run_id) || 'new analysis' }}
 on:
   workflow_dispatch:
     inputs:
@@ -20,6 +21,14 @@ on:
         description: Previous bootstrap run ID (same branch commit and inputs)
         default: ''
         type: string
+      auto_resume:
+        description: Automatically continue a paused analysis after uploading its evidence
+        default: true
+        type: boolean
+      max_continuations:
+        description: Maximum automatic continuations in this chain (0-10); budget_usd is shared
+        default: 3
+        type: number
 permissions:
   contents: read
   actions: read
@@ -28,8 +37,11 @@ concurrency:
   cancel-in-progress: false
 jobs:
   bootstrap:
+    name: Analyze and generate (may pause before delivery)
     runs-on: ubuntu-latest
     timeout-minutes: 350
+    outputs:
+      status: ${{ steps.generate.outputs.status }}
     steps:
       - name: Check required credentials and branch
         shell: pwsh
@@ -50,6 +62,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Restore saved analysis
+        if: inputs.resume_run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: foundry-evidence
+          path: target/.qa-foundry-artifacts
+          run-id: ${{ inputs.resume_run_id }}
+          github-token: ${{ github.token }}
+      - name: Validate continuation identity and limits before model work
+        run: node target/foundry/scripts/github/bootstrap-continuation.mjs prepare target/.qa-foundry-artifacts
       - name: Install Foundry dependencies
         shell: pwsh
         run: |
@@ -87,14 +109,6 @@ jobs:
           ./target/foundry/scripts/Initialize-AdditionalRuntimes.ps1 `
             -ProjectConfigPath ./target/foundry/config/project.yaml `
             -CacheRoot (Join-Path $env:RUNNER_TEMP 'foundry-toolchains')
-      - name: Restore saved analysis
-        if: inputs.resume_run_id != ''
-        uses: actions/download-artifact@v4
-        with:
-          name: foundry-evidence
-          path: target/.qa-foundry-artifacts
-          run-id: ${{ inputs.resume_run_id }}
-          github-token: ${{ github.token }}
       - name: Prepare configuration for this repository
         shell: pwsh
         env:
@@ -106,6 +120,7 @@ jobs:
             -RuntimeRepository $env:GITHUB_REPOSITORY -RuntimeRef $env:GITHUB_SHA `
             -Publish:($env:PUBLISH_CHANGES -eq 'true')
       - name: Generate frameworks and tests, review, report and open draft PR
+        id: generate
         shell: pwsh
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
@@ -137,3 +152,31 @@ jobs:
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14
+  continue_bootstrap:
+    name: Continue paused analysis (bootstrap is not complete)
+    needs: bootstrap
+    if: needs.bootstrap.result == 'success' && needs.bootstrap.outputs.status == 'paused'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Only this short controller job can dispatch. Model processes retain read-only Actions access.
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Download successfully uploaded checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: foundry-evidence
+          path: saved-evidence
+      - name: Queue continuation or explain required manual action
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BOOTSTRAP_STATUS: ${{ needs.bootstrap.outputs.status }}
+        run: node foundry/scripts/github/bootstrap-continuation.mjs continue saved-evidence
