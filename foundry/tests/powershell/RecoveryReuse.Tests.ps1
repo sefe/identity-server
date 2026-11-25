@@ -22,7 +22,7 @@ Describe 'Controlled recovery reuses verified artifact identities' {
         $inputs = @{ version = 1; hashes = @{ source = 'same-source'; contracts = 'same-contracts' } }
         $null = Save-Record $script:Run run-inputs.json $inputs
         $null = Save-Record $script:Archive run-inputs.json $inputs
-        $null = Save-Record $script:Archive recovery-request.json @{ stageId = 'implementation'; invalidated = @('implementation','generation','verification') }
+        $null = Save-Record $script:Archive recovery-request.json @{ stageId = 'implementation'; invalidated = @('implementation','review','delivery-preparation','generation','verification') }
         $script:Inventory = @{ plannedFiles = @('a.ts','b.ts','removed.ts' | ForEach-Object {
             @{ path = "automation/$_"; operation = 'create'; purpose = 'Assertions'; contentContract = 'Keep actual checks'; dependsOn = @() }
         }) }
@@ -128,6 +128,79 @@ Describe 'Controlled recovery reuses verified artifact identities' {
         $text | Should -Match 'Listing tests, empty suites, skipped tests and weakened assertions do not satisfy'
         $text | Should -Match 'unchanged contracts are merged'
         New-QaFoundryRecoveryContext -RunRoot $script:Run -RunId run -StageId generation -OutputPath (Join-Path $script:Run unused.md) | Should -BeNullOrEmpty
+    }
+
+    It 'carries latest dissent and required delivery repairs without reopening resolved review findings' {
+        $old = Save-Record $script:Archive review/iteration-2/test-quality-review.json @{
+            decision='revision_required'; findings=@(@{severity='error';message='Obsolete naming defect'})
+        }
+        $current = Save-Record $script:Archive review/iteration-3/test-quality-review.json @{
+            decision='revision_required'; findings=@(@{severity='error';message='EnvironmentPicker captures the wrong response'})
+            requiredChanges=@('AssertWriteEnvironmentBindingAsync must match the configured display-name filter in POST PostData')
+        }
+        $approved = Save-Record $script:Archive review/iteration-3/code-review.json @{decision='approved';summary='Earlier errors resolved'}
+        $delivery = Save-Record $script:Archive delivery/iteration-3/change-summary.json @{
+            deferrals=@(@{kind='artifact_invalid';required=$true;description='Remove NetworkIdle; preserve exact-one-row ID check'})
+        }
+        $script:State.stages = @($script:State.stages | Where-Object id -ne verification) + @(
+            @{id='architecture';attempts=@(@{iteration=1;status='approved';artifacts=@(
+                (Save-Record $script:Archive architecture/architecture-critic.json @{decision='approved';summary='Upstream architecture already settled'})
+            )})},
+            @{id='review';attempts=@(
+                @{iteration=2;status='revision_required';artifacts=@($old)},
+                @{iteration=3;status='approved_with_dissent';artifacts=@($current,$approved)},
+                @{iteration=3;status='failed';error='Supervisor stopped without an artifact'})},
+            @{id='delivery-preparation';attempts=@(@{iteration=3;status='blocked';artifacts=@($delivery)})}
+        )
+        $null=Save-Record $script:Archive workflow-state.json $script:State
+        $output=Join-Path $script:Run recovery-context.md
+        $null=New-QaFoundryRecoveryContext -RunRoot $script:Run -RunId run -StageId implementation -OutputPath $output
+        $text=Get-Content $output -Raw
+        $text | Should -Match 'EnvironmentPicker'
+        $text | Should -Match 'PostData'
+        $text | Should -Match 'exact-one-row'
+        $text | Should -Match 'Earlier errors resolved'
+        $text | Should -Not -Match 'Obsolete naming defect'
+        $text | Should -Not -Match 'Upstream architecture already settled'
+        $text | Should -Not -Match 'The default local verification must execute'
+        $text | Should -Match 'Respect the configured verification mode'
+        Add-Content (Join-Path $script:Archive $current.relativePath) ' '
+        {New-QaFoundryRecoveryContext -RunRoot $script:Run -RunId run -StageId implementation -OutputPath $output} |
+            Should -Throw '*Recovery evidence cannot be verified*'
+    }
+
+    It 'retains critical repair evidence when requiredChanges is empty' {
+        $review=Save-Record $script:Archive review/security-resilience-review.json @{
+            decision='revision_required';requiredChanges=@();findings=@(
+                @{severity='critical';message='Critical isolation failure';evidence='Writes escape the configured tier'},
+                @{severity='error';message='Missing prerequisite guard';evidence='Setup contract'},
+                @{severity='warning';message='Cleanup timeout risk';evidence='Teardown contract'},
+                @{severity='info';message='Resolved historical finding';evidence='Previous revision'})
+        }
+        $script:State.stages += @{id='review';attempts=@(
+            @{iteration=3;status='approved_with_dissent';artifacts=@($review)})}
+        $null=Save-Record $script:Archive workflow-state.json $script:State
+        $output=Join-Path $script:Run recovery-context.md
+        $null=New-QaFoundryRecoveryContext -RunRoot $script:Run -RunId run -StageId implementation -OutputPath $output
+        $text=Get-Content $output -Raw
+        $text | Should -Match 'Critical isolation failure'
+        $text | Should -Match 'Writes escape the configured tier'
+        $text | Should -Match 'Missing prerequisite guard'
+        $text | Should -Match 'Cleanup timeout risk'
+        $text | Should -Not -Match 'Resolved historical finding'
+    }
+
+    It 'does not resurrect a rejected review superseded by unanimous approval' {
+        $old=Save-Record $script:Archive review/iteration-1/test-quality-review.json @{decision='revision_required';requiredChanges=@('Already fixed race')}
+        $latest=Save-Record $script:Archive review/iteration-2/test-quality-review.json @{decision='approved';summary='All prior findings resolved'}
+        $script:State.stages += @{id='review';attempts=@(
+            @{iteration=1;status='revision_required';artifacts=@($old)},
+            @{iteration=2;status='approved';artifacts=@($latest)})}
+        $null=Save-Record $script:Archive workflow-state.json $script:State
+        $output=Join-Path $script:Run recovery-context.md
+        $null=New-QaFoundryRecoveryContext -RunRoot $script:Run -RunId run -StageId implementation -OutputPath $output
+        Get-Content $output -Raw | Should -Not -Match 'Already fixed race'
+        Get-Content $output -Raw | Should -Match 'All prior findings resolved'
     }
     It 'retains the completed verification diagnostics after a supervisor crash and checks original log integrity' {
         $log = Join-Path $script:Archive 'verification/commands/command-001.log'

@@ -49,7 +49,7 @@ test('checkpoint replacement preserves the previous snapshot and unrelated budge
 test('malformed or incompatible checkpoints are retained instead of resetting the chain', t => {
   const directory = scratch(t);
   const file = path.join(directory, 'bootstrap-continuation.json');
-  for (const content of ['invalid checkpoint', JSON.stringify({ ...fresh(), sha: 'b'.repeat(40) })]) {
+  for (const content of ['invalid checkpoint', 'null', 'false', '0', '[]', JSON.stringify({ ...fresh(), sha: 'b'.repeat(40) })]) {
     fs.writeFileSync(file, content);
     assert.throws(() => prepareCheckpoint(directory, { ...identity, id: '101', inputs: { ...inputs, resume_run_id: '100' } }));
     assert.equal(fs.readFileSync(file, 'utf8'), content);
@@ -105,6 +105,61 @@ test('manual resume from a legacy checkpoint starts a bounded chain', () => {
   const state = prepareContinuation({ ...identity, inputs: { ...inputs, resume_run_id: '99' } });
   assert.equal(state.leg, 1);
   assert.equal(state.rootRunId, '99');
+});
+
+test('explicit recovery updates runtime identity but pins the original product and retains the ledger chain', () => {
+  const previous = fresh();
+  delete previous.sourceSha; // Artifact from before recovery support.
+  const state = prepareContinuation({ ...identity, sha: 'b'.repeat(40), id: '101', previous,
+    inputs: { ...inputs, resume_run_id: '100', restart_stage: 'implementation' } });
+  assert.equal(state.sha, 'b'.repeat(40));
+  assert.equal(state.sourceSha, identity.sha);
+  assert.equal(state.previousRuntimeSha, identity.sha);
+  assert.equal(state.leg, 2);
+  assert.equal(state.rootRunId, '100');
+  assert.equal(state.budget_usd, previous.budget_usd);
+  const next = prepareContinuation({ ...identity, sha: state.sha, id: '102', previous: state,
+    inputs: { ...inputs, resume_run_id: '101' } });
+  assert.equal(next.sourceSha, identity.sha);
+  assert.equal(next.restartStage, undefined, 'ordinary continuation must not reset stages again');
+  assert.throws(() => prepareContinuation({ ...identity, previous, inputs: { ...inputs, restart_stage: 'implementation' } }), /requires/);
+  assert.throws(() => prepareContinuation({ ...identity, inputs: { ...inputs, resume_run_id: '100', restart_stage: 'implementation' } }), /requires/);
+  assert.throws(() => prepareContinuation({ ...identity, previous, inputs: { ...inputs, resume_run_id: '100', restart_stage: 'delivery-preparation' } }), /restart_stage/);
+  for (const change of [{ model: 'other' }, { publish: 'false' }, { budget_usd: '20' }]) {
+    assert.throws(() => prepareContinuation({ ...identity, previous, inputs: {
+      ...inputs, resume_run_id: '100', restart_stage: 'implementation', ...change } }), /changed/);
+  }
+});
+
+test('recovery checks stopped state and source identity before replacing checkpoint', t => {
+  const directory = scratch(t);
+  const file = path.join(directory, 'bootstrap-continuation.json');
+  prepareCheckpoint(directory, { ...identity, inputs });
+  const original = fs.readFileSync(file, 'utf8');
+  const recovery = { ...identity, sha: 'b'.repeat(40), id: '101', inputs: {
+    ...inputs, resume_run_id: '100', restart_stage: 'implementation' } };
+  assert.throws(() => prepareCheckpoint(directory, recovery), /exactly one/);
+  const root = path.join(directory, 'run-saved');
+  fs.mkdirSync(root);
+  fs.writeFileSync(path.join(root, 'run-inputs.json'), JSON.stringify({ sourceCommit: identity.sha }));
+  fs.writeFileSync(path.join(root, 'workflow-state.json'), JSON.stringify({ status: 'completed' }));
+  assert.throws(() => prepareCheckpoint(directory, recovery), /stopped analysis/);
+  fs.writeFileSync(path.join(root, 'workflow-state.json'), JSON.stringify({ status: 'blocked' }));
+  fs.writeFileSync(path.join(root, 'run-inputs.json'), JSON.stringify({ sourceCommit: 'c'.repeat(40) }));
+  assert.throws(() => prepareCheckpoint(directory, recovery), /saved source/);
+  assert.equal(fs.readFileSync(file, 'utf8'), original);
+  fs.writeFileSync(path.join(root, 'run-inputs.json'), JSON.stringify({ sourceCommit: identity.sha }));
+  assert.equal(prepareCheckpoint(directory, recovery).sourceSha, identity.sha);
+});
+
+test('automatic continuation after recovery never dispatches another stage reset', async () => {
+  const state = { ...fresh(), sourceSha: 'b'.repeat(40), restartStage: 'implementation' };
+  const mock = api();
+  await continueBootstrap({ ...options(state), request: mock.request });
+  assert.equal(JSON.parse(mock.calls[1].body).inputs.restart_stage, undefined);
+  const next = prepareContinuation({ ...identity, id: '101', previous: state,
+    inputs: JSON.parse(mock.calls[1].body).inputs });
+  assert.equal(next.sourceSha, state.sourceSha);
 });
 
 test('rejects mismatched parent, commit, branch and settings before any model work', () => {

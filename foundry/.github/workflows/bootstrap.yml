@@ -21,6 +21,11 @@ on:
         description: Previous bootstrap run ID (same branch commit and inputs)
         default: ''
         type: string
+      restart_stage:
+        description: 'Recovery only: restart implementation from saved evidence using this runtime and the saved product commit'
+        default: ''
+        type: choice
+        options: ['', implementation]
       auto_resume:
         description: Automatically continue a paused analysis after uploading its evidence
         default: true
@@ -71,7 +76,19 @@ jobs:
           run-id: ${{ inputs.resume_run_id }}
           github-token: ${{ github.token }}
       - name: Validate continuation identity and limits before model work
+        id: continuation
         run: node target/foundry/scripts/github/bootstrap-continuation.mjs prepare target/.qa-foundry-artifacts
+      - name: Restore saved product snapshot with the selected Foundry runtime
+        shell: pwsh
+        env:
+          SOURCE_SHA: ${{ steps.continuation.outputs.source_sha }}
+        run: |
+          $ErrorActionPreference='Stop'
+          if ($env:SOURCE_SHA -notmatch '^[a-f0-9]{40}$') { throw 'Invalid saved source commit.' }
+          git -C target checkout --detach $env:SOURCE_SHA
+          if ($LASTEXITCODE) { throw 'Cannot restore the saved product commit.' }
+          git -C target restore --source $env:GITHUB_SHA --worktree -- foundry
+          if ($LASTEXITCODE) { throw 'Cannot restore the selected Foundry runtime.' }
       - name: Install Foundry dependencies
         shell: pwsh
         run: |
@@ -127,9 +144,10 @@ jobs:
           FOUNDRY_GITHUB_TOKEN: ${{ secrets.FOUNDRY_GITHUB_TOKEN }}
           QA_FOUNDRY_ADDITIONAL_USD_LIMIT: ${{ inputs.budget_usd }}
           RESUME_RUN_ID: ${{ inputs.resume_run_id }}
+          RESTART_STAGE: ${{ inputs.restart_stage }}
         run: |
           ./target/foundry/scripts/github/Invoke-GitHubBootstrap.ps1 -RepositoryRoot ./target `
-            -TargetBranch $env:GITHUB_REF_NAME -Resume:([bool]$env:RESUME_RUN_ID)
+            -TargetBranch $env:GITHUB_REF_NAME -Resume:([bool]$env:RESUME_RUN_ID) -RestartStage $env:RESTART_STAGE
       - name: Publish evidence and usage report
         if: always()
         uses: actions/upload-artifact@v4
