@@ -73,6 +73,7 @@ function New-QaFoundryRecoveryContext {
     $verificationInstructions.Add('The default local verification must execute real assertions without deployed endpoints or credentials. Listing tests, empty suites, skipped tests and weakened assertions do not satisfy it. Preserve deployed coverage with explicit configuration in its own execution selection. Plan the necessary local test files, runner selection, fixtures and commands together. Required resources must exist in the delivered Automation checkout or have an explicit setup contract; do not assume product files are present in the isolated verifier. Product code remains read-only. Use existing local application startup when supported by repository evidence; specify readiness and cleanup and distinguish substituted dependencies from end-to-end coverage.')
     $verificationInstructions.Add('The verifier uses adapter entry points, not proposedCommands: npm test, and dotnet test or the MTP executable via dotnet run without an added filter. Category labels alone do not create a default selection. Inspect the selected ecosystem adapter and plan the actual runner-supported entry point/configuration plus any missing local tests. Preserve explicit deployed execution and its prerequisite refusal. The negative probe must run in that same local selection. Check all reported compiler locations against the locked dependency APIs; a guessed replacement overload is not a verified fix.')
     foreach ($stage in @($archive.state.stages)) {
+        if ([string]$stage.id -notin @($archive.request.invalidated)) { continue }
         # Use the latest substantive review, including approved_with_dissent.
         # An earlier rejection must not supersede a later approval, while a
         # supervisor failure without artifacts must not hide the last review.
@@ -88,7 +89,10 @@ function New-QaFoundryRecoveryContext {
                 $lines.Add("Latest downstream evidence: $($record.name). Read the full artifact: $path (SHA256 $($record.sha256)).")
                 $excerpt = [ordered]@{}
                 foreach ($field in @('agentId', 'decision', 'summary', 'findings', 'requiredChanges', 'repairScope', 'repairTargets', 'deferrals')) {
-                    if ($document.PSObject.Properties[$field]) { $excerpt[$field] = $document.$field }
+                    if (-not $document.PSObject.Properties[$field]) { continue }
+                    $excerpt[$field] = if ($field -eq 'findings') {
+                        @($document.findings | Where-Object { $_.severity -in @('error', 'warning') })
+                    } else { $document.$field }
                 }
                 $lines.Add(($excerpt | ConvertTo-Json -Depth 100))
             }
