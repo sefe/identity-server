@@ -1,8 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import http from 'node:http';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
-import { prepareContinuation, continueBootstrap } from '../../scripts/github/bootstrap-continuation.mjs';
+import { prepareContinuation, prepareCheckpoint, continueBootstrap } from '../../scripts/github/bootstrap-continuation.mjs';
 
 const identity = { repository: 'example/product', branch: 'main', sha: 'a'.repeat(40), id: '100' };
 const inputs = { model: 'claude-opus-5.5', publish: 'true', budget_usd: '12.50',
@@ -17,6 +22,72 @@ function api({ sha = identity.sha, status = 200 } = {}) {
     return init.method === 'GET' ? response(200, { object: { sha } }) : response(status, { workflow_run_id: 101 });
   } };
 }
+
+function scratch(t) {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'foundry-continuation-test-'));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  return directory;
+}
+
+test('checkpoint replacement preserves the previous snapshot and unrelated budget evidence', t => {
+  const directory = scratch(t);
+  const file = path.join(directory, 'bootstrap-continuation.json');
+  const first = prepareCheckpoint(directory, { ...identity, inputs });
+  // A hard link observes the original inode. In-place truncation would change it.
+  const snapshot = path.join(directory, 'previous.json');
+  fs.linkSync(file, snapshot);
+  const ledger = path.join(directory, 'call-budget.usage.json');
+  fs.writeFileSync(ledger, 'existing spending evidence');
+  const second = prepareCheckpoint(directory, { ...identity, id: '101', inputs: { ...inputs, resume_run_id: '100' } });
+  assert.deepEqual(JSON.parse(fs.readFileSync(snapshot, 'utf8')), first);
+  assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')), second);
+  assert.equal(second.leg, 2);
+  assert.equal(fs.readFileSync(ledger, 'utf8'), 'existing spending evidence');
+  assert.equal(fs.readdirSync(directory).some(name => name.startsWith('.continuation-')), false);
+});
+
+test('malformed or incompatible checkpoints are retained instead of resetting the chain', t => {
+  const directory = scratch(t);
+  const file = path.join(directory, 'bootstrap-continuation.json');
+  for (const content of ['invalid checkpoint', JSON.stringify({ ...fresh(), sha: 'b'.repeat(40) })]) {
+    fs.writeFileSync(file, content);
+    assert.throws(() => prepareCheckpoint(directory, { ...identity, id: '101', inputs: { ...inputs, resume_run_id: '100' } }));
+    assert.equal(fs.readFileSync(file, 'utf8'), content);
+  }
+});
+
+test('malformed network responses never reach the summary or CLI error output', async t => {
+  const directory = scratch(t);
+  fs.writeFileSync(path.join(directory, 'bootstrap-continuation.json'), JSON.stringify(fresh()));
+  const summaryFile = path.join(directory, 'summary.md');
+  const hostile = '<script>network-secret-do-not-copy</script>';
+  let requests = 0;
+  const server = http.createServer((request, response) => {
+    requests++;
+    response.writeHead(200, { 'Content-Type': 'application/json' });
+    response.end(hostile);
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise(resolve => server.close(resolve)));
+  const script = fileURLToPath(new URL('../../scripts/github/bootstrap-continuation.mjs', import.meta.url));
+  const child = spawn(process.execPath, [script, 'continue', directory], { env: {
+    ...process.env, GITHUB_REPOSITORY: identity.repository, GITHUB_REF_NAME: identity.branch,
+    GITHUB_SHA: identity.sha, GITHUB_RUN_ID: identity.id, GITHUB_RUN_ATTEMPT: '1',
+    BOOTSTRAP_STATUS: 'paused', GH_TOKEN: 'test-secret', GITHUB_STEP_SUMMARY: summaryFile,
+    GITHUB_API_URL: `http://127.0.0.1:${server.address().port}`, GITHUB_SERVER_URL: 'https://github.com',
+  } });
+  let output = '';
+  child.stdout.on('data', chunk => { output += chunk; });
+  child.stderr.on('data', chunk => { output += chunk; });
+  const code = await new Promise((resolve, reject) => { child.on('error', reject); child.on('close', resolve); });
+  assert.equal(code, 1);
+  assert.equal(requests, 1, 'must not dispatch after a malformed branch response');
+  const summary = fs.readFileSync(summaryFile, 'utf8');
+  assert.match(summary, /continuation needs attention/);
+  assert.match(summary, /resume_run_id=100/);
+  assert.match(output, /Could not parse the branch verification response/);
+  assert.doesNotMatch(output + summary, /network-secret|<script>|test-secret/);
+});
 
 test('continuations retain chain identity and spending allowance without resetting the counter', () => {
   const first = fresh();

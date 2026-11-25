@@ -49,6 +49,31 @@ export function prepareContinuation({ previous, inputs, repository, branch, sha,
   };
 }
 
+export function prepareCheckpoint(directory, options) {
+  fs.mkdirSync(directory, { recursive: true });
+  const file = path.join(directory, stateFile);
+  let previous;
+  try { previous = readJson(file); }
+  catch (error) {
+    // Only a missing checkpoint means a fresh/legacy run. Never overwrite a
+    // malformed or unreadable checkpoint as if it had not existed.
+    if (error.code !== 'ENOENT') throw error;
+  }
+  const state = prepareContinuation({ ...options, previous });
+  // Write a complete replacement in a private directory on the same filesystem.
+  // Rename publishes it atomically and does not follow a destination symlink.
+  const temporaryDirectory = fs.mkdtempSync(path.join(directory, '.continuation-'));
+  const temporaryFile = path.join(temporaryDirectory, 'state.json');
+  try {
+    fs.writeFileSync(temporaryFile, JSON.stringify(state, null, 2), { flag: 'wx', mode: 0o600 });
+    fs.renameSync(temporaryFile, file);
+  } finally {
+    try { fs.unlinkSync(temporaryFile); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    fs.rmdirSync(temporaryDirectory);
+  }
+  return state;
+}
+
 export async function continueBootstrap({ state, status, repository, branch, sha, id, attempt,
   token, apiUrl = 'https://api.github.com', serverUrl = 'https://github.com', request = fetch }) {
   if (status !== 'paused') return { outcome: 'not_paused', message: `No continuation for ${status}.` };
@@ -77,7 +102,10 @@ export async function continueBootstrap({ state, status, repository, branch, sha
   };
   const ref = await invoke(`${api}/repos/${repoPath}/git/ref/heads/${branch.split('/').map(encodeURIComponent).join('/')}`, { method: 'GET' });
   if (ref.status !== 200) throw new Error(`Could not verify continuation branch (HTTP ${ref.status}). No workflow was dispatched.`);
-  if ((await ref.json()).object?.sha !== sha) return manual('The branch has moved since this run; automatic continuation is stopped.');
+  let refData;
+  try { refData = await ref.json(); }
+  catch { throw new Error('Could not parse the branch verification response. No workflow was dispatched.'); }
+  if (refData?.object?.sha !== sha) return manual('The branch has moved since this run; automatic continuation is stopped.');
   const response = await invoke(`${api}/repos/${repoPath}/actions/workflows/${workflow}/dispatches`, {
     method: 'POST', body: JSON.stringify({ ref: branch, inputs: {
       model: state.model, publish: String(state.publish), budget_usd: state.budget_usd,
@@ -105,10 +133,7 @@ async function main() {
   if (mode === 'prepare') {
     const event = readJson(env.GITHUB_EVENT_PATH);
     if (env.GITHUB_EVENT_NAME !== 'workflow_dispatch' || env.GITHUB_REF_TYPE !== 'branch') throw new Error('Bootstrap requires a branch workflow_dispatch.');
-    const previous = fs.existsSync(file) ? readJson(file) : null;
-    const state = prepareContinuation({ ...identity, previous, inputs: event.inputs ?? {} });
-    fs.mkdirSync(directory, { recursive: true });
-    fs.writeFileSync(file, JSON.stringify(state, null, 2));
+    const state = prepareCheckpoint(directory, { ...identity, inputs: event.inputs ?? {} });
     console.log(`Bootstrap segment ${state.leg}; at most ${state.maxContinuations} automatic continuations. Spending allowance is shared across resumed segments.`);
     return;
   }
@@ -123,7 +148,7 @@ async function main() {
     if (result.outcome === 'manual_required') console.log('::warning::Bootstrap is paused and needs manual continuation; see the job summary.');
   } catch (error) {
     if (env.GITHUB_STEP_SUMMARY) fs.appendFileSync(env.GITHUB_STEP_SUMMARY,
-      `## Foundry bootstrap: PAUSED — continuation needs attention\n\nBootstrap is not complete and no PR was created by this paused run.\n\n${error.message}\n\nSaved evidence: resume_run_id=${env.GITHUB_RUN_ID}.\n`);
+      `## Foundry bootstrap: PAUSED — continuation needs attention\n\nBootstrap is not complete and no PR was created by this paused run.\n\nContinuation failed. Check the job log and Actions for an already queued successor before retrying.\n\nSaved evidence: resume_run_id=${runId(env.GITHUB_RUN_ID)}.\n`);
     throw error;
   }
 }
