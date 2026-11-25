@@ -91,7 +91,7 @@ function New-QaFoundryRecoveryContext {
                 foreach ($field in @('agentId', 'decision', 'summary', 'findings', 'requiredChanges', 'repairScope', 'repairTargets', 'deferrals')) {
                     if (-not $document.PSObject.Properties[$field]) { continue }
                     $excerpt[$field] = if ($field -eq 'findings') {
-                        @($document.findings | Where-Object { $_.severity -in @('error', 'warning') })
+                        @($document.findings | Where-Object { $_.severity -in @('critical', 'error', 'warning') })
                     } else { $document.$field }
                 }
                 $lines.Add(($excerpt | ConvertTo-Json -Depth 100))

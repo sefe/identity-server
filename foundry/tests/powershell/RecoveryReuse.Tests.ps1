@@ -169,6 +169,27 @@ Describe 'Controlled recovery reuses verified artifact identities' {
             Should -Throw '*Recovery evidence cannot be verified*'
     }
 
+    It 'retains critical repair evidence when requiredChanges is empty' {
+        $review=Save-Record $script:Archive review/security-resilience-review.json @{
+            decision='revision_required';requiredChanges=@();findings=@(
+                @{severity='critical';message='Critical isolation failure';evidence='Writes escape the configured tier'},
+                @{severity='error';message='Missing prerequisite guard';evidence='Setup contract'},
+                @{severity='warning';message='Cleanup timeout risk';evidence='Teardown contract'},
+                @{severity='info';message='Resolved historical finding';evidence='Previous revision'})
+        }
+        $script:State.stages += @{id='review';attempts=@(
+            @{iteration=3;status='approved_with_dissent';artifacts=@($review)})}
+        $null=Save-Record $script:Archive workflow-state.json $script:State
+        $output=Join-Path $script:Run recovery-context.md
+        $null=New-QaFoundryRecoveryContext -RunRoot $script:Run -RunId run -StageId implementation -OutputPath $output
+        $text=Get-Content $output -Raw
+        $text | Should -Match 'Critical isolation failure'
+        $text | Should -Match 'Writes escape the configured tier'
+        $text | Should -Match 'Missing prerequisite guard'
+        $text | Should -Match 'Cleanup timeout risk'
+        $text | Should -Not -Match 'Resolved historical finding'
+    }
+
     It 'does not resurrect a rejected review superseded by unanimous approval' {
         $old=Save-Record $script:Archive review/iteration-1/test-quality-review.json @{decision='revision_required';requiredChanges=@('Already fixed race')}
         $latest=Save-Record $script:Archive review/iteration-2/test-quality-review.json @{decision='approved';summary='All prior findings resolved'}
