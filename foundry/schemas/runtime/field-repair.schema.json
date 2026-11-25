@@ -2,10 +2,42 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Field repair record",
   "type": "object",
-  "required": ["artifact", "shortened"],
+  "required": ["artifact"],
   "additionalProperties": false,
+  "oneOf": [
+    { "required": ["shortened"], "not": { "required": ["repaired"] } },
+    { "required": ["repaired"], "not": { "required": ["shortened"] } }
+  ],
   "properties": {
     "artifact": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "repaired": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 40,
+      "items": {
+        "type": "object",
+        "required": ["pointer", "operation"],
+        "additionalProperties": false,
+        "properties": {
+          "pointer": { "type": "string" },
+          "operation": { "enum": ["replace", "add"] }
+        },
+        "oneOf": [
+          {
+            "properties": {
+              "pointer": { "pattern": "^/details/componentStacks/[0-9]+/(name|buildSystem|configurationApproach|loggingApproach|ciEnvironment)$" },
+              "operation": { "const": "replace" }
+            }
+          },
+          {
+            "properties": {
+              "pointer": { "const": "/details/excludedFromStackDetermination" },
+              "operation": { "const": "add" }
+            }
+          }
+        ]
+      }
+    },
     "shortened": {
       "type": "array",
       "minItems": 1,

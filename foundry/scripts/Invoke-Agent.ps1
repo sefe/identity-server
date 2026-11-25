@@ -26,6 +26,7 @@ param(
 
 . (Join-Path $PSScriptRoot "Common.ps1")
 . (Join-Path $PSScriptRoot 'GenerationRepair.ps1')
+. (Join-Path $PSScriptRoot 'RepositoryDiscoveryRepair.ps1')
 $splitInvocationParameters = @{} + $PSBoundParameters
 $batchAssignment = $null
 if ((Split-Path $SchemaPath -Leaf) -eq 'change-set-batch.schema.json') {
@@ -2083,9 +2084,14 @@ $lastValidationError
                     (Get-QaFoundryBudgetSecondsRemaining -Deadline $Deadline) -
                         $script:QaFoundryHandoverReserveSeconds)
             }
-            $shortened = Repair-OverlongFields -Errors @($validation.errors) `
-                -ArtifactPath $OutputPath -Provider $provider -TimeoutSeconds $repairTimeout `
-                -Attempt $attempt
+            $shortened = Repair-RepositoryDiscoveryFields -Errors @($validation.errors) `
+                -ArtifactPath $OutputPath -SchemaPath $SchemaPath -OriginalRequest $request `
+                -Provider $provider -TimeoutSeconds $repairTimeout -Attempt $attempt
+            if ($null -eq $shortened) {
+                $shortened = Repair-OverlongFields -Errors @($validation.errors) `
+                    -ArtifactPath $OutputPath -Provider $provider -TimeoutSeconds $repairTimeout `
+                    -Attempt $attempt
+            }
             if ($null -ne $shortened) {
                 $validation = & (Join-Path $PSScriptRoot "Validate-JsonArtifact.ps1") `
                     -ArtifactPath $OutputPath `
@@ -2094,7 +2100,7 @@ $lastValidationError
                     -NoThrow
                 if ($validation.valid) {
                     Write-QaFoundryLog -Level warn -Indent 2 -Scope $AgentId -Message (
-                        "Accepted after shortening " + (@($shortened) -join "; ") +
+                        "Accepted after field repair: " + (@($shortened) -join "; ") +
                         ". The rest of the answer is the one the agent gave.")
                 }
             }
