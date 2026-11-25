@@ -1,6 +1,8 @@
 [CmdletBinding()]
-param([Parameter(Mandatory)][string]$RepositoryRoot,[string]$TargetBranch='main',[switch]$Resume)
+param([Parameter(Mandatory)][string]$RepositoryRoot,[string]$TargetBranch='main',[switch]$Resume,
+    [ValidateSet('', 'implementation')][string]$RestartStage='')
 $ErrorActionPreference='Stop'
+if ($RestartStage -and -not $Resume) { throw '-RestartStage requires -Resume.' }
 $root=(Resolve-Path -LiteralPath $RepositoryRoot).Path
 $framework=(Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '../..')).Path
 $evidence=Join-Path $root '.qa-foundry-artifacts'
@@ -22,7 +24,7 @@ $result=$null
 try {
     $result=@(& (Join-Path $framework 'scripts/Start-FoundryBootstrap.ps1') -ConfigPath (Join-Path $root '.qa-foundry-artifacts/github-bootstrap.json') `
         -PreparedProjectConfigPath (Join-Path $root '.qa-foundry-artifacts/github-project.json') `
-        -Phase Plan -CurrentRef "refs/heads/$TargetBranch" -BudgetMinutes 280 -ResumeRunRoot $resumeRoot)[-1]
+        -Phase Plan -CurrentRef "refs/heads/$TargetBranch" -BudgetMinutes 280 -ResumeRunRoot $resumeRoot -RestartStage $RestartStage)[-1]
     if ($result.status -notin @('dry_run','plan_applied','pull_request_created','paused')) {throw "Bootstrap ended as '$($result.status)'."}
 }
 finally {

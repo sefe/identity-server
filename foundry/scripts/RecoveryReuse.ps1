@@ -67,11 +67,32 @@ function New-QaFoundryRecoveryContext {
     $archive = Get-QaFoundryRecoveryArchive -RunRoot $RunRoot -RunId $RunId -StageId $StageId
     if ($null -eq $archive -or $archive.request.stageId -ne $StageId) { return '' }
     $lines = [System.Collections.Generic.List[string]]::new()
-    $lines.Add('# Recovery after downstream verification')
-    $lines.Add('This is a revision of the existing deliverable, even though the operator reset the stage counter. Read the supplied previous inventories and the failed verification below. Return only changed or new plannedFiles and explicit removedFiles; unchanged contracts are merged from the previous inventory. Correct the contracts that made verification impossible, rather than regenerating unrelated plans.')
-    $lines.Add('The default local verification must execute real assertions without deployed endpoints or credentials. Listing tests, empty suites, skipped tests and weakened assertions do not satisfy it. Preserve deployed coverage with explicit configuration in its own execution selection. Plan the necessary local test files, runner selection, fixtures and commands together. Required resources must exist in the delivered Automation checkout or have an explicit setup contract; do not assume product files are present in the isolated verifier. Product code remains read-only. Use existing local application startup when supported by repository evidence; specify readiness and cleanup and distinguish substituted dependencies from end-to-end coverage.')
-    $lines.Add('The verifier uses adapter entry points, not proposedCommands: npm test, and dotnet test or the MTP executable via dotnet run without an added filter. Category labels alone do not create a default selection. Inspect the selected ecosystem adapter and plan the actual runner-supported entry point/configuration plus any missing local tests. Preserve explicit deployed execution and its prerequisite refusal. The negative probe must run in that same local selection. Check all reported compiler locations against the locked dependency APIs; a guessed replacement overload is not a verified fix.')
+    $lines.Add('# Recovery after downstream review or verification')
+    $lines.Add('This is a revision of the existing deliverable, even though the operator reset the stage counter. Read the supplied previous inventories and the verified recovery evidence below. Return only changed or new plannedFiles and explicit removedFiles; unchanged contracts are merged from the previous inventory. Fix the outstanding findings in the owning framework and test contracts together. Preserve resolved findings, scenario IDs, assertions and approved scope. A restarted counter is not approval: independent review is still required. Respect the configured verification mode and do not claim execution from specification-only evidence.')
+    $verificationInstructions = [System.Collections.Generic.List[string]]::new()
+    $verificationInstructions.Add('The default local verification must execute real assertions without deployed endpoints or credentials. Listing tests, empty suites, skipped tests and weakened assertions do not satisfy it. Preserve deployed coverage with explicit configuration in its own execution selection. Plan the necessary local test files, runner selection, fixtures and commands together. Required resources must exist in the delivered Automation checkout or have an explicit setup contract; do not assume product files are present in the isolated verifier. Product code remains read-only. Use existing local application startup when supported by repository evidence; specify readiness and cleanup and distinguish substituted dependencies from end-to-end coverage.')
+    $verificationInstructions.Add('The verifier uses adapter entry points, not proposedCommands: npm test, and dotnet test or the MTP executable via dotnet run without an added filter. Category labels alone do not create a default selection. Inspect the selected ecosystem adapter and plan the actual runner-supported entry point/configuration plus any missing local tests. Preserve explicit deployed execution and its prerequisite refusal. The negative probe must run in that same local selection. Check all reported compiler locations against the locked dependency APIs; a guessed replacement overload is not a verified fix.')
     foreach ($stage in @($archive.state.stages)) {
+        # Use the latest substantive review, including approved_with_dissent.
+        # An earlier rejection must not supersede a later approval, while a
+        # supervisor failure without artifacts must not hide the last review.
+        $latest = @($stage.attempts | Where-Object {
+            $_.PSObject.Properties['artifacts'] -and @($_.artifacts).Count -gt 0
+        } | Select-Object -Last 1)
+        if ($latest.Count) {
+            foreach ($record in @($latest[0].artifacts)) {
+                if ($record.name -notmatch '^(.+-review|.+-critic|pull-request-compliance|change-summary)\.json$') { continue }
+                $path = Resolve-QaFoundryRecoveryArtifact -RunRoot $RunRoot -Archive $archive -Record $record
+                if (-not $path) { throw "Recovery evidence cannot be verified: $($record.name)" }
+                $document = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json -Depth 100
+                $lines.Add("Latest downstream evidence: $($record.name). Read the full artifact: $path (SHA256 $($record.sha256)).")
+                $excerpt = [ordered]@{}
+                foreach ($field in @('agentId', 'decision', 'summary', 'findings', 'requiredChanges', 'repairScope', 'repairTargets', 'deferrals')) {
+                    if ($document.PSObject.Properties[$field]) { $excerpt[$field] = $document.$field }
+                }
+                $lines.Add(($excerpt | ConvertTo-Json -Depth 100))
+            }
+        }
         $attempts = @($stage.attempts | Where-Object {
             $_.status -in @('blocked', 'revision_required', 'failed') -and
             $_.PSObject.Properties['artifacts'] -and @($_.artifacts).Count -gt 0
@@ -83,6 +104,8 @@ function New-QaFoundryRecoveryContext {
             if (-not $path) { throw "Recovery evidence cannot be verified: $($record.name)" }
             $document = Get-Content $path -Raw | ConvertFrom-Json -Depth 100
             if ($document.PSObject.Properties['projects']) {
+                foreach ($instruction in $verificationInstructions) { $lines.Add($instruction) }
+                $verificationInstructions.Clear()
                 foreach ($project in @($document.projects | Where-Object outcome -ne verified)) {
                     $lines.Add("Failed project: $($project.projectPath). Evidence: $path")
                     foreach ($step in @($project.steps | Where-Object status -eq failed)) {
@@ -105,7 +128,7 @@ function New-QaFoundryRecoveryContext {
             }
         }
     }
-    $lines.Add('Earlier runtime failures may have been fixed since these logs were recorded. Use them to identify contract inconsistencies; do not rewrite otherwise valid files to work around a repaired runtime fault. Subsequent materialization and real verification remain mandatory.')
+    $lines.Add('Earlier runtime failures may have been fixed since these logs were recorded. Use them to identify contract inconsistencies; do not rewrite otherwise valid files to work around a repaired runtime fault. Subsequent materialization, review and the configured verification gates remain mandatory.')
     if ($RepositoryRoot -and $env:QA_FOUNDRY_RECOVERY_CANDIDATE -and $env:QA_FOUNDRY_RECOVERY_CANDIDATE -ne 'none') {
         . (Join-Path $PSScriptRoot 'RecoveryCandidate.ps1')
         $candidate = Get-QaFoundryRecoveryCandidate -RunRoot $RunRoot -RunId $RunId -RepositoryRoot $RepositoryRoot

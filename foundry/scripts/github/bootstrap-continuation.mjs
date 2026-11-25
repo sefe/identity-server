@@ -30,19 +30,28 @@ export function prepareContinuation({ previous, inputs, repository, branch, sha,
     throw new Error('budget_usd must be empty or a finite positive number.');
   }
   const parent = inputs.resume_run_id ? runId(inputs.resume_run_id) : '';
-  if (previous) {
+  const restartStage = String(inputs.restart_stage ?? '').trim();
+  if (restartStage && restartStage !== 'implementation') throw new Error('restart_stage must be empty or implementation.');
+  if (restartStage && (!parent || previous === undefined)) throw new Error('Stage recovery requires resume_run_id and a saved continuation checkpoint.');
+  let sourceSha = sha;
+  if (previous !== undefined) {
+    if (!previous || typeof previous !== 'object' || Array.isArray(previous)) throw new Error('Invalid saved continuation checkpoint.');
     if (previous.version !== 1 || previous.runId !== parent || !Number.isInteger(previous.leg) || previous.leg < 1) {
       throw new Error('Saved continuation state does not match resume_run_id.');
     }
-    for (const [key, value] of Object.entries({ repository, branch, sha, ...settings })) {
+    for (const [key, value] of Object.entries({ repository, branch, ...settings })) {
       if (previous[key] !== value) throw new Error(`Cannot resume: ${key} changed. Use the original commit and inputs.`);
     }
+    if (previous.sha !== sha && !restartStage) throw new Error('Cannot resume: sha changed. Use the original runtime commit or explicitly restart implementation.');
+    sourceSha = previous.sourceSha ?? previous.sha;
+    if (!/^[a-f0-9]{40}$/.test(sourceSha) || !/^[a-f0-9]{40}$/.test(previous.sha)) throw new Error('Invalid saved source/runtime commit.');
     runId(previous.rootRunId);
   }
   // A legacy manual resume starts a bounded chain here; Foundry still verifies
   // its saved source/configuration fingerprints before doing any model work.
   return {
-    version: 1, repository, branch, sha, ...settings,
+    version: 1, repository, branch, sha, sourceSha, ...settings,
+    ...(restartStage ? { restartStage, previousRuntimeSha: previous.sha } : {}),
     rootRunId: previous?.rootRunId ?? (parent || id), runId: id,
     parentRunId: parent, leg: previous ? previous.leg + 1 : 1,
     maxContinuations: max, autoResume: bool(inputs.auto_resume ?? true),
@@ -60,6 +69,18 @@ export function prepareCheckpoint(directory, options) {
     if (error.code !== 'ENOENT') throw error;
   }
   const state = prepareContinuation({ ...options, previous });
+  if (state.restartStage) {
+    const roots = fs.readdirSync(directory, { withFileTypes: true })
+      .filter(entry => entry.isDirectory() && entry.name.startsWith('run-') &&
+        fs.existsSync(path.join(directory, entry.name, 'workflow-state.json')));
+    if (roots.length !== 1) throw new Error('Stage recovery requires exactly one saved analysis root.');
+    const root = path.join(directory, roots[0].name);
+    const saved = readJson(path.join(root, 'workflow-state.json'));
+    const manifest = readJson(path.join(root, 'run-inputs.json'));
+    if (!['blocked', 'failed', 'paused'].includes(saved.status) || manifest.sourceCommit !== state.sourceSha) {
+      throw new Error('Stage recovery requires a stopped analysis on the saved source commit.');
+    }
+  }
   // Write a complete replacement in a private directory on the same filesystem.
   // Rename publishes it atomically and does not follow a destination symlink.
   const temporaryDirectory = fs.mkdtempSync(path.join(directory, '.continuation-'));
@@ -79,11 +100,12 @@ export async function continueBootstrap({ state, status, repository, branch, sha
   if (status !== 'paused') return { outcome: 'not_paused', message: `No continuation for ${status}.` };
   if (!state || state.version !== 1 || state.runId !== runId(id) || state.repository !== repository ||
       state.branch !== branch || state.sha !== sha || !Number.isInteger(state.leg) || state.leg < 1 ||
+      !/^[a-f0-9]{40}$/.test(state.sourceSha ?? state.sha) ||
       !Number.isInteger(state.maxContinuations) || state.maxContinuations < 0 || state.maxContinuations > 10) {
     throw new Error('Invalid continuation evidence for this run. No workflow was dispatched.');
   }
   const manual = reason => ({ outcome: 'manual_required', message: reason +
-    ` Bootstrap is NOT finished; no PR was created by this paused run. Resume with resume_run_id=${id}, on the original commit and with the same model, publish setting and budget.` });
+    ` Bootstrap is NOT finished; no PR was created by this paused run. Resume with resume_run_id=${id}, on the original runtime commit and with the same model, publish setting and budget. Leave restart_stage empty; the saved source commit is restored automatically.` });
   if (!bool(state.autoResume)) return manual('Automatic continuation is disabled.');
   if (state.leg > state.maxContinuations) return manual(`Automatic continuation limit (${state.maxContinuations}) reached.`);
   // A rerun can replay the last step after GitHub accepted the first POST. Do
@@ -134,6 +156,7 @@ async function main() {
     const event = readJson(env.GITHUB_EVENT_PATH);
     if (env.GITHUB_EVENT_NAME !== 'workflow_dispatch' || env.GITHUB_REF_TYPE !== 'branch') throw new Error('Bootstrap requires a branch workflow_dispatch.');
     const state = prepareCheckpoint(directory, { ...identity, inputs: event.inputs ?? {} });
+    if (env.GITHUB_OUTPUT) fs.appendFileSync(env.GITHUB_OUTPUT, `source_sha=${state.sourceSha}\n`);
     console.log(`Bootstrap segment ${state.leg}; at most ${state.maxContinuations} automatic continuations. Spending allowance is shared across resumed segments.`);
     return;
   }
