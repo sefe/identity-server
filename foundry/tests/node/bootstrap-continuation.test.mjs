@@ -86,7 +86,8 @@ test('malformed network responses never reach the summary or CLI error output', 
   assert.match(summary, /continuation needs attention/);
   assert.match(summary, /resume_run_id=100/);
   assert.match(output, /Could not parse the branch verification response/);
-  assert.doesNotMatch(output + summary, /network-secret|<script>|test-secret/);
+  assert.equal((output + summary).includes(hostile), false);
+  assert.doesNotMatch(output + summary, /network-secret|test-secret/);
 });
 
 test('continuations retain chain identity and spending allowance without resetting the counter', () => {
