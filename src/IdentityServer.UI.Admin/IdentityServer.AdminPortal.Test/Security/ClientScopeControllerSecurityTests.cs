@@ -82,7 +82,7 @@ public class ClientControllerAdditionalSecurityTests : ControllerTestBase
         var client = await _clientController.Call_CreateClientAsync(ClientControllerExtensions.GetDefaultClient(sp.Environments.First().Id), user);
 
         // Act & Assert
-        var exception = Assert.ThrowsAsync<EntityReferenceException>(() => _clientScopeController.Call_AddClientScopeAsync(client.Id, scope, user));
+        var exception = await Assert.ThrowsAsync<EntityReferenceException>(() => _clientScopeController.Call_AddClientScopeAsync(client.Id, scope, user));
         Assert.That(exception!.Message, Does.Contain($"Scope '{scope}' doesn't exist."));
     }
 
@@ -103,7 +103,7 @@ public class ClientControllerAdditionalSecurityTests : ControllerTestBase
         var client = await _clientController.Call_CreateClientAsync(ClientControllerExtensions.GetDefaultClient(sp.Environments.First().Id), Contributor);
 
         // Act & Assert
-        var exception = Assert.ThrowsAsync<EntityAccessException>(() => _clientScopeController.Call_AddClientScopeAsync(client.Id, scopeDto.Name, Contributor));
+        var exception = await Assert.ThrowsAsync<EntityAccessException>(() => _clientScopeController.Call_AddClientScopeAsync(client.Id, scopeDto.Name, Contributor));
         using (Assert.EnterMultipleScope())
         {
             Assert.That(exception!.Message, Does.Contain(scopeDto.Name));
@@ -123,7 +123,7 @@ public class ClientControllerAdditionalSecurityTests : ControllerTestBase
         var client = ClientControllerExtensions.GetDefaultClient(sp.Environments.First().Id);
 
         // Act & Assert
-        var exception = Assert.ThrowsAsync<EntityAccessException>(() => _clientController.Call_CreateClientAsync(client, Contributor));
+        var exception = await Assert.ThrowsAsync<EntityAccessException>(() => _clientController.Call_CreateClientAsync(client, Contributor));
         Assert.That(exception!.Message, Does.Contain("Restricted system permission environment"));
     }
 
@@ -147,7 +147,7 @@ public class ClientControllerAdditionalSecurityTests : ControllerTestBase
         _ = await _apiResourceScopeController.Call_AddApiResourceScopeAsync(scopeDto, Admin);
 
         // Act & Assert
-        var exception = Assert.ThrowsAsync<EntityAccessException>(() => _clientScopeController.Call_AddClientScopeAsync(createdClient.Id, scopeDto.Name, Contributor));
+        var exception = await Assert.ThrowsAsync<EntityAccessException>(() => _clientScopeController.Call_AddClientScopeAsync(createdClient.Id, scopeDto.Name, Contributor));
         Assert.That(exception!.Message, Does.Contain("Restricted system permission environment"));
     }
 
@@ -192,7 +192,7 @@ public class ClientControllerAdditionalSecurityTests : ControllerTestBase
         var scope = Guid.NewGuid().ToString();
 
         // Act & Assert
-        var exception = Assert.ThrowsAsync<EntityReferenceException>(() => _clientScopeController.Call_AddClientScopeAsync(createdClient.Id, scope, user));
+        var exception = await Assert.ThrowsAsync<EntityReferenceException>(() => _clientScopeController.Call_AddClientScopeAsync(createdClient.Id, scope, user));
         Assert.That(exception!.Message, Does.Contain($"Scope '{scope}' doesn't exist."));
     }
 
@@ -251,7 +251,7 @@ public class ClientControllerAdditionalSecurityTests : ControllerTestBase
         _ = await _apiResourceScopeController.Call_AddApiResourceScopeAsync(scopeDto, Admin);
 
         // Act & Assert
-        var exception = Assert.ThrowsAsync<EntityAccessException>(() => _clientScopeController.Call_AddClientScopeAsync(createdClient.Id, scopeDto.Name, Contributor));
+        var exception = await Assert.ThrowsAsync<EntityAccessException>(() => _clientScopeController.Call_AddClientScopeAsync(createdClient.Id, scopeDto.Name, Contributor));
         using (Assert.EnterMultipleScope())
         {
             Assert.That(exception!.Message, Does.Contain(scopeDto.Name));

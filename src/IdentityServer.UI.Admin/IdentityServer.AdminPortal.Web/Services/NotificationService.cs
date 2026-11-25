@@ -3,6 +3,7 @@
 
 using Telerik.Blazor;
 using Telerik.Blazor.Components;
+using IdentityServer.AdminPortal.Web.Constants;
 
 namespace IdentityServer.AdminPortal.Web.Services;
 
@@ -17,7 +18,7 @@ public class NotificationService
 
     public void ShowInfo(string message)
     {
-        Show(message, ThemeConstants.Notification.ThemeColor.Dark);
+        Show(message, ThemeColorNames.Dark);
     }
 
     private void Show(string message, string themeColor = "primary")

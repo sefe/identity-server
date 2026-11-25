@@ -17,7 +17,7 @@ public class SelectableOperatorTests : Bunit.TestContext
         // Arrange
         var items = new List<Selectable> { new() { DisplayName = "Test" }, new() { DisplayName = "Test" } };
         var called = false;
-        var cut = RenderComponent<SelectableOperator>(parameters => parameters
+        var cut = Render<SelectableOperator>(parameters => parameters
             .Add(p => p.Items, items)
             .Add(p => p.OnStateChanged, EventCallback.Factory.Create(this, () => called = true))
         );
@@ -39,7 +39,7 @@ public class SelectableOperatorTests : Bunit.TestContext
         // Arrange
         var items = new List<Selectable> { new() { IsSelected = true, DisplayName = "Test" }, new() { IsSelected = true, DisplayName = "Test" } };
         var called = false;
-        var cut = RenderComponent<SelectableOperator>(parameters => parameters
+        var cut = Render<SelectableOperator>(parameters => parameters
             .Add(p => p.Items, items)
             .Add(p => p.OnStateChanged, EventCallback.Factory.Create(this, () => called = true))
         );
@@ -55,3 +55,4 @@ public class SelectableOperatorTests : Bunit.TestContext
         }
     }
 }
+

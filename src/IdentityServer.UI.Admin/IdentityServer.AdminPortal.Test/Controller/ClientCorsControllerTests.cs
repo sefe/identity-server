@@ -11,6 +11,7 @@ using IdentityServer.AdminPortal.Server.Controllers;
 using IdentityServer.AdminPortal.Test.Extensions;
 using IdentityServer.Tests.Common;
 using DataEntities = Duende.IdentityServer.EntityFramework.Entities;
+using CorsCacheEntry = Duende.IdentityServer.Stores.CachingCorsPolicyService<Duende.IdentityServer.EntityFramework.Services.CorsPolicyService>.CorsCacheEntry;
 
 namespace IdentityServer.AdminPortal.Test.Controller;
 
@@ -19,12 +20,14 @@ public class ClientCorsControllerTests : ControllerTestBase
 {
     private ClientPropertyCorsController _clientCorsController;
     private ClientController _clientController;
-    private ICache<DataEntities.Client> _clientCache;
+    private IConfigurationCacheInvalidator<DataEntities.Client> _clientCache;
+    private IConfigurationCacheInvalidator<CorsCacheEntry> _corsCache;
 
     [SetUp]
     public async Task Setup()
     {
-        _clientCache = Substitute.For<ICache<DataEntities.Client>>();
+        _clientCache = Substitute.For<IConfigurationCacheInvalidator<DataEntities.Client>>();
+        _corsCache = Substitute.For<IConfigurationCacheInvalidator<CorsCacheEntry>>();
 
         var provider = IoC.GetProvider(sc =>
         {
@@ -32,6 +35,7 @@ public class ClientCorsControllerTests : ControllerTestBase
             sc.AddScoped<ClientController>();
             sc.ReplaceWithInstance(EverythingIsAllowed);
             sc.ReplaceWithInstance(_clientCache);
+            sc.ReplaceWithInstance(_corsCache);
         });
 
         await Setup(provider);
@@ -54,6 +58,7 @@ public class ClientCorsControllerTests : ControllerTestBase
         // Assert
         ClientCorsControllerExtensions.AssertClientCorsIsValid(addedCors, client.Id, corsOrigin);
         ClientCorsControllerExtensions.AssertClientHasCorsOrigin(updatedClient, corsOrigin);
+        await _corsCache.Received(1).RemoveAsync(corsOrigin);
     }
 
     [Test]
@@ -65,7 +70,7 @@ public class ClientCorsControllerTests : ControllerTestBase
         await _clientCorsController.Call_AddClientCorsAsync(client.Id, corsOrigin, Contributor);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientCorsController.Call_AddClientCorsAsync(client.Id, corsOrigin, Contributor));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientCorsController.Call_AddClientCorsAsync(client.Id, corsOrigin, Contributor));
     }
 
     [Test]
@@ -141,11 +146,13 @@ public class ClientCorsControllerTests : ControllerTestBase
 
         // Reset the mock to clear previous calls
         _clientCache.ClearReceivedCalls();
+        _corsCache.ClearReceivedCalls();
 
         // Act
         await _clientCorsController.Call_DeleteClientCorsAsync(addedCors.Id, Contributor);
 
         // Assert
         await _clientCache.Received(1).RemoveAsync(client.ClientId);
+        await _corsCache.Received(1).RemoveAsync(corsOrigin);
     }
 }

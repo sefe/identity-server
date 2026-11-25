@@ -112,7 +112,7 @@ public class ClientPropertyEntraAppDtoRepositoryTests
     }
 
     [Test]
-    public void CreateAsync_WithNonExistentEntraApp_ThrowsEntityNotFoundException()
+    public async Task CreateAsync_WithNonExistentEntraApp_ThrowsEntityNotFoundException()
     {
         // Arrange
         var createDto = new ClientPropertyEntraAppDtoCreate
@@ -134,11 +134,11 @@ public class ClientPropertyEntraAppDtoRepositoryTests
         _entraAppService.GetByIdAsync(_testAppId).Returns((Application)null);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityNotFoundException>(async () => await _sut.CreateAsync(_user, createDto));
+        await Assert.ThrowsAsync<EntityNotFoundException>(async () => await _sut.CreateAsync(_user, createDto));
     }
 
     [Test]
-    public void CreateAsync_WithDuplicateEntraApp_ThrowsEntityAlreadyExistsException()
+    public async Task CreateAsync_WithDuplicateEntraApp_ThrowsEntityAlreadyExistsException()
     {
         // Arrange
         var createDto = new ClientPropertyEntraAppDtoCreate
@@ -166,7 +166,7 @@ public class ClientPropertyEntraAppDtoRepositoryTests
             .Returns(new List<ClientEntraApp> { existingProperty });
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(async () => await _sut.CreateAsync(_user, createDto));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(async () => await _sut.CreateAsync(_user, createDto));
     }
 
     [Test]

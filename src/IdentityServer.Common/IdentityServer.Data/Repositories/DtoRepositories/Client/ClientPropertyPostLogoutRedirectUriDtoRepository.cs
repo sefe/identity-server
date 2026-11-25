@@ -27,7 +27,7 @@ internal class ClientPropertyPostLogoutRedirectUriDtoRepository :
         IMapper mapper,
         IPermissionChecker permissionChecker,
         IParentAccessor<ClientPostLogoutRedirectUriExt, ClientExt> parentAccessor,
-        ICache<DataEntities.Client> clientCache,
+        IConfigurationCacheInvalidator<DataEntities.Client> clientCache,
         ILogger<ClientPropertyPostLogoutRedirectUriDtoRepository> logger
         ) : base(clientStorage, propertyStorage, mapper, permissionChecker, parentAccessor, clientCache)
     {

@@ -7,7 +7,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using IdentityServer.Abstraction;
 using IdentityServer.Abstraction.Configs;
 using IdentityServer.Abstraction.Contracts;
@@ -19,6 +19,7 @@ using IdentityServer.Core.Extensions;
 using IdentityServer.Core.Infrastructure;
 using IdentityServer.Core.Serilog.Extensions;
 using IdentityServer.MicrosoftGraph.Extensions;
+using IdentityServer.Data.Caching;
 using static IdentityServer.Abstraction.Constants;
 using static IdentityServer.Data.RegisterServices;
 
@@ -135,6 +136,7 @@ public static class HostingExtensions
                     var redisOptions = RedisConnectionStringBuilder.BuildFrom(identityServerCachingOptions.Provider);
                     builder.Services.AddRedisConnection(redisOptions);
                     builder.Services.AddSingleton(typeof(ICache<>), typeof(RedisCache<>));
+                    builder.Services.AddSharedConfigurationCache();
                     break;
                 default:
                     throw new InvalidOperationException($"Unsupported caching provider: '{identityServerCachingOptions.Provider}'");
@@ -188,13 +190,10 @@ public static class HostingExtensions
                 Type = SecuritySchemeType.OAuth2
             };
             options.AddSecurityDefinition("OAuth", scheme);
-            options.AddSecurityRequirement(new OpenApiSecurityRequirement
+            options.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
             {
                 {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference { Id = "OAuth", Type = ReferenceType.SecurityScheme }
-                    },
+                    new OpenApiSecuritySchemeReference("OAuth"),
                     new List<string>()
                 }
             });

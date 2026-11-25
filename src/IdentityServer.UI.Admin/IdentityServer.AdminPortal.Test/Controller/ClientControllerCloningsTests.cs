@@ -115,7 +115,7 @@ public class ClientControllerCloningsTests : ControllerTestBase
     }
 
     [Test]
-    public void CloneClient_WithInvalidId_Fails()
+    public async Task CloneClient_WithInvalidId_Fails()
     {
         // Arrange
         var cloneRequest = new ClientDtoClone
@@ -127,11 +127,11 @@ public class ClientControllerCloningsTests : ControllerTestBase
         };
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityNotFoundException>(() => _clientController.Call_CloneClientAsync(cloneRequest, Admin));
+        await Assert.ThrowsAsync<EntityNotFoundException>(() => _clientController.Call_CloneClientAsync(cloneRequest, Admin));
     }
 
     [Test]
-    public void CloneClient_WithExistingClientId_Fails()
+    public async Task CloneClient_WithExistingClientId_Fails()
     {
         // Arrange
         var originalClient = _clientController.Call_CreateClientAsync(
@@ -146,7 +146,7 @@ public class ClientControllerCloningsTests : ControllerTestBase
         };
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientController.Call_CloneClientAsync(cloneRequest, Admin));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientController.Call_CloneClientAsync(cloneRequest, Admin));
     }
 
     [Test]

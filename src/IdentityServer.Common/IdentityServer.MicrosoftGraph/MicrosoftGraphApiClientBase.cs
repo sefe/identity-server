@@ -41,24 +41,20 @@ internal abstract class MicrosoftGraphApiClientBase
 
     private static string AppendQuery(string relativePath, string? select, string? filter)
     {
-        var query = HttpUtility.ParseQueryString(string.Empty);
+        var queryString = BuildQueryString(("$select", select), ("$filter", filter));
+        return string.IsNullOrEmpty(queryString) ? relativePath : $"{relativePath}?{queryString}";
+    }
 
-        if (!string.IsNullOrEmpty(select))
-        {
-            query["$select"] = select;
-        }
-        if (!string.IsNullOrEmpty(filter))
-        {
-            query["$filter"] = filter;
-        }
-
-        var queryString = query.ToString();
-        if (string.IsNullOrEmpty(queryString))
-        {
-            return relativePath;
-        }
-
-        return $"{relativePath}?{queryString}";
+    /// <summary>
+    /// Builds a query string keeping OData system query option names (e.g. <c>$select</c>) unencoded.
+    /// Since .NET 10, <see cref="HttpUtility.ParseQueryString(string)"/> encodes '$' in keys as '%24'.
+    /// Parameters with null or empty values are skipped.
+    /// </summary>
+    protected static string BuildQueryString(params (string Name, string? Value)[] parameters)
+    {
+        return string.Join('&', parameters
+            .Where(p => !string.IsNullOrEmpty(p.Value))
+            .Select(p => $"{p.Name}={HttpUtility.UrlEncode(p.Value)}"));
     }
 
     protected Task<TResponse?> GetByIdAsync<TResponse>(string relativePath)

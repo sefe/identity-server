@@ -138,7 +138,7 @@ public class GroupControllerTests : ControllerTestBase
         _mockEntraGroupService.GetGroupsByDisplayNameAsync(searchString, skipToken).Throws(expectedException);
 
         // Act & Assert
-        var exception = Assert.ThrowsAsync<InvalidOperationException>(() => _controller.Call_GetGroupsByDisplayNameAsync(searchString, skipToken, Admin));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.Call_GetGroupsByDisplayNameAsync(searchString, skipToken, Admin));
         Assert.That(exception.Message, Is.EqualTo(expectedException.Message));
         await _mockEntraGroupService.Received(1).GetGroupsByDisplayNameAsync(searchString, skipToken);
     }

@@ -51,7 +51,7 @@ public class CustomProfileServiceTests
         _userService.GetUserByObjectIdAsync(userObjectId).Returns(userResponse);
 
         // Act
-        await _service.IsActiveAsync(context);
+        await _service.IsActiveAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.IsActive, Is.True);
@@ -72,7 +72,7 @@ public class CustomProfileServiceTests
         _userService.GetUserByObjectIdAsync(userObjectId).Returns(userResponse);
 
         // Act
-        await _service.IsActiveAsync(context);
+        await _service.IsActiveAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.IsActive, Is.False);
@@ -89,7 +89,7 @@ public class CustomProfileServiceTests
         _userService.GetUserByObjectIdAsync(userObjectId).Returns((UserResponse)null);
 
         // Act
-        await _service.IsActiveAsync(context);
+        await _service.IsActiveAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.IsActive, Is.False);
@@ -104,7 +104,7 @@ public class CustomProfileServiceTests
         var context = new IsActiveContext(subject, new Client(), "test-caller");
 
         // Act
-        await _service.IsActiveAsync(context);
+        await _service.IsActiveAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.IsActive, Is.False);
@@ -118,7 +118,7 @@ public class CustomProfileServiceTests
         var context = CreateIsActiveContext(string.Empty);
 
         // Act
-        await _service.IsActiveAsync(context);
+        await _service.IsActiveAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.IsActive, Is.False);
@@ -143,7 +143,7 @@ public class CustomProfileServiceTests
         _userService.GetUserByObjectIdAsync(userObjectId).Returns(userResponse);
 
         // Act
-        await _service.IsActiveAsync(context);
+        await _service.IsActiveAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.IsActive, Is.False);
@@ -168,7 +168,7 @@ public class CustomProfileServiceTests
         _userService.GetUserByObjectIdAsync(userObjectId).Returns(userResponse);
 
         // Act
-        await _service.IsActiveAsync(context);
+        await _service.IsActiveAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.IsActive, Is.False);
@@ -194,7 +194,7 @@ public class CustomProfileServiceTests
         _userService.GetUserByObjectIdAsync(userObjectId).Returns(userResponse);
 
         // Act
-        await _service.IsActiveAsync(context);
+        await _service.IsActiveAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.IsActive, Is.True);
@@ -211,7 +211,7 @@ public class CustomProfileServiceTests
         _userService.GetUserByObjectIdAsync(userObjectId).ThrowsAsync(new Exception("Service error"));
 
         // Act
-        await _service.IsActiveAsync(context);
+        await _service.IsActiveAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.IsActive, Is.False);
@@ -238,7 +238,7 @@ public class CustomProfileServiceTests
         var context = TestHelpers.CreateProfileDataRequestContext(IdentityServerConstants.ProfileDataCallers.ClaimsProviderAccessToken);
 
         // Act
-        await _service.GetProfileDataAsync(context);
+        await _service.GetProfileDataAsync(context, CancellationToken.None);
 
         // Assert
         Assert.That(context.IssuedClaims, Is.Not.Null);
@@ -390,7 +390,8 @@ public class CustomProfileServiceTests
     {
         // Arrange
         var context = TestHelpers.CreateProfileDataRequestContext();
-        context.Client = new Client { ClientId = "client1" };
+        context.Application = Substitute.For<IConnectedApplication>();
+        context.Application.Identifier.Returns("client1");
         var claim = new Claim(ClaimNames.UserObjectId, "123");
         var claims = new[] { new Claim("role", "client") };
         _clientRoleMapper.ProcessClientRoleMappingsForUserAsync("client1", "123")
@@ -401,6 +402,71 @@ public class CustomProfileServiceTests
 
         // Assert
         Assert.That(context.IssuedClaims, Has.Exactly(1).EqualTo(claims[0]));
+    }
+
+    [Test]
+    public async Task GetProfileDataAsync_ForIdentityTokenWithoutClientIdClaim_ShouldMapRequestingApplicationRoles()
+    {
+        var context = TestHelpers.CreateProfileDataRequestContext(IdentityServerConstants.ProfileDataCallers.ClaimsProviderIdentityToken);
+        context.Application = Substitute.For<IConnectedApplication>();
+        context.Application.Identifier.Returns("client1");
+        context.Subject = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim("sub", "123"),
+            new Claim(ClaimNames.UserObjectId, "123")
+        }));
+        var role = new Claim("role", "client");
+        _clientRoleMapper.ProcessClientRoleMappingsForUserAsync("client1", "123")
+            .Returns(new[] { role }.ToAsyncEnumerable());
+        _userService.GetUserOnPremisePropertiesAsync("123").Returns(new Dictionary<string, string>());
+
+        await _service.GetProfileDataAsync(context, CancellationToken.None);
+
+        Assert.That(context.IssuedClaims, Does.Contain(role));
+        _clientRoleMapper.Received(1).ProcessClientRoleMappingsForUserAsync("client1", "123");
+    }
+
+    [Test]
+    public async Task AddClientRoleClaims_WhenSubjectClientIdDiffers_ShouldUseRequestingApplication()
+    {
+        var context = TestHelpers.CreateProfileDataRequestContext();
+        context.Application = Substitute.For<IConnectedApplication>();
+        context.Application.Identifier.Returns("client1");
+        context.Subject = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim("client_id", "other-client") }));
+        _clientRoleMapper.ProcessClientRoleMappingsForUserAsync("client1", "123")
+            .Returns(Array.Empty<Claim>().ToAsyncEnumerable());
+
+        await _service.AddClientRoleClaims(context, new Claim(ClaimNames.UserObjectId, "123"));
+
+        _clientRoleMapper.Received(1).ProcessClientRoleMappingsForUserAsync("client1", "123");
+        _clientRoleMapper.DidNotReceive().ProcessClientRoleMappingsForUserAsync("other-client", Arg.Any<string>());
+    }
+
+    [TestCase(null)]
+    [TestCase("")]
+    public async Task AddClientRoleClaims_WhenApplicationIdentifierMissing_ShouldNotMapSubjectClientId(string identifier)
+    {
+        var context = TestHelpers.CreateProfileDataRequestContext();
+        context.Application = Substitute.For<IConnectedApplication>();
+        context.Application.Identifier.Returns(identifier);
+        context.Subject = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim("client_id", "other-client") }));
+
+        await _service.AddClientRoleClaims(context, new Claim(ClaimNames.UserObjectId, "123"));
+
+        Assert.That(context.IssuedClaims, Is.Empty);
+        _clientRoleMapper.DidNotReceive().ProcessClientRoleMappingsForUserAsync(Arg.Any<string>(), Arg.Any<string>());
+    }
+
+    [Test]
+    public async Task AddClientRoleClaims_WhenApplicationMissing_ShouldNotMapRoles()
+    {
+        var context = TestHelpers.CreateProfileDataRequestContext();
+        context.Application = null;
+
+        await _service.AddClientRoleClaims(context, new Claim(ClaimNames.UserObjectId, "123"));
+
+        Assert.That(context.IssuedClaims, Is.Empty);
+        _clientRoleMapper.DidNotReceive().ProcessClientRoleMappingsForUserAsync(Arg.Any<string>(), Arg.Any<string>());
     }
 
     [Test]

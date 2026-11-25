@@ -48,10 +48,10 @@ public class ApiResourceImportControllerTests : ControllerTestBase
     }
 
     [Test]
-    public void ImportApiResourceRoles_WithInvalidApiId_Fails()
+    public async Task ImportApiResourceRoles_WithInvalidApiId_Fails()
     {
         // Act & Assert
-        Assert.ThrowsAsync<EntityNotFoundException>(() => _importController.ImportApiResourceRoles(9999, new ApiResourceRoleImportDto { Roles = [] }));
+        await Assert.ThrowsAsync<EntityNotFoundException>(() => _importController.ImportApiResourceRoles(9999, new ApiResourceRoleImportDto { Roles = [] }));
     }
 
     [Test]
@@ -73,7 +73,7 @@ public class ApiResourceImportControllerTests : ControllerTestBase
         // Act & Assert
         using (Assert.EnterMultipleScope())
         {
-            var ex = Assert.ThrowsAsync<ImportValidationException>(() => _importController.ImportApiResourceRoles(api.Id, importDto));
+            var ex = await Assert.ThrowsAsync<ImportValidationException>(() => _importController.ImportApiResourceRoles(api.Id, importDto));
             Assert.That(ex!.ValidationSummary.Errors, Has.Some.Contains("Duplicate role names"));
             await _roleMappingValidationService.Received(1).ValidateImportRoleMappingsAsync(Arg.Any<List<RoleMappingValueObject>>(), Arg.Any<OperationStatus>());
         }
@@ -95,7 +95,7 @@ public class ApiResourceImportControllerTests : ControllerTestBase
         SetControllerContext(_importController, Admin);
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<ImportValidationException>(() => _importController.ImportApiResourceRoles(api.Id, importDto));
+        var ex = await Assert.ThrowsAsync<ImportValidationException>(() => _importController.ImportApiResourceRoles(api.Id, importDto));
         Assert.That(ex, Is.Not.Null);
         using (Assert.EnterMultipleScope())
         {
@@ -228,10 +228,10 @@ public class ApiResourceImportControllerTests : ControllerTestBase
     }
 
     [Test]
-    public void ValidateImportApiResourceRoles_WithInvalidApiId_Fails()
+    public async Task ValidateImportApiResourceRoles_WithInvalidApiId_Fails()
     {
         // Act & Assert
-        Assert.ThrowsAsync<EntityNotFoundException>(() => _importController.ValidateImportApiResourceRoles(9999, new ApiResourceRoleImportDto { Roles = [] }));
+        await Assert.ThrowsAsync<EntityNotFoundException>(() => _importController.ValidateImportApiResourceRoles(9999, new ApiResourceRoleImportDto { Roles = [] }));
     }
 
     [Test]

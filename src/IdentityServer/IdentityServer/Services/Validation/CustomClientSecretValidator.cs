@@ -47,7 +47,7 @@ public class CustomClientSecretValidator : IClientSecretValidator
     /// </summary>
     /// <param name="context">The context.</param>
     /// <returns></returns>
-    public async Task<ClientSecretValidationResult> ValidateAsync(HttpContext context)
+    public async Task<ClientSecretValidationResult> ValidateAsync(HttpContext context, CancellationToken cancellationToken)
     {
         _logger.LogDebug("Start client validation");
 
@@ -57,10 +57,10 @@ public class CustomClientSecretValidator : IClientSecretValidator
             Error = OidcConstants.TokenErrors.InvalidClient
         };
 
-        var parsedSecret = await _parser.ParseAsync(context);
+        var parsedSecret = await _parser.ParseAsync(context, cancellationToken);
         if (parsedSecret == null)
         {
-            await RaiseFailureEventAsync("unknown", "No client id found");
+            await RaiseFailureEventAsync("unknown", "No client id found", cancellationToken);
             _logger.LogError("No client identifier found");
 
             fail.Error = OidcConstants.TokenErrors.InvalidRequest;
@@ -69,16 +69,16 @@ public class CustomClientSecretValidator : IClientSecretValidator
         }
 
         // load client
-        var client = await _clients.FindEnabledClientByIdAsync(parsedSecret.Id);
+        var client = await _clients.FindEnabledClientByIdAsync(parsedSecret.Id, cancellationToken);
         if (client == null)
         {
-            await RaiseFailureEventAsync(parsedSecret.Id, "Unknown client");
+            await RaiseFailureEventAsync(parsedSecret.Id, "Unknown client", cancellationToken);
             _logger.LogError("No client with id '{ClientId}' found", parsedSecret.Id);
             fail.ErrorDescription = $"Client not found or not enabled.";
             return fail;
         }
 
-        var grantType = await GetGrantTypeAsync(context);
+        var grantType = await GetGrantTypeAsync(context, cancellationToken);
 
         SecretValidationResult? secretValidationResult = null;
         if (grantType != GrantType.ClientCredentials && (!client.RequireClientSecret || client.IsImplicitOnly()))
@@ -87,10 +87,10 @@ public class CustomClientSecretValidator : IClientSecretValidator
         }
         else
         {
-            secretValidationResult = await _validator.ValidateAsync(client.ClientSecrets, parsedSecret);
+            secretValidationResult = await _validator.ValidateAsync(client.ClientSecrets, parsedSecret, cancellationToken);
             if (!secretValidationResult.Success)
             {
-                await RaiseFailureEventAsync(client.ClientId, secretValidationResult.Error ?? "Invalid client secret");
+                await RaiseFailureEventAsync(client.ClientId, secretValidationResult.Error ?? "Invalid client secret", cancellationToken);
                 _logger.LogError("Client secret validation failed for client {ClientId}: {Error}: {ErrorDescription}", client.ClientId, secretValidationResult.Error, secretValidationResult.ErrorDescription);
                 fail.ErrorDescription = "Invalid client secret.";
                 return fail;
@@ -107,26 +107,26 @@ public class CustomClientSecretValidator : IClientSecretValidator
             Confirmation = secretValidationResult?.Confirmation
         };
 
-        await RaiseSuccessEventAsync(client.ClientId, parsedSecret.Type);
+        await RaiseSuccessEventAsync(client.ClientId, parsedSecret.Type, cancellationToken);
         return success;
     }
 
-    private static async Task<string?> GetGrantTypeAsync(HttpContext context)
+    private static async Task<string?> GetGrantTypeAsync(HttpContext context, CancellationToken cancellationToken)
     {
-        await context.Request.ReadFormAsync();
+        await context.Request.ReadFormAsync(cancellationToken);
         string? grantType = context.Request.Form[OidcConstants.TokenRequest.GrantType];
         return grantType ?? context.Request.Query[OidcConstants.TokenRequest.GrantType].FirstOrDefault();
     }
 
-    private Task RaiseSuccessEventAsync(string clientId, string authMethod)
+    private Task RaiseSuccessEventAsync(string clientId, string authMethod, CancellationToken cancellationToken)
     {
         Telemetry.Metrics.ClientSecretValidation(clientId, authMethod);
-        return _events.RaiseAsync(new ClientAuthenticationSuccessEvent(clientId, authMethod));
+        return _events.RaiseAsync(new ClientAuthenticationSuccessEvent(clientId, authMethod), cancellationToken);
     }
 
-    private Task RaiseFailureEventAsync(string clientId, string message)
+    private Task RaiseFailureEventAsync(string clientId, string message, CancellationToken cancellationToken)
     {
         Telemetry.Metrics.ClientSecretValidationFailure(clientId, message);
-        return _events.RaiseAsync(new ClientAuthenticationFailureEvent(clientId, message));
+        return _events.RaiseAsync(new ClientAuthenticationFailureEvent(clientId, message), cancellationToken);
     }
 }

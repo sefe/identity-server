@@ -68,7 +68,7 @@ public class ApiResourceListTests //: Bunit.TestContext
             .Returns(Task.FromResult(apiCallResult));
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ApiResourceList>(childParameters => childParameters
                 .Add(p => p.OnApiResourceClick, EventCallback.Factory.Create<int>(this, _ => { }))
                 .Add(p => p.GridStateStorageKey, "test-key")
@@ -101,7 +101,7 @@ public class ApiResourceListTests //: Bunit.TestContext
             .Returns(Task.FromResult(apiCallResult));
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ApiResourceList>(childParameters => childParameters
                 .Add(p => p.OnApiResourceClick, EventCallback.Factory.Create<int>(this, _ => { }))
                 .Add(p => p.GridStateStorageKey, "test-key")
@@ -149,7 +149,7 @@ public class ApiResourceListTests //: Bunit.TestContext
                 return Task.FromResult(apiCallResult);
             });
 
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ApiResourceList>(childParameters => childParameters
                 .Add(p => p.OnApiResourceClick, EventCallback.Factory.Create<int>(this, _ => { }))
                 .Add(p => p.GridStateStorageKey, "test-toggle-key")
@@ -198,3 +198,4 @@ public class ApiResourceListTests //: Bunit.TestContext
         ctx.JSInterop.SetupVoid("TelerikBlazor.initColumnResizable", _ => true);
     }
 }
+

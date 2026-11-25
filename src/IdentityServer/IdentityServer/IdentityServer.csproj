@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <UserSecretsId>21d226c8-3619-413e-b6b0-8ad9bee714f5</UserSecretsId>
@@ -16,7 +16,6 @@
         <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
         <PackageReference Include="StackExchange.Redis" />
         <PackageReference Include="Swashbuckle.AspNetCore" />
-        <PackageReference Include="Duende.IdentityServer" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />
         <PackageReference Include="System.Linq.Async" />

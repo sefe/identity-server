@@ -333,6 +333,25 @@ identity-server/
 | `IdentityServer:CachingOptions:Provider:Username` | Valkey username (Valkey only) |
 | `IdentityServer:CachingOptions:Provider:Password` | Valkey password (Valkey only) |
 
+With `Valkey`, both IdentityServer and the admin portal must use the same Redis
+database and `System:Environment`. Duende 8 configuration decorators use a keyed
+`HybridCache`, isolated under `<environment>:configuration:v8:`; the application's
+`ICache<T>` (for example, Microsoft Graph caching) remains separate. Configuration
+keys are case-sensitive. Client changes remove the client model entry, CORS changes
+remove the origin decision (including negative decisions), and API resource/scope
+changes remove Duende's entire `Resources` snapshot, including on resource creation.
+
+The shared configuration cache disables HybridCache's local tier on every call:
+deleting a Redis entry from the admin process must not leave authentication servers
+serving their own stale copies. Invalidations run after database persistence and
+fail visibly if Redis is unavailable. This is not a transaction spanning SQL and
+Redis; requests already in flight can finish with, or repopulate, earlier configuration
+until its configured expiration.
+`InMemory` is process-local and admin edits become visible only after the configured
+Duende cache expiration (or an IdentityServer restart). Use `Valkey` when immediate
+cross-process invalidation is required. Deploy both applications together when
+upgrading from the legacy cache format; old entries expire naturally.
+
 ### Feature Flags
 
 | Key | Description |

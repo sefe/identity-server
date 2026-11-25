@@ -71,8 +71,8 @@ public class ApiResourceIsEnabledValidatorTests
         // Arrange
         var result = new ResourceValidationResult();
         var scopeName = "api1.scope";
-        _resourceStore.FindApiResourcesByNameAsync(Arg.Any<IEnumerable<string>>())
-            .Returns(Enumerable.Empty<ApiResource>());
+        _resourceStore.FindApiResourcesByNameAsync(Arg.Any<IEnumerable<string>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyCollection<ApiResource>>(Array.Empty<ApiResource>()));
 
         // Act
         await _sut.ValidateApiResourceIsEnabled(scopeName, result);
@@ -88,8 +88,8 @@ public class ApiResourceIsEnabledValidatorTests
         var result = new ResourceValidationResult();
         var scopeName = "api1.scope";
         var apiResources = new[] { new ApiResource("api1"), new ApiResource("api1") };
-        _resourceStore.FindApiResourcesByNameAsync(Arg.Any<IEnumerable<string>>())
-            .Returns(apiResources);
+        _resourceStore.FindApiResourcesByNameAsync(Arg.Any<IEnumerable<string>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyCollection<ApiResource>>(apiResources));
 
         // Act
         await _sut.ValidateApiResourceIsEnabled(scopeName, result);
@@ -105,8 +105,8 @@ public class ApiResourceIsEnabledValidatorTests
         var result = new ResourceValidationResult();
         var scopeName = "api1.scope";
         var apiResource = new ApiResource("api1") { Enabled = false };
-        _resourceStore.FindApiResourcesByNameAsync(Arg.Any<IEnumerable<string>>())
-            .Returns(new[] { apiResource });
+        _resourceStore.FindApiResourcesByNameAsync(Arg.Any<IEnumerable<string>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyCollection<ApiResource>>(new[] { apiResource }));
 
         // Act
         await _sut.ValidateApiResourceIsEnabled(scopeName, result);
@@ -122,8 +122,8 @@ public class ApiResourceIsEnabledValidatorTests
         var result = new ResourceValidationResult();
         var scopeName = "api1.scope";
         var apiResource = new ApiResource("api1") { Enabled = true };
-        _resourceStore.FindApiResourcesByNameAsync(Arg.Any<IEnumerable<string>>())
-            .Returns(new[] { apiResource });
+        _resourceStore.FindApiResourcesByNameAsync(Arg.Any<IEnumerable<string>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyCollection<ApiResource>>(new[] { apiResource }));
 
         // Act
         await _sut.ValidateApiResourceIsEnabled(scopeName, result);
@@ -143,7 +143,8 @@ public class ApiResourceIsEnabledValidatorTests
             ApiResources = apiResources,
             ApiScopes = [new ApiScope { Name = "api1.scope", Enabled = true }],
         };
-        _resourceStore.FindApiResourcesByNameAsync(Arg.Any<IEnumerable<string>>()).Returns(apiResources);
+        _resourceStore.FindApiResourcesByNameAsync(Arg.Any<IEnumerable<string>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyCollection<ApiResource>>(apiResources));
         var requestedScope = new ParsedScopeValue("api1.scope");
         var result = new ResourceValidationResult();
 
@@ -170,7 +171,8 @@ public class ApiResourceIsEnabledValidatorTests
             ApiResources = apiResources,
             ApiScopes = [new ApiScope { Name = "api1.scope", Enabled = true }],
         };
-        _resourceStore.FindApiResourcesByNameAsync(Arg.Any<IEnumerable<string>>()).Returns(apiResources);
+        _resourceStore.FindApiResourcesByNameAsync(Arg.Any<IEnumerable<string>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyCollection<ApiResource>>(apiResources));
         var requestedScope = new ParsedScopeValue("api1.scope");
         var result = new ResourceValidationResult();
 

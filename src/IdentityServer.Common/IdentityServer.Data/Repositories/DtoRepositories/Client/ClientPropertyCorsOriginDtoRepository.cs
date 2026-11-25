@@ -18,7 +18,7 @@ namespace IdentityServer.Data.Repositories.DtoRepositories.Client;
 internal class ClientPropertyCorsOriginDtoRepository :
     ClientCacheablePropertyBaseDtoRepository<ClientPropertyCorsOriginDtoRead, ClientPropertyCorsOriginDtoCreate, ClientCorsOriginExt>
 {
-    private readonly ICache<CachingCorsPolicyService<CorsPolicyService>.CorsCacheEntry> _corsCache;
+    private readonly IConfigurationCacheInvalidator<CachingCorsPolicyService<CorsPolicyService>.CorsCacheEntry> _corsCache;
 
     public ClientPropertyCorsOriginDtoRepository(
         IStorage<ClientExt> clientStorage,
@@ -26,8 +26,8 @@ internal class ClientPropertyCorsOriginDtoRepository :
         IMapper mapper,
         IPermissionChecker permissionChecker,
         IParentAccessor<ClientCorsOriginExt, ClientExt> parentAccessor,
-        ICache<CachingCorsPolicyService<CorsPolicyService>.CorsCacheEntry> corsCache,
-        ICache<DataEntities.Client> clientCache
+        IConfigurationCacheInvalidator<CachingCorsPolicyService<CorsPolicyService>.CorsCacheEntry> corsCache,
+        IConfigurationCacheInvalidator<DataEntities.Client> clientCache
         ) : base(clientStorage, propertyStorage, mapper, permissionChecker, parentAccessor, clientCache)
     {
         _corsCache = corsCache;

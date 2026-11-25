@@ -22,7 +22,7 @@ public class NewSecretFormTests
         ctx.Services.AddSingleton(config);
 
         // Act
-        var cut = ctx.RenderComponent<NewSecretForm>(parameters => parameters
+        var cut = ctx.Render<NewSecretForm>(parameters => parameters
             .Add(p => p.ProhibitedValues, new List<string>()));
 
         // Assert
@@ -44,7 +44,7 @@ public class NewSecretFormTests
         ctx.Services.AddSingleton(config);
 
         // Act
-        var cut = ctx.RenderComponent<NewSecretForm>(parameters => parameters
+        var cut = ctx.Render<NewSecretForm>(parameters => parameters
             .Add(p => p.ProhibitedValues, new List<string>()));
 
         // Assert
@@ -60,11 +60,11 @@ public class NewSecretFormTests
         ctx.Services.AddSingleton(config);
 
         // Act
-        var cut = ctx.RenderComponent<NewSecretForm>(parameters => parameters
+        var cut = ctx.Render<NewSecretForm>(parameters => parameters
             .Add(p => p.ProhibitedValues, new List<string>()));
 
         // Assert
-        Assert.That(cut.Markup, Does.Contain("Create").And.Contain("k-button-solid-primary"));
+        Assert.That(cut.Markup, Does.Contain("Create").And.Contain("k-button-primary"));
     }
 
     [Test]
@@ -76,11 +76,11 @@ public class NewSecretFormTests
         ctx.Services.AddSingleton(config);
 
         // Act
-        var cut = ctx.RenderComponent<NewSecretForm>(parameters => parameters
+        var cut = ctx.Render<NewSecretForm>(parameters => parameters
             .Add(p => p.ProhibitedValues, new List<string>()));
 
         // Assert
-        Assert.That(cut.Markup, Does.Contain("Cancel").And.Contain("k-button-solid-secondary"));
+        Assert.That(cut.Markup, Does.Contain("Cancel").And.Contain("k-button-secondary"));
     }
 
     [Test]
@@ -92,7 +92,7 @@ public class NewSecretFormTests
         ctx.Services.AddSingleton(config);
 
         // Act
-        var cut = ctx.RenderComponent<NewSecretForm>(parameters => parameters
+        var cut = ctx.Render<NewSecretForm>(parameters => parameters
             .Add(p => p.ProhibitedValues, new List<string>()));
 
         // Assert
@@ -104,3 +104,4 @@ public class NewSecretFormTests
         }
     }
 }
+

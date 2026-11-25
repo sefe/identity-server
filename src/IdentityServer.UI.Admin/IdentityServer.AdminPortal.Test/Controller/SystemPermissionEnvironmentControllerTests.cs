@@ -60,7 +60,7 @@ public class SystemPermissionEnvironmentControllerTests : ControllerTestBase
         };
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityReferenceException>(() => _envController.Call_CreateSystemPermissionEnvironmentAsync(env, user));
+        await Assert.ThrowsAsync<EntityReferenceException>(() => _envController.Call_CreateSystemPermissionEnvironmentAsync(env, user));
     }
 
     [Test]
@@ -75,7 +75,7 @@ public class SystemPermissionEnvironmentControllerTests : ControllerTestBase
         };
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _envController.Call_CreateSystemPermissionEnvironmentAsync(env, TestUser.SuperUser));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _envController.Call_CreateSystemPermissionEnvironmentAsync(env, TestUser.SuperUser));
     }
 
     [Test]
@@ -141,7 +141,7 @@ public class SystemPermissionEnvironmentControllerTests : ControllerTestBase
         await _clientController.Call_CreateClientAsync(ClientControllerExtensions.GetDefaultClient(envToDelete.Id), Admin);
 
         // Act & Assert
-        Assert.ThrowsAsync(Is.TypeOf(exceptionType), () => _envController.Call_DeleteSystemPermissionEnvironmentByIdAsync(envToDelete.Id, user));
+        await Assert.ThrowsAsync(Is.TypeOf(exceptionType), () => _envController.Call_DeleteSystemPermissionEnvironmentByIdAsync(envToDelete.Id, user));
     }
 
     [Test]
@@ -162,7 +162,7 @@ public class SystemPermissionEnvironmentControllerTests : ControllerTestBase
         await _apiResourceController.Call_CreateApiResourceAsync(ApiResourceControllerExtensions.GetDefaultApiResource(envToDelete.Id), Admin);
 
         // Act & Assert
-        Assert.ThrowsAsync(Is.TypeOf(exceptionType), () => _envController.Call_DeleteSystemPermissionEnvironmentByIdAsync(envToDelete.Id, user));
+        await Assert.ThrowsAsync(Is.TypeOf(exceptionType), () => _envController.Call_DeleteSystemPermissionEnvironmentByIdAsync(envToDelete.Id, user));
     }
 
     [Test]
@@ -189,7 +189,7 @@ public class SystemPermissionEnvironmentControllerTests : ControllerTestBase
         }
         else
         {
-            Assert.ThrowsAsync(Is.TypeOf(exceptionType), () => _envController.Call_DeleteSystemPermissionEnvironmentByIdAsync(sp.Id, user));
+            await Assert.ThrowsAsync(Is.TypeOf(exceptionType), () => _envController.Call_DeleteSystemPermissionEnvironmentByIdAsync(sp.Id, user));
         }
     }
 

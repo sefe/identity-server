@@ -21,13 +21,13 @@ public class ClientPostLogoutRedirectControllerTests : ControllerTestBase
     private ClientPropertyPostLogoutRedirectController _clientPostLogoutRedirectController;
     private ClientController _clientController;
     private MockLogger<ClientPropertyPostLogoutRedirectUriDtoRepository> _mockLogger;
-    private ICache<DataEntities.Client> _clientCache;
+    private IConfigurationCacheInvalidator<DataEntities.Client> _clientCache;
 
     [SetUp]
     public async Task Setup()
     {
         _mockLogger = new MockLogger<ClientPropertyPostLogoutRedirectUriDtoRepository>();
-        _clientCache = Substitute.For<ICache<DataEntities.Client>>();
+        _clientCache = Substitute.For<IConfigurationCacheInvalidator<DataEntities.Client>>();
 
         var provider = IoC.GetProvider(sc =>
         {
@@ -71,7 +71,7 @@ public class ClientPostLogoutRedirectControllerTests : ControllerTestBase
         await _clientPostLogoutRedirectController.Call_AddClientPostLogoutRedirectAsync(client.Id, originalUri, Contributor);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientPostLogoutRedirectController.Call_AddClientPostLogoutRedirectAsync(client.Id, caseDifferentUri, Contributor));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientPostLogoutRedirectController.Call_AddClientPostLogoutRedirectAsync(client.Id, caseDifferentUri, Contributor));
     }
 
     [Test]

@@ -20,6 +20,7 @@ internal class ApiResourceCloneDtoRepository : ApiResourceDtoRepositoryBase,
 {
     private readonly IStorage<SystemPermissionEnvironment> _sysEnvStorage;
     private readonly IDtoCreateRepository<ApiResourcePropertyScopeDtoRead, ApiResourcePropertyScopeDtoCreate> _apiResourceScopeRepo;
+    private readonly IConfigurationCacheInvalidator<Duende.IdentityServer.EntityFramework.Entities.ApiResource> _apiCache;
 
     public ApiResourceCloneDtoRepository(
         IStorage<ApiResourceExt> apiResourceStorage,
@@ -29,10 +30,12 @@ internal class ApiResourceCloneDtoRepository : ApiResourceDtoRepositoryBase,
         IPermissionChecker permissionChecker,
         IDtoCreateRepository<ApiResourcePropertyScopeDtoRead, ApiResourcePropertyScopeDtoCreate> apiResourceScopeRepo,
         IStorage<SystemPermissionEnvironment> sysEnvStorage,
-        ILogger<ApiResourceCloneDtoRepository> logger) : base(apiResourceStorage, apiScopeStorage, clientScopeStorage, mapper, permissionChecker, logger)
+        ILogger<ApiResourceCloneDtoRepository> logger,
+        IConfigurationCacheInvalidator<Duende.IdentityServer.EntityFramework.Entities.ApiResource> apiCache) : base(apiResourceStorage, apiScopeStorage, clientScopeStorage, mapper, permissionChecker, logger)
     {
         _apiResourceScopeRepo = apiResourceScopeRepo;
         _sysEnvStorage = sysEnvStorage;
+        _apiCache = apiCache;
     }
 
     public async Task<ApiResourceDtoRead> CloneAsync(ClaimsPrincipal user, ApiResourceDtoClone resource)
@@ -64,6 +67,7 @@ internal class ApiResourceCloneDtoRepository : ApiResourceDtoRepositoryBase,
         CopyRoles(entity, clonedEntity);
 
         var storedApiResource = await _apiResourceStorage.AddAsync(clonedEntity);
+        await _apiCache.RemoveAsync(storedApiResource.Name);
 
         await CopyScopesAsync(user, entity, storedApiResource);
 

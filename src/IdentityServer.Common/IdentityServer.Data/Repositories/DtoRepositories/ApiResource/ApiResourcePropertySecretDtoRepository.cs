@@ -20,7 +20,7 @@ internal class ApiResourcePropertySecretDtoRepository :
     ApiResourcePropertyBaseDtoRepository<ApiResourcePropertySecretValueDtoRead, ApiResourcePropertySecretDtoCreate, ApiResourceSecretExt>
 {
     private readonly ISecretGeneratorService _secretGenerator;
-    private readonly ICache<DataEntities.ApiResource> _apiCache;
+    private readonly IConfigurationCacheInvalidator<DataEntities.ApiResource> _apiCache;
     private readonly IOptions<SecretExpirationConfig> _expirationConfig;
 
     public ApiResourcePropertySecretDtoRepository(
@@ -30,7 +30,7 @@ internal class ApiResourcePropertySecretDtoRepository :
         IPermissionChecker permissionChecker,
         ISecretGeneratorService secretGenerator,
         IParentAccessor<ApiResourceSecretExt, ApiResourceExt> parentAccessor,
-        ICache<DataEntities.ApiResource> apiCache,
+        IConfigurationCacheInvalidator<DataEntities.ApiResource> apiCache,
         IOptions<SecretExpirationConfig> expirationConfig
         )
         : base(apiStorage, propertyStorage, mapper, permissionChecker, parentAccessor)

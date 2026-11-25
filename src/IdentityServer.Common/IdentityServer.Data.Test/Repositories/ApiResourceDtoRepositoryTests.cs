@@ -32,7 +32,7 @@ public class ApiResourceDtoRepositoryTests
     private IApiResourceAuditService _auditServiceMock;
     private ApiResourceDtoRepository _sut;
     private ClaimsPrincipal _user;
-    private ICache<ApiResource> _cache;
+    private IConfigurationCacheInvalidator<ApiResource> _cache;
 
     [SetUp]
     public void SetUp()
@@ -43,7 +43,7 @@ public class ApiResourceDtoRepositoryTests
         _mapperMock = Substitute.For<IMapper>();
         _permissionCheckerMock = Substitute.For<IPermissionChecker>();
         _loggerMock = Substitute.For<ILogger<ApiResourceDtoRepository>>();
-        _cache = Substitute.For<ICache<ApiResource>>();
+        _cache = Substitute.For<IConfigurationCacheInvalidator<ApiResource>>();
         _auditServiceMock = Substitute.For<IApiResourceAuditService>();
 
         _sut = new ApiResourceDtoRepository(

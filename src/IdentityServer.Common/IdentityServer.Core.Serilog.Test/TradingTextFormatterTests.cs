@@ -44,7 +44,7 @@ namespace IdentityServer.Core.Serilog.Test
                 Assert.That(output.TrimEnd(), Does.EndWith("}"));
                 Assert.That(output, Does.EndWith(Environment.NewLine));
                 Assert.That(output, Does.Contain(_defaultMessage));
-                Assert.That(output, Does.Contain("\"ecs\""));
+                Assert.That(output, Does.Contain("\"ecs.version\""));
             }
         }
 
@@ -62,7 +62,7 @@ namespace IdentityServer.Core.Serilog.Test
             {
                 Assert.That(output, Is.Not.Empty);
                 Assert.That(output, Does.Contain(_defaultMessage));
-                Assert.That(output, Does.Contain("\"ecs\""));
+                Assert.That(output, Does.Contain("\"ecs.version\""));
                 Assert.That(output, Does.EndWith(Environment.NewLine));
             }
         }
@@ -117,7 +117,7 @@ namespace IdentityServer.Core.Serilog.Test
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(output, Does.Contain(_debugMessage));
-                Assert.That(output, Does.Contain("\"ecs\""));
+                Assert.That(output, Does.Contain("\"ecs.version\""));
                 Assert.That(output, Does.Contain("Logger.Core"));
                 Assert.That(output, Does.Contain("user4"));
             }
@@ -138,7 +138,7 @@ namespace IdentityServer.Core.Serilog.Test
             using (Assert.EnterMultipleScope())
             {
                 Assert.That(output, Does.Contain(msg));
-                Assert.That(output, Does.Contain("\"ecs\""));
+                Assert.That(output, Does.Contain("\"ecs.version\""));
             }
         }
 

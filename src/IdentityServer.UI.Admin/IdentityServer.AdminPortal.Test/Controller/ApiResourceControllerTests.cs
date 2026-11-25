@@ -25,13 +25,13 @@ public class ApiResourceControllerTests : ControllerTestBase
     private ApiResourcePropertyScopeController _apiResourceScopeController;
     private IStorage<ApiScopeExt> _apiScopeStorage;
 
-    private ICache<DataEntities.ApiResource> _apiCache;
+    private IConfigurationCacheInvalidator<DataEntities.ApiResource> _apiCache;
     private IApiResourceAuditService _apiResourceAuditService;
 
     [SetUp]
     public async Task Setup()
     {
-        _apiCache = Substitute.For<ICache<DataEntities.ApiResource>>();
+        _apiCache = Substitute.For<IConfigurationCacheInvalidator<DataEntities.ApiResource>>();
 
         var provider = IoC.GetProvider(sc =>
         {
@@ -59,6 +59,7 @@ public class ApiResourceControllerTests : ControllerTestBase
     {
         // Act
         var createdApiResource = await _apiResourceController.Call_CreateApiResourceAsync(ApiResourceControllerExtensions.GetDefaultApiResource(1), Admin);
+        await _apiCache.Received(1).RemoveAsync(createdApiResource.Name);
 
         // Assert
         using (Assert.EnterMultipleScope())
@@ -77,7 +78,7 @@ public class ApiResourceControllerTests : ControllerTestBase
         _ = await _apiResourceController.Call_CreateApiResourceAsync(client, Admin);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _apiResourceController.Call_CreateApiResourceAsync(client, Admin));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _apiResourceController.Call_CreateApiResourceAsync(client, Admin));
     }
 
     [Test]
@@ -136,6 +137,7 @@ public class ApiResourceControllerTests : ControllerTestBase
             Description = "UpdatedDescription",
         };
 
+        _apiCache.ClearReceivedCalls();
         // Act
         await _apiResourceController.Call_UpdateApiResourceAsync(apiUpdate, Admin);
 
@@ -208,7 +210,7 @@ public class ApiResourceControllerTests : ControllerTestBase
         await _clientPropertyScopeController.Call_AddClientScopeAsync(createdClient.Id, createdScope.Scope, Admin);
 
         // Act
-        Assert.ThrowsAsync<EntityReferenceException>(() => _apiResourceController.Call_DeleteApiResourceAsync(createdApiResource.Id, Admin));
+        await Assert.ThrowsAsync<EntityReferenceException>(() => _apiResourceController.Call_DeleteApiResourceAsync(createdApiResource.Id, Admin));
     }
 
     [Test]
@@ -238,6 +240,7 @@ public class ApiResourceControllerTests : ControllerTestBase
         // Arrange
         var createdApiResource = await _apiResourceController.Call_CreateApiResourceAsync(ApiResourceControllerExtensions.GetDefaultApiResource(1), Admin);
 
+        _apiCache.ClearReceivedCalls();
         // Act
         await _apiResourceController.Call_DeleteApiResourceAsync(createdApiResource.Id, Admin);
 

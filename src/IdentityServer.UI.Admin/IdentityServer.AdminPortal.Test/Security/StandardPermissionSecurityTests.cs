@@ -54,7 +54,7 @@ public class StandardPermissionSecurityTests : PermissionSecurityTestBase
         }
         else
         {
-            Assert.ThrowsAsync<EntityAccessException>(() => _controller.Call_GetSystemPermissionByIdAsync(_permission1.Id, user));
+            await Assert.ThrowsAsync<EntityAccessException>(() => _controller.Call_GetSystemPermissionByIdAsync(_permission1.Id, user));
         }
     }
 
@@ -94,7 +94,7 @@ public class StandardPermissionSecurityTests : PermissionSecurityTestBase
         }
         else
         {
-            Assert.ThrowsAsync<EntityAccessException>(() => _controller.Call_UpdateSystemPermissionAsync(updateItem, user));
+            await Assert.ThrowsAsync<EntityAccessException>(() => _controller.Call_UpdateSystemPermissionAsync(updateItem, user));
         }
     }
 
@@ -126,7 +126,7 @@ public class StandardPermissionSecurityTests : PermissionSecurityTestBase
         }
         else
         {
-            Assert.ThrowsAsync<EntityAccessException>(() => _controller.Call_DeleteSystemPermissionByIdAsync(_permission1.Id, user));
+            await Assert.ThrowsAsync<EntityAccessException>(() => _controller.Call_DeleteSystemPermissionByIdAsync(_permission1.Id, user));
         }
     }
 
@@ -174,7 +174,7 @@ public class StandardPermissionSecurityTests : PermissionSecurityTestBase
         }
         else
         {
-            Assert.ThrowsAsync<EntityAccessException>(() => _controller.Call_DeleteSystemPermissionByIdAsync(_permission1.Id, user));
+            await Assert.ThrowsAsync<EntityAccessException>(() => _controller.Call_DeleteSystemPermissionByIdAsync(_permission1.Id, user));
         }
     }
 
@@ -230,7 +230,7 @@ public class StandardPermissionSecurityTests : PermissionSecurityTestBase
         }
         else
         {
-            Assert.ThrowsAsync<EntityAccessException>(() => _controller.Call_UpdateSystemPermissionAsync(updateItem, user));
+            await Assert.ThrowsAsync<EntityAccessException>(() => _controller.Call_UpdateSystemPermissionAsync(updateItem, user));
         }
     }
 
@@ -247,7 +247,7 @@ public class StandardPermissionSecurityTests : PermissionSecurityTestBase
 
         // Assert
         Assert.That(result1, Is.Not.Null);
-        Assert.ThrowsAsync<EntityAccessException>(() => _controller.Call_GetSystemPermissionByIdAsync(_permission2.Id, Reader));
+        await Assert.ThrowsAsync<EntityAccessException>(() => _controller.Call_GetSystemPermissionByIdAsync(_permission2.Id, Reader));
     }
 
     [Test]

@@ -22,7 +22,7 @@ internal class ApiResourceDtoRepository : ApiResourceDtoRepositoryBase,
     IDtoListRepository<ApiResourceShortDtoRead, ApiResourceExt>,
     IDtoUpdateRepository<ApiResourceDtoRead, ApiResourceDtoUpdate>
 {
-    private readonly ICache<Duende.IdentityServer.EntityFramework.Entities.ApiResource> _apiCache;
+    private readonly IConfigurationCacheInvalidator<Duende.IdentityServer.EntityFramework.Entities.ApiResource> _apiCache;
     private readonly IApiResourceAuditService _auditService;
 
     public ApiResourceDtoRepository(
@@ -31,7 +31,7 @@ internal class ApiResourceDtoRepository : ApiResourceDtoRepositoryBase,
         IStorage<ClientScopeExt> clientScopeStorage,
         IMapper mapper,
         IPermissionChecker permissionChecker,
-        ICache<Duende.IdentityServer.EntityFramework.Entities.ApiResource> apiCache,
+        IConfigurationCacheInvalidator<Duende.IdentityServer.EntityFramework.Entities.ApiResource> apiCache,
         IApiResourceAuditService auditService,
         ILogger<ApiResourceDtoRepository> logger)
         : base(apiStorage, apiScopeStorage, clientScopeStorage, mapper, permissionChecker, logger)
@@ -55,6 +55,7 @@ internal class ApiResourceDtoRepository : ApiResourceDtoRepositoryBase,
         apiResource.Created = DateTime.UtcNow;
 
         var storedApiResource = await _apiResourceStorage.AddAsync(apiResource);
+        await _apiCache.RemoveAsync(storedApiResource.Name);
         var result = _mapper.Map<ApiResourceDtoRead>(storedApiResource);
         result.AccessLevel = role;
         return result;

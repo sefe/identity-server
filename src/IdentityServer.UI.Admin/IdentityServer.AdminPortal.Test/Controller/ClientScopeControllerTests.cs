@@ -19,12 +19,12 @@ public class ClientScopeControllerTests : ControllerTestBase
     private ClientPropertyScopeController _clientScopeController;
     private ApiResourceController _apiResourceController;
     private ApiResourcePropertyScopeController _apiResourceScopeController;
-    private ICache<DataEntities.Client> _clientCache;
+    private IConfigurationCacheInvalidator<DataEntities.Client> _clientCache;
 
     [SetUp]
     public async Task Setup()
     {
-        _clientCache = Substitute.For<ICache<DataEntities.Client>>();
+        _clientCache = Substitute.For<IConfigurationCacheInvalidator<DataEntities.Client>>();
 
         var provider = IoC.GetProvider(sc =>
         {
@@ -76,7 +76,7 @@ public class ClientScopeControllerTests : ControllerTestBase
         _ = await _clientScopeController.Call_AddClientScopeAsync(client.Id, scopeDto.Name, Contributor);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientScopeController.Call_AddClientScopeAsync(client.Id, scopeDto.Name, Contributor));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientScopeController.Call_AddClientScopeAsync(client.Id, scopeDto.Name, Contributor));
     }
 
     [Test]
@@ -105,7 +105,7 @@ public class ClientScopeControllerTests : ControllerTestBase
         _ = await _clientScopeController.Call_AddClientScopeAsync(client.Id, scope, Contributor);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientScopeController.Call_AddClientScopeAsync(client.Id, scope, Contributor));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _clientScopeController.Call_AddClientScopeAsync(client.Id, scope, Contributor));
     }
     [Test]
     public async Task AddClientScope_InvalidatesCache()
@@ -159,7 +159,7 @@ public class ClientScopeControllerTests : ControllerTestBase
         _ = await _clientScopeController.Call_AddClientScopeAsync(client.Id, scopeDto.Name, Contributor);
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityReferenceException>(() =>
+        await Assert.ThrowsAsync<EntityReferenceException>(() =>
             _apiResourceScopeController.Call_DeleteApiResourceScopeAsync(createdScope.Id, Admin));
     }
 

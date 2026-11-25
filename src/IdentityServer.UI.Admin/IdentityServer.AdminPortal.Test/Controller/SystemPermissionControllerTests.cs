@@ -79,7 +79,7 @@ public class SystemPermissionControllerTests : ControllerTestBase
         };
 
         // Act & Assert
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _systemController.Call_CreateSystemPermissionAsync(newSpDto, SuperUser));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _systemController.Call_CreateSystemPermissionAsync(newSpDto, SuperUser));
     }
 
     [Test]
@@ -174,7 +174,7 @@ public class SystemPermissionControllerTests : ControllerTestBase
         await _clientController.Call_CreateClientAsync(ClientControllerExtensions.GetDefaultClient(sp.Environments[0].Id), Admin);
 
         // Act & Assert
-        Assert.ThrowsAsync(Is.TypeOf(exceptionType), () => _systemController.Call_DeleteSystemPermissionByIdAsync(sp.Id, user));
+        await Assert.ThrowsAsync(Is.TypeOf(exceptionType), () => _systemController.Call_DeleteSystemPermissionByIdAsync(sp.Id, user));
     }
 
     [Test]
@@ -194,7 +194,7 @@ public class SystemPermissionControllerTests : ControllerTestBase
         await _apiResourceController.Call_CreateApiResourceAsync(ApiResourceControllerExtensions.GetDefaultApiResource(sp.Environments[0].Id), Admin);
 
         // Act & Assert
-        Assert.ThrowsAsync(Is.TypeOf(exceptionType), () => _systemController.Call_DeleteSystemPermissionByIdAsync(sp.Id, user));
+        await Assert.ThrowsAsync(Is.TypeOf(exceptionType), () => _systemController.Call_DeleteSystemPermissionByIdAsync(sp.Id, user));
     }
 
     [Test]
@@ -220,7 +220,7 @@ public class SystemPermissionControllerTests : ControllerTestBase
         }
         else
         {
-            Assert.ThrowsAsync(Is.TypeOf(exceptionType), () => _systemController.Call_DeleteSystemPermissionByIdAsync(sp.Id, user));
+            await Assert.ThrowsAsync(Is.TypeOf(exceptionType), () => _systemController.Call_DeleteSystemPermissionByIdAsync(sp.Id, user));
         }
     }
 

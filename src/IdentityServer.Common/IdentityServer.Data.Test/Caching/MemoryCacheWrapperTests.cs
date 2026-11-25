@@ -149,13 +149,13 @@ public class MemoryCacheWrapperTests
     }
 
     [Test]
-    public void RemoveAsync_DoesNotThrow_WhenKeyDoesNotExist()
+    public async Task RemoveAsync_DoesNotThrow_WhenKeyDoesNotExist()
     {
         // Arrange
         var key = "NonExistentKey";
 
         // Act & Assert
-        Assert.DoesNotThrowAsync(async () => await _service.RemoveAsync(key));
+        await Assert.DoesNotThrowAsync(async () => await _service.RemoveAsync(key));
     }
 
     [Test]
@@ -445,14 +445,14 @@ public class MemoryCacheWrapperTests
     }
 
     [Test]
-    public void SetManyAsync_HandlesEmptyDictionary()
+    public async Task SetManyAsync_HandlesEmptyDictionary()
     {
         // Arrange
         var items = new Dictionary<string, string>();
         var expiration = TimeSpan.FromMinutes(5);
 
         // Act & Assert
-        Assert.DoesNotThrowAsync(async () => await _service.SetManyAsync(items, expiration));
+        await Assert.DoesNotThrowAsync(async () => await _service.SetManyAsync(items, expiration));
     }
 
     [Test]

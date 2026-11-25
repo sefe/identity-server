@@ -68,7 +68,7 @@ public class ClientPostLogoutRedirectUriListTests
         var client = CreateTestClient();
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientPostLogoutRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -100,7 +100,7 @@ public class ClientPostLogoutRedirectUriListTests
         });
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientPostLogoutRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -123,7 +123,7 @@ public class ClientPostLogoutRedirectUriListTests
         var client = CreateTestClient();
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientPostLogoutRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -132,7 +132,7 @@ public class ClientPostLogoutRedirectUriListTests
         );
 
         // Assert
-        var addButton = cut.Find("button.k-button-solid-primary");
+        var addButton = cut.Find("button.k-button-primary");
         Assert.That(addButton.TextContent, Does.Contain("Add New"));
     }
 
@@ -143,7 +143,7 @@ public class ClientPostLogoutRedirectUriListTests
         var client = CreateTestClient();
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientPostLogoutRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, true)
@@ -170,7 +170,7 @@ public class ClientPostLogoutRedirectUriListTests
         });
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientPostLogoutRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, true)
@@ -179,7 +179,7 @@ public class ClientPostLogoutRedirectUriListTests
         );
 
         // Assert
-        var deleteButtons = cut.FindAll("button").Where(b => b.ClassList.Contains("k-button-outline-error"));
+        var deleteButtons = cut.FindAll("button").Where(b => b.ClassList.Contains("k-button-outline") && b.ClassList.Contains("k-button-error"));
         Assert.That(deleteButtons, Is.Empty);
     }
 
@@ -202,7 +202,7 @@ public class ClientPostLogoutRedirectUriListTests
         });
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientPostLogoutRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -221,7 +221,7 @@ public class ClientPostLogoutRedirectUriListTests
         // Arrange
         var client = CreateTestClient();
 
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientPostLogoutRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -248,7 +248,7 @@ public class ClientPostLogoutRedirectUriListTests
         // Arrange
         var client = CreateTestClient();
 
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientPostLogoutRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -281,7 +281,7 @@ public class ClientPostLogoutRedirectUriListTests
         });
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientPostLogoutRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -307,7 +307,7 @@ public class ClientPostLogoutRedirectUriListTests
         });
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientPostLogoutRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -333,7 +333,7 @@ public class ClientPostLogoutRedirectUriListTests
         });
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientPostLogoutRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -359,7 +359,7 @@ public class ClientPostLogoutRedirectUriListTests
         });
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientPostLogoutRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -391,7 +391,7 @@ public class ClientPostLogoutRedirectUriListTests
         });
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientPostLogoutRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -417,7 +417,7 @@ public class ClientPostLogoutRedirectUriListTests
         });
 
         // Act
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientPostLogoutRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -447,7 +447,7 @@ public class ClientPostLogoutRedirectUriListTests
             Arg.Any<bool>())
             .Returns(Task.FromResult(false));
 
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientPostLogoutRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -456,7 +456,7 @@ public class ClientPostLogoutRedirectUriListTests
         );
 
         // Act
-        var deleteButton = cut.Find("button.k-button-outline-error");
+        var deleteButton = cut.Find("button.k-button-outline.k-button-error");
         deleteButton.Click();
 
         // Assert
@@ -488,7 +488,7 @@ public class ClientPostLogoutRedirectUriListTests
         _mockHandler.SetResponse(System.Net.HttpStatusCode.OK, "1");
 
         var updateCallbackInvoked = false;
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientPostLogoutRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -497,7 +497,7 @@ public class ClientPostLogoutRedirectUriListTests
         );
 
         // Act
-        var deleteButton = cut.Find("button.k-button-outline-error");
+        var deleteButton = cut.Find("button.k-button-outline.k-button-error");
         deleteButton.Click();
 
         // Assert
@@ -527,7 +527,7 @@ public class ClientPostLogoutRedirectUriListTests
             Arg.Any<bool>())
             .Returns(Task.FromResult(false));
 
-        var cut = _ctx.RenderComponent<TelerikRootComponent>(parameters => parameters
+        var cut = _ctx.Render<TelerikRootComponent>(parameters => parameters
             .AddChildContent<ClientPostLogoutRedirectUriList>(childParameters => childParameters
                 .Add(p => p.Application, client)
                 .Add(p => p.IsReadonly, false)
@@ -536,7 +536,7 @@ public class ClientPostLogoutRedirectUriListTests
         );
 
         // Act
-        var deleteButton = cut.Find("button.k-button-outline-error");
+        var deleteButton = cut.Find("button.k-button-outline.k-button-error");
         deleteButton.Click();
 
         // Assert
@@ -570,3 +570,4 @@ public class ClientPostLogoutRedirectUriListTests
         };
     }
 }
+

@@ -29,7 +29,7 @@ internal class ClientPropertySecretDtoRepository :
         IPermissionChecker permissionChecker,
         ISecretGeneratorService secretGenerator,
         IParentAccessor<ClientSecretExt, ClientExt> parentAccessor,
-        ICache<DataEntities.Client> clientCache,
+        IConfigurationCacheInvalidator<DataEntities.Client> clientCache,
         IOptions<SecretExpirationConfig> expirationConfig
         ) : base(clientStorage, propertyStorage, mapper, permissionChecker, parentAccessor, clientCache)
     {

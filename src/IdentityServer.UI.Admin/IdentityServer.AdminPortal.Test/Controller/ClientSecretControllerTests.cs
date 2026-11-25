@@ -20,12 +20,12 @@ public class ClientSecretControllerTests : ControllerTestBase
     private ClientController _clientController;
     private ClientPropertySecretController _secretController;
     private IStorage<ClientSecretExt> _clientSecretStorage;
-    private ICache<DataEntities.Client> _clientCache;
+    private IConfigurationCacheInvalidator<DataEntities.Client> _clientCache;
 
     [SetUp]
     public async Task Setup()
     {
-        _clientCache = Substitute.For<ICache<DataEntities.Client>>();
+        _clientCache = Substitute.For<IConfigurationCacheInvalidator<DataEntities.Client>>();
 
         var provider = IoC.GetProvider(sc =>
         {
@@ -53,11 +53,11 @@ public class ClientSecretControllerTests : ControllerTestBase
     }
 
     [Test]
-    public void Create_Secret_Missing_Client_Fail()
+    public async Task Create_Secret_Missing_Client_Fail()
     {
         var newSecret = ClientSecretControllerExtensions.GetDefaultClientSecretFor(999);
 
-        Assert.ThrowsAsync<EntityNotFoundException>(() => _secretController.Call_CreateSecretAsync(newSecret, Admin));
+        await Assert.ThrowsAsync<EntityNotFoundException>(() => _secretController.Call_CreateSecretAsync(newSecret, Admin));
     }
 
     [Test]
@@ -103,7 +103,7 @@ public class ClientSecretControllerTests : ControllerTestBase
         var newSecret = ClientSecretControllerExtensions.GetDefaultClientSecretFor(createdClient.Id);
         _ = await _secretController.Call_CreateSecretAsync(newSecret, Admin);
 
-        Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _secretController.Call_CreateSecretAsync(newSecret, Admin));
+        await Assert.ThrowsAsync<EntityAlreadyExistsException>(() => _secretController.Call_CreateSecretAsync(newSecret, Admin));
     }
 
     [Test]
