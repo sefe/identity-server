@@ -31,8 +31,8 @@ export function prepareContinuation({ previous, inputs, repository, branch, sha,
   }
   const parent = inputs.resume_run_id ? runId(inputs.resume_run_id) : '';
   const restartStage = String(inputs.restart_stage ?? '').trim();
-  if (restartStage && !['implementation', 'bootstrap-change-materialization'].includes(restartStage)) {
-    throw new Error('restart_stage must be empty, implementation or bootstrap-change-materialization.');
+  if (restartStage && !['implementation', 'bootstrap-change-materialization', 'delivery'].includes(restartStage)) {
+    throw new Error('restart_stage must be empty, implementation, bootstrap-change-materialization or delivery.');
   }
   if (restartStage && (!parent || previous === undefined)) throw new Error('Stage recovery requires resume_run_id and a saved continuation checkpoint.');
   let sourceSha = sha;
@@ -79,8 +79,14 @@ export function prepareCheckpoint(directory, options) {
     const root = path.join(directory, roots[0].name);
     const saved = readJson(path.join(root, 'workflow-state.json'));
     const manifest = readJson(path.join(root, 'run-inputs.json'));
-    if (!['blocked', 'failed', 'paused'].includes(saved.status) || manifest.sourceCommit !== state.sourceSha) {
+    const delivery = state.restartStage === 'delivery';
+    if (!(delivery ? saved.status === 'completed' : ['blocked', 'failed', 'paused'].includes(saved.status)) || manifest.sourceCommit !== state.sourceSha) {
       throw new Error('Stage recovery requires a stopped analysis on the saved source commit.');
+    }
+    if (delivery && (!Array.isArray(saved.stages) || !saved.stages.length ||
+        saved.stages.some(stage => !['completed', 'approved'].includes(stage.status)) ||
+        saved.stages.filter(stage => stage.id === 'bootstrap-change-review' && stage.status === 'approved').length !== 1)) {
+      throw new Error('Delivery recovery requires completed stages and unanimous final review approval.');
     }
     if (state.restartStage === 'bootstrap-change-materialization') {
       const generation = saved.stages?.filter(stage => stage.id === 'bootstrap-change-generation');

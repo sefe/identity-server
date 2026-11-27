@@ -139,7 +139,13 @@ Describe 'Secret scanning distinguishes credentials from source and fixture data
         @{ Case = 'a function call'; Path = 'test.ts'; Line = 'const password = symbolicSecret();' },
         @{ Case = 'secure input'; Path = 'README.md'; Line = '$password = Read-Host -AsSecureString' },
         @{ Case = 'an explicitly symbolic test password'; Path = 'tests/config.spec.ts'; Line = 'APP_PASSWORD: ''LocalSymbolicPassword123!'',' },
-        @{ Case = 'redaction fixture values'; Path = 'tests/redaction.spec.ts'; Line = 'token: ''raw-token-value'', password: ''row-one-password''' }
+        @{ Case = 'redaction fixture values'; Path = 'tests/redaction.spec.ts'; Line = 'token: ''raw-token-value'', password: ''row-one-password''' },
+        @{ Case = 'provider environment identity mapping'; Path = '.foundry/project.json'; Line = '"COPILOT_GITHUB_TOKEN": "COPILOT_GITHUB_TOKEN",' },
+        @{ Case = 'client secret route'; Path = 'AdminApiClient.cs'; Line = 'public const string ClientSecret = "/api/client/secret";' },
+        @{ Case = 'resource secret route'; Path = 'AdminApiClient.cs'; Line = 'public const string ApiResourceSecret = "/api/apiresource/secret";' },
+        @{ Case = 'client secret entity'; Path = 'ProductContracts.cs'; Line = 'public const string ClientSecret = "ClientSecretExt";' },
+        @{ Case = 'resource secret entity'; Path = 'ProductContracts.cs'; Line = 'public const string ApiResourceSecret = "ApiResourceSecretExt";' },
+        @{ Case = 'OAuth token type'; Path = 'ProtocolClients.cs'; Line = 'public const string AccessToken = "urn:ietf:params:oauth:token-type:access_token";' }
     ) {
         $rules = @(Get-QaFoundrySecretRules | Where-Object { -not $_.PSObject.Properties['failsBuild'] -or $_.failsBuild })
         @(Get-QaFoundrySecretLineFindings -Line $Line -Path $Path -Rules $rules | Where-Object { -not $_.ignored }).Count | Should -Be 0
@@ -149,10 +155,39 @@ Describe 'Secret scanning distinguishes credentials from source and fixture data
         @{ Case = 'a generic key in a hidden file'; Path = '.env'; Line = 'api_key = "0123456789abcdef"' },
         @{ Case = 'a generic key inside a test'; Path = 'tests/auth.spec.ts'; Line = 'token: "0123456789abcdef"' },
         @{ Case = 'a symbolic-looking value in production configuration'; Path = 'config.json'; Line = '"password": "LocalSymbolicPassword123!"' },
-        @{ Case = 'a connection string'; Path = 'Config.cs'; Line = 'const string Connection = "Server=local;Password=RealPassword42!;";' }
+        @{ Case = 'a connection string'; Path = 'Config.cs'; Line = 'const string Connection = "Server=local;Password=RealPassword42!;";' },
+        @{ Case = 'a value in the provider mapping'; Path = '.foundry/project.json'; Line = '"COPILOT_GITHUB_TOKEN": "0123456789abcdef"' },
+        @{ Case = 'an identity-looking assignment outside provider configuration'; Path = 'config.json'; Line = '"COPILOT_GITHUB_TOKEN": "COPILOT_GITHUB_TOKEN"' },
+        @{ Case = 'a route with a credential query'; Path = 'Client.cs'; Line = 'public const string ClientSecret = "/api/client/secret?token=0123456789abcdef";' },
+        @{ Case = 'a credential assigned beside a constant'; Path = 'Client.cs'; Line = 'public const string ClientSecret = "/api/client/secret"; password = "0123456789abcdef";' },
+        @{ Case = 'a credential in an entity constant'; Path = 'ProductContracts.cs'; Line = 'public const string ClientSecret = "0123456789abcdef";' },
+        @{ Case = 'a nonstandard token URI'; Path = 'ProtocolClients.cs'; Line = 'public const string AccessToken = "urn:secret:0123456789abcdef";' }
     ) {
         $rules = @(Get-QaFoundrySecretRules | Where-Object { -not $_.PSObject.Properties['failsBuild'] -or $_.failsBuild })
         @(Get-QaFoundrySecretLineFindings -Line $Line -Path $Path -Rules $rules | Where-Object { -not $_.ignored }).Count | Should -BeGreaterThan 0
+    }
+}
+
+Describe 'Report metadata exceptions preserve the rest of the secret scan' {
+    BeforeAll {
+        $script:Rules=@(Get-QaFoundrySecretRules | Where-Object { -not $_.PSObject.Properties['failsBuild'] -or $_.failsBuild })
+        function New-ReportLine($Inputs,$Extra=@{}) {
+            $data=@{summaries=@(@{summary='No configuration here'},@{details=@{configuration=@{suiteInputs=$Inputs}}});extra=$Extra}
+            '<script id="report-data" type="application/json">'+($data|ConvertTo-Json -Depth 10 -Compress)+'</script><script>/* report */'
+        }
+        function Find-ReportSecrets($Line) { return ,@(Get-QaFoundrySecretLineFindings -Line $Line -Path 'foundry-report.html' -Rules $script:Rules | Where-Object {-not $_.ignored}) }
+    }
+    It 'recognizes explicit environment lists only in suiteInputs' {
+        $line=New-ReportLine @{UserToken='APP_REDIRECT_URI, APP_CLIENT_ID; (s) APP_READER_USERNAME, APP_READER_PASSWORD.'}
+        (Find-ReportSecrets $line).Count | Should -Be 0
+        (Find-ReportSecrets (New-ReportLine @{} @{UserToken='APP_REDIRECT_URI, APP_CLIENT_ID; (s) APP_READER_USERNAME, APP_READER_PASSWORD.'})).Count | Should -BeGreaterThan 0
+    }
+    It 'blocks credentials in metadata, other fields and scripts after the JSON block' {
+        $safe=@{UserToken='APP_CLIENT_ID; (s) APP_READER_PASSWORD.'}
+        (Find-ReportSecrets (New-ReportLine @{UserToken='0123456789abcdef'})).Count | Should -BeGreaterThan 0
+        (Find-ReportSecrets (New-ReportLine $safe @{password='0123456789abcdef'})).Count | Should -BeGreaterThan 0
+        (Find-ReportSecrets ((New-ReportLine $safe)+'const password="0123456789abcdef";')).Count | Should -BeGreaterThan 0
+        (Find-ReportSecrets '<script id="report-data" type="application/json">{"password":"0123456789abcdef",broken}</script>').Count | Should -BeGreaterThan 0
     }
 }
 

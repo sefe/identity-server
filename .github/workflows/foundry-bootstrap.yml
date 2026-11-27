@@ -25,7 +25,7 @@ on:
         description: 'Recovery only: restart the selected stage using this runtime and saved product commit'
         default: ''
         type: choice
-        options: ['', implementation, bootstrap-change-materialization]
+        options: ['', implementation, bootstrap-change-materialization, delivery]
       auto_resume:
         description: Automatically continue a paused analysis after uploading its evidence
         default: true

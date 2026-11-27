@@ -1,5 +1,23 @@
 # Recover a blocked bootstrap from saved evidence
 
+## Retry delivery after all analysis stages have completed
+
+Run **46030786190** completed all 13 analysis stages and received unanimous final review approval. Its wrapper stopped before PR publication because the installation secret scan mistook symbolic names for credentials. After merging the scanner and delivery-recovery fix, dispatch **Foundry Bootstrap** on `main` with:
+
+| Input | Value |
+| --- | --- |
+| `resume_run_id` | `46030786190` |
+| `restart_stage` | `delivery` |
+| `model` | `claude-opus-5.5` |
+| `publish` | `true` |
+| `budget_usd` | empty |
+| `auto_resume` | `true` |
+| `max_continuations` | `3` |
+
+`delivery` permits selecting the repaired runtime while retaining the original product commit. It requires a completed analysis, completed/approved stages and an approved final review. The wrapper resumes the analysis with **no stage reset**: the workflow returns its saved completed state, so generation and reviews do not run again. Source/configuration fingerprints and the hash checks binding final approval to the materialized change set still run. Installation is reconstructed, scanned again and only then offered to the existing publication path.
+
+The secret scan remains enabled. It recognises identity mappings to environment variables, C# route/entity constants, the OAuth access-token type URI and explicit environment-variable lists inside the report's `suiteInputs` metadata. Other report fields, malformed metadata, credential values and additional assignments remain scanned. Provider redaction rules are unchanged. Verification was deferred in this analysis; successful delivery does not claim that generated tests were built or executed.
+
 ## Recover materialization after generation has completed
 
 For a resolver or SDK failure at stage 11, select `restart_stage=bootstrap-change-materialization` instead of `implementation`. The checkpoint must show completed change generation. Stages 1–10, their approvals, the merged change set and all generated batches remain untouched; only stages 11–13 reset. Their previous evidence is archived before restarting. The source/configuration/contract fingerprint checks still apply.

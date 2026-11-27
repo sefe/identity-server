@@ -92,6 +92,24 @@ $PSBoundParameters | ConvertTo-Json | Set-Content (Join-Path $PSScriptRoot invoc
         {& $script:Wrapper -RepositoryRoot $script:Target -RestartStage implementation} | Should -Throw '*requires -Resume*'
         Test-Path $script:Invocation | Should -BeFalse
     }
+    It 'resumes completed analysis for delivery without passing a stage reset' {
+        $path=Join-Path $script:Target .qa-foundry-artifacts/run-saved/workflow-state.json
+        @{status='completed';stages=@(@{id='bootstrap-change-review';status='approved'})} | ConvertTo-Json -Depth 10 | Set-Content $path
+        $hash=(Get-FileHash $path).Hash
+        $null=& $script:Wrapper -RepositoryRoot $script:Target -Resume -RestartStage delivery
+        $call=Get-Content $script:Invocation -Raw | ConvertFrom-Json
+        $call.RestartStage | Should -Be ''
+        $call.ResumeRunRoot | Should -Be (Split-Path $path)
+        (Get-FileHash $path).Hash | Should -BeExactly $hash
+    }
+    It 'refuses delivery recovery when analysis or final review is unfinished' -ForEach @(
+        @{Status='blocked';Review='approved'}, @{Status='completed';Review='revision_required'}
+    ) {
+        @{status=$Status;stages=@(@{id='bootstrap-change-review';status=$Review})} | ConvertTo-Json -Depth 10 |
+            Set-Content (Join-Path $script:Target .qa-foundry-artifacts/run-saved/workflow-state.json)
+        {& $script:Wrapper -RepositoryRoot $script:Target -Resume -RestartStage delivery} | Should -Throw '*requires completed stages*'
+        Test-Path $script:Invocation | Should -BeFalse
+    }
 }
 
 Describe 'Materialization recovery retains generation and approvals' {
