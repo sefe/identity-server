@@ -18,6 +18,10 @@ For run **45666290042**, after merging the materialization recovery fix, dispatc
 
 This preserves the 107 generated files instead of paying for generation again. The original resolver failure selected SDK 11.0.100 instead of the locked SDK 10. The NuGet adapter now creates a scratch-only `project/global.json` **before** the version probe and restore, selecting the locked SDK major with `latestMinor` and `allowPrerelease=false`. It does not edit the product's SDK selection, install an SDK or permit a different major when the required SDK is absent. See [.NET SDK selection](https://learn.microsoft.com/en-us/dotnet/core/tools/global-json).
 
+Run **45984385472** exposed another resolver defect: its scratch project inherited the product's central package management and failed with `NU1008`. The runtime now also writes local `Directory.Build.props`, `Directory.Build.targets` and `Directory.Packages.props` before resolution. These stop parent MSBuild imports and disable central package management only in scratch; product files and the generated change set are unchanged. See [MSBuild directory imports](https://learn.microsoft.com/en-us/visualstudio/msbuild/customize-by-directory) and [central package management](https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management).
+
+`NU1008` from this runtime-authored resolver project is classified as an infrastructure failure (`blocked`), so it cannot send generation agents back to rewrite tests. Missing-package errors still retain the existing revision path. After merging this isolation fix, use **45666290042** and the inputs above: it has completed generation. Do **not** use `45984385472` for a stage-11 restart: its later generation attempt is blocked with unfinished API/UI file parity work. Recovery must not mark that attempt complete or bypass it.
+
 After any pause, continue with the newest run ID and leave `restart_stage` empty. Successful materialization still needs the remaining configured verification and review gates; it is not a promise that generated tests build or execute successfully.
 
 ## Recover implementation after a rejected review

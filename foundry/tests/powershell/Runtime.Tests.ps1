@@ -469,7 +469,7 @@ BeforeAll {
                 resolved = "$($registry.TrimEnd('/'))/$name/-/$($name -replace '^@[^/]+/', '')-$version.tgz"
             }
             if (-not $Override.ContainsKey("dropIntegrity")) {
-                $entry.integrity = "sha512-" + ("a" * 86) + "=="
+                $entry.integrity = "sha512-" + [Convert]::ToBase64String([byte[]](1..64))
             }
             $packages["node_modules/$name"] = $entry
             if ([string]$package.scope -eq "dev") {
@@ -7162,7 +7162,7 @@ Describe "Dependency materialisation" {
         $lock.packages["node_modules/some-transitive"] = [ordered]@{
             version = "1.0.0"
             resolved = "https://packages.attacker.example/some-transitive/-/some-transitive-1.0.0.tgz"
-            integrity = "sha512-" + ("b" * 86) + "=="
+            integrity = "sha512-" + [Convert]::ToBase64String([byte[]](65..128))
         }
         $lock | ConvertTo-Json -Depth 30 | Set-Content -LiteralPath $lockFixture -Encoding utf8
         $stub = New-NpmStub -Directory (Join-Path $TestDrive "transitive-stub") -LockFixturePath $lockFixture

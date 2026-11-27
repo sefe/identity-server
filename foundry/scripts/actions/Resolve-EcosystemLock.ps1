@@ -446,6 +446,17 @@ foreach ($step in $steps) {
 
     $exitCode = $result.exitCode
     if ($exitCode -ne 0) {
+        # This manifest is authored by the runtime from the locked toolchain,
+        # not by a generation agent. NU1008 here means its MSBuild isolation
+        # failed; regenerating user test files cannot repair that environment.
+        # Inspect both streams before clipping diagnostics (MSBuild can put
+        # the actual error on stdout while also writing stderr).
+        if ($ecosystem -eq 'nuget' -and
+            "$($result.standardOutput)`n$($result.standardError)" -match '(?i)\berror\s+NU1008\s*:') {
+            return New-Failure -InfrastructureUnavailable -ExitCode $exitCode -Duration $duration -Detail (
+                'NuGet resolver isolation failed (NU1008): central package management reached the runtime-owned ' +
+                'scratch project. Repair resolver isolation before retrying materialization; do not regenerate automation.')
+        }
         $standardError = [string]$result.standardError
         if ([string]::IsNullOrWhiteSpace($standardError)) { $standardError = [string]$result.standardOutput }
         $trimmed = ([string]$standardError).Trim()
