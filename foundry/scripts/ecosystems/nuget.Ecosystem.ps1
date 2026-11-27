@@ -160,6 +160,25 @@ function New-QaFoundryNugetEcosystemAdapter {
                 '</configuration>'
             )
             return @(
+                # The resolver rebuilds a minimal project from the locked packages.
+                # Its scratch folder can be inside the product checkout: stop
+                # MSBuild's upward search before it imports product build logic
+                # or central package versions. These files are never delivered.
+                [pscustomobject]@{
+                    key = "buildprops"
+                    path = "project/Directory.Build.props"
+                    content = '<Project />'
+                }
+                [pscustomobject]@{
+                    key = "buildtargets"
+                    path = "project/Directory.Build.targets"
+                    content = '<Project />'
+                }
+                [pscustomobject]@{
+                    key = "packageprops"
+                    path = "project/Directory.Packages.props"
+                    content = '<Project><PropertyGroup><ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally><CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled></PropertyGroup></Project>'
+                }
                 # Scratch-only SDK selection: never edit the product's global.json.
                 # latestMinor permits installed feature bands within the locked
                 # major, but cannot roll forward from SDK 10 to SDK 11.
