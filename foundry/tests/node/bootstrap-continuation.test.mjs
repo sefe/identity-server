@@ -162,6 +162,32 @@ test('automatic continuation after recovery never dispatches another stage reset
   assert.equal(next.sourceSha, state.sourceSha);
 });
 
+test('materialization recovery changes runtime only and requires completed generation', t => {
+  const directory = scratch(t);
+  const previous = prepareCheckpoint(directory, { ...identity, inputs });
+  const root = path.join(directory, 'run-saved');
+  fs.mkdirSync(root);
+  fs.writeFileSync(path.join(root, 'run-inputs.json'), JSON.stringify({ sourceCommit: identity.sha }));
+  const recovery = { ...identity, sha: 'b'.repeat(40), id: '101', inputs: {
+    ...inputs, resume_run_id: '100', restart_stage: 'bootstrap-change-materialization' } };
+  for (const stages of [[], [{ id: 'bootstrap-change-generation', status: 'failed' }]]) {
+    fs.writeFileSync(path.join(root, 'workflow-state.json'), JSON.stringify({ status: 'blocked', stages }));
+    assert.throws(() => prepareCheckpoint(directory, recovery), /requires completed change generation/);
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(directory, 'bootstrap-continuation.json'))), previous);
+  }
+  const savedState = JSON.stringify({ status: 'blocked', stages: [{ id: 'bootstrap-change-generation', status: 'completed' }] });
+  fs.writeFileSync(path.join(root, 'workflow-state.json'), savedState);
+  const recovered = prepareCheckpoint(directory, recovery);
+  assert.equal(recovered.restartStage, 'bootstrap-change-materialization');
+  assert.equal(recovered.sourceSha, identity.sha);
+  assert.equal(recovered.sha, recovery.sha);
+  assert.equal(fs.readFileSync(path.join(root, 'workflow-state.json'), 'utf8'), savedState);
+  const next = prepareContinuation({ ...identity, sha: recovered.sha, id: '102', previous: recovered,
+    inputs: { ...inputs, resume_run_id: '101' } });
+  assert.equal(next.sourceSha, identity.sha);
+  assert.equal(next.restartStage, undefined);
+});
+
 test('rejects mismatched parent, commit, branch and settings before any model work', () => {
   const previous = fresh();
   const valid = { ...identity, id: '101', previous, inputs: { ...inputs, resume_run_id: '100' } };
@@ -273,4 +299,5 @@ test('workflow dispatch is isolated from generation and waits for uploaded evide
   }
   assert.equal(doc.on.workflow_dispatch.inputs.auto_resume.default, true);
   assert.equal(doc.on.workflow_dispatch.inputs.max_continuations.default, 3);
+  assert.ok(doc.on.workflow_dispatch.inputs.restart_stage.options.includes('bootstrap-change-materialization'));
 });

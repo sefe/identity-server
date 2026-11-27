@@ -160,6 +160,18 @@ function New-QaFoundryNugetEcosystemAdapter {
                 '</configuration>'
             )
             return @(
+                # Scratch-only SDK selection: never edit the product's global.json.
+                # latestMinor permits installed feature bands within the locked
+                # major, but cannot roll forward from SDK 10 to SDK 11.
+                [pscustomobject]@{
+                    key = "dotnetsdk"
+                    path = "project/global.json"
+                    content = (@{ sdk = @{
+                        version = "$([int]$Toolchain.runtime.sdkMajor).0.100"
+                        rollForward = 'latestMinor'
+                        allowPrerelease = $false
+                    } } | ConvertTo-Json -Depth 4)
+                }
                 [pscustomobject]@{
                     key = "nugetconfig"
                     path = "project/NuGet.config"

@@ -285,6 +285,25 @@ function Get-ToolVersion {
     }
 }
 
+# Resolver configuration must exist before version probes as well as restore.
+# In particular, dotnet selects its SDK from global.json in the working directory;
+# probing first can select a newer SDK even when the approved one is installed.
+$configFiles = @{}
+$neutralFiles = @()
+if ($null -ne $adapter.PSObject.Properties["NewNeutralConfigFiles"]) {
+    $neutralFiles = @(& $adapter.NewNeutralConfigFiles $Toolchain $WorkRoot)
+}
+foreach ($file in $neutralFiles) {
+    $path = [string]$file.path
+    if (-not [IO.Path]::IsPathRooted($path)) { $path = Join-Path $WorkRoot $path }
+    $directory = Split-Path $path -Parent
+    if ($directory -and -not (Test-Path $directory -PathType Container)) {
+        New-Item -ItemType Directory -Path $directory -Force | Out-Null
+    }
+    Set-Content -LiteralPath $path -Value ([string]$file.content) -Encoding utf8 -NoNewline
+    $configFiles[[string]$file.key] = $path
+}
+
 foreach ($tool in $requiredTools) {
     $expected = [string]$tool.expectedVersion
     $comparison = [string]$tool.match
@@ -360,25 +379,6 @@ if (-not (Test-Path $manifestDirectory -PathType Container)) {
     New-Item -ItemType Directory -Path $manifestDirectory -Force | Out-Null
 }
 Set-Content -LiteralPath $manifestPath -Value $manifestContent -Encoding utf8 -NoNewline
-
-# Most package managers read user and machine configuration unless they are
-# pointed at empty files, and an inherited one could redirect the feed or add a
-# credential. The adapter names the files its tooling would otherwise read.
-$configFiles = @{}
-$neutralFiles = @()
-if ($null -ne $adapter.PSObject.Properties["NewNeutralConfigFiles"]) {
-    $neutralFiles = @(& $adapter.NewNeutralConfigFiles $Toolchain $WorkRoot)
-}
-foreach ($file in $neutralFiles) {
-    $path = [string]$file.path
-    if (-not [IO.Path]::IsPathRooted($path)) { $path = Join-Path $WorkRoot $path }
-    $directory = Split-Path $path -Parent
-    if ($directory -and -not (Test-Path $directory -PathType Container)) {
-        New-Item -ItemType Directory -Path $directory -Force | Out-Null
-    }
-    Set-Content -LiteralPath $path -Value ([string]$file.content) -Encoding utf8 -NoNewline
-    $configFiles[[string]$file.key] = $path
-}
 
 $context = [pscustomobject][ordered]@{
     workRoot = $WorkRoot
