@@ -31,7 +31,9 @@ export function prepareContinuation({ previous, inputs, repository, branch, sha,
   }
   const parent = inputs.resume_run_id ? runId(inputs.resume_run_id) : '';
   const restartStage = String(inputs.restart_stage ?? '').trim();
-  if (restartStage && restartStage !== 'implementation') throw new Error('restart_stage must be empty or implementation.');
+  if (restartStage && !['implementation', 'bootstrap-change-materialization'].includes(restartStage)) {
+    throw new Error('restart_stage must be empty, implementation or bootstrap-change-materialization.');
+  }
   if (restartStage && (!parent || previous === undefined)) throw new Error('Stage recovery requires resume_run_id and a saved continuation checkpoint.');
   let sourceSha = sha;
   if (previous !== undefined) {
@@ -42,7 +44,7 @@ export function prepareContinuation({ previous, inputs, repository, branch, sha,
     for (const [key, value] of Object.entries({ repository, branch, ...settings })) {
       if (previous[key] !== value) throw new Error(`Cannot resume: ${key} changed. Use the original commit and inputs.`);
     }
-    if (previous.sha !== sha && !restartStage) throw new Error('Cannot resume: sha changed. Use the original runtime commit or explicitly restart implementation.');
+    if (previous.sha !== sha && !restartStage) throw new Error('Cannot resume: sha changed. Use the original runtime commit or explicitly select a recovery stage.');
     sourceSha = previous.sourceSha ?? previous.sha;
     if (!/^[a-f0-9]{40}$/.test(sourceSha) || !/^[a-f0-9]{40}$/.test(previous.sha)) throw new Error('Invalid saved source/runtime commit.');
     runId(previous.rootRunId);
@@ -79,6 +81,12 @@ export function prepareCheckpoint(directory, options) {
     const manifest = readJson(path.join(root, 'run-inputs.json'));
     if (!['blocked', 'failed', 'paused'].includes(saved.status) || manifest.sourceCommit !== state.sourceSha) {
       throw new Error('Stage recovery requires a stopped analysis on the saved source commit.');
+    }
+    if (state.restartStage === 'bootstrap-change-materialization') {
+      const generation = saved.stages?.filter(stage => stage.id === 'bootstrap-change-generation');
+      if (generation?.length !== 1 || generation[0].status !== 'completed') {
+        throw new Error('Materialization recovery requires completed change generation; recover the earlier failure first.');
+      }
     }
   }
   // Write a complete replacement in a private directory on the same filesystem.

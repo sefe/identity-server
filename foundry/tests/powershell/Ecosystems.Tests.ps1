@@ -1972,7 +1972,7 @@ Describe "Applying the programme's refusals to everything that would be installe
             $direct = [ordered]@{
                 version = "3.2.4"
                 resolved = "$script:Registry/vitest/-/vitest-3.2.4.tgz"
-                integrity = "sha512-" + ("a" * 86) + "=="
+                integrity = "sha512-" + [Convert]::ToBase64String([byte[]](1..64))
                 license = "MIT"
             }
             foreach ($key in $DirectOverride.Keys) {
@@ -1981,7 +1981,7 @@ Describe "Applying the programme's refusals to everything that would be installe
             $transitive = [ordered]@{
                 version = "2.0.0"
                 resolved = "$script:Registry/tinyrainbow/-/tinyrainbow-2.0.0.tgz"
-                integrity = "sha512-" + ("b" * 86) + "=="
+                integrity = "sha512-" + [Convert]::ToBase64String([byte[]](65..128))
                 license = "MIT"
             }
             foreach ($key in $TransitiveOverride.Keys) {

@@ -80,16 +80,51 @@ $PSBoundParameters | ConvertTo-Json | Set-Content (Join-Path $PSScriptRoot invoc
     AfterEach {
         foreach ($name in $script:Environment.Keys) { [Environment]::SetEnvironmentVariable($name,$script:Environment[$name]) }
     }
-    It 'passes the saved run and implementation restart to the core without invoking a model' {
-        $result=& $script:Wrapper -RepositoryRoot $script:Target -Resume -RestartStage implementation
+    It 'passes the saved run and <_> restart to the core without invoking a model' -ForEach @('implementation','bootstrap-change-materialization') {
+        $result=& $script:Wrapper -RepositoryRoot $script:Target -Resume -RestartStage $_
         $result.status | Should -Be paused
         $call=Get-Content $script:Invocation -Raw | ConvertFrom-Json
-        $call.RestartStage | Should -Be implementation
+        $call.RestartStage | Should -Be $_
         $call.ResumeRunRoot | Should -Be (Join-Path $script:Target .qa-foundry-artifacts/run-saved)
         $call.Phase | Should -Be Plan
     }
     It 'refuses restart without resume and does not call the core' {
         {& $script:Wrapper -RepositoryRoot $script:Target -RestartStage implementation} | Should -Throw '*requires -Resume*'
         Test-Path $script:Invocation | Should -BeFalse
+    }
+}
+
+Describe 'Materialization recovery retains generation and approvals' {
+    It 'resets only stages 11 through 13 and preserves the generated plan and first ten stage records' {
+        $run=Join-Path $TestDrive 'saved-run'
+        New-Item -ItemType Directory $run -Force | Out-Null
+        $workflow=Import-QaFoundryYaml -Path (Join-Path $script:Root workflows/bootstrap-automation.yaml) -Root $script:Root
+        $stages=@($workflow.stages)
+        $records=@(for($i=0;$i -lt $stages.Count;$i++) {
+            $status=if($i -lt 10){'completed'}elseif($i -eq 10){'blocked'}else{'pending'}
+            @{id=$stages[$i].id;status=$status;iteration=$(if($i -le 10){1}else{0});attempts=@()}
+        })
+        $planDirectory=Join-Path $run bootstrap-change-generation
+        New-Item -ItemType Directory $planDirectory -Force | Out-Null
+        $plan=Join-Path $planDirectory change-set-plan.json
+        '{"changes":[{"path":"automation/api/Test.cs","content":"preserved"}]}' | Set-Content $plan
+        $hash=(Get-FileHash $plan).Hash
+        $records[9].attempts=@(@{iteration=1;status='completed';artifacts=@(@{
+            name='change-set-plan.json';relativePath='bootstrap-change-generation/change-set-plan.json';sha256=$hash})})
+        $failed=Join-Path $run bootstrap-change-materialization
+        New-Item -ItemType Directory $failed -Force | Out-Null
+        'SDK 11 selected instead of SDK 10' | Set-Content (Join-Path $failed resolver-evidence.json)
+        $state=@{runId='saved';status='blocked';currentStage='bootstrap-change-materialization';stageIteration=1;updatedAt='';stages=$records}
+        $state|ConvertTo-Json -Depth 100|Set-Content (Join-Path $run workflow-state.json)
+        $before=($records|Select-Object -First 10)|ConvertTo-Json -Depth 100 -Compress
+        & (Join-Path $script:Root scripts/Reset-WorkflowStage.ps1) -RunRoot $run -Workflow $workflow -StageId bootstrap-change-materialization
+        $after=Get-Content (Join-Path $run workflow-state.json) -Raw|ConvertFrom-Json -Depth 100
+        (($after.stages|Select-Object -First 10)|ConvertTo-Json -Depth 100 -Compress)|Should -BeExactly $before
+        (Get-FileHash $plan).Hash|Should -BeExactly $hash
+        $after.currentStage|Should -Be bootstrap-change-materialization
+        $after.status|Should -Be paused
+        @($after.stages|Where-Object status -eq pending).Count|Should -Be 3
+        $archived=Get-ChildItem (Join-Path $run recovery) -Directory|Select-Object -First 1
+        Test-Path (Join-Path $archived.FullName bootstrap-change-materialization/resolver-evidence.json)|Should -BeTrue
     }
 }

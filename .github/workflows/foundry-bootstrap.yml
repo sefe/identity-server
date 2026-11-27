@@ -22,10 +22,10 @@ on:
         default: ''
         type: string
       restart_stage:
-        description: 'Recovery only: restart implementation from saved evidence using this runtime and the saved product commit'
+        description: 'Recovery only: restart the selected stage using this runtime and saved product commit'
         default: ''
         type: choice
-        options: ['', implementation]
+        options: ['', implementation, bootstrap-change-materialization]
       auto_resume:
         description: Automatically continue a paused analysis after uploading its evidence
         default: true

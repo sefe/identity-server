@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param([Parameter(Mandatory)][string]$RepositoryRoot,[string]$TargetBranch='main',[switch]$Resume,
-    [ValidateSet('', 'implementation')][string]$RestartStage='')
+    [ValidateSet('', 'implementation', 'bootstrap-change-materialization')][string]$RestartStage='')
 $ErrorActionPreference='Stop'
 if ($RestartStage -and -not $Resume) { throw '-RestartStage requires -Resume.' }
 $root=(Resolve-Path -LiteralPath $RepositoryRoot).Path
