@@ -188,6 +188,35 @@ test('materialization recovery changes runtime only and requires completed gener
   assert.equal(next.restartStage, undefined);
 });
 
+test('delivery recovery changes runtime without resetting completed analysis or approvals', t => {
+  const directory = scratch(t);
+  const previous = prepareCheckpoint(directory, { ...identity, inputs });
+  const root = path.join(directory, 'run-saved');
+  fs.mkdirSync(root);
+  fs.writeFileSync(path.join(root, 'run-inputs.json'), JSON.stringify({ sourceCommit: identity.sha }));
+  const recovery = { ...identity, sha: 'b'.repeat(40), id: '101', inputs: {
+    ...inputs, resume_run_id: '100', restart_stage: 'delivery' } };
+  for (const state of [
+    { status: 'blocked', stages: [] }, { status: 'completed', stages: [] },
+    { status: 'completed', stages: [{ id: 'bootstrap-change-review', status: 'revision_required' }] },
+    { status: 'completed', stages: [{ id: 'bootstrap-change-review', status: 'approved' }, { id: 'generation', status: 'pending' }] },
+  ]) {
+    fs.writeFileSync(path.join(root, 'workflow-state.json'), JSON.stringify(state));
+    assert.throws(() => prepareCheckpoint(directory, recovery), /recovery requires/);
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(directory, 'bootstrap-continuation.json'))), previous);
+  }
+  const saved = JSON.stringify({ status: 'completed', stages: [
+    { id: 'bootstrap-change-materialization', status: 'completed' },
+    { id: 'bootstrap-change-review', status: 'approved' },
+  ] });
+  fs.writeFileSync(path.join(root, 'workflow-state.json'), saved);
+  const recovered = prepareCheckpoint(directory, recovery);
+  assert.equal(recovered.sourceSha, identity.sha);
+  assert.equal(recovered.sha, recovery.sha);
+  assert.equal(recovered.restartStage, 'delivery');
+  assert.equal(fs.readFileSync(path.join(root, 'workflow-state.json'), 'utf8'), saved);
+});
+
 test('rejects mismatched parent, commit, branch and settings before any model work', () => {
   const previous = fresh();
   const valid = { ...identity, id: '101', previous, inputs: { ...inputs, resume_run_id: '100' } };

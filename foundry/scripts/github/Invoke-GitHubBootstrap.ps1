@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param([Parameter(Mandatory)][string]$RepositoryRoot,[string]$TargetBranch='main',[switch]$Resume,
-    [ValidateSet('', 'implementation', 'bootstrap-change-materialization')][string]$RestartStage='')
+    [ValidateSet('', 'implementation', 'bootstrap-change-materialization', 'delivery')][string]$RestartStage='')
 $ErrorActionPreference='Stop'
 if ($RestartStage -and -not $Resume) { throw '-RestartStage requires -Resume.' }
 $root=(Resolve-Path -LiteralPath $RepositoryRoot).Path
@@ -14,6 +14,19 @@ if ($Resume) {
     if ($runs.Count -ne 1) {throw 'Resume requires exactly one saved analysis root; do not guess between runs.'}
     $resumeRoot=$runs[0].FullName
 }
+$analysisRestart=$RestartStage
+if ($RestartStage -eq 'delivery') {
+    $saved=Get-Content -LiteralPath (Join-Path $resumeRoot 'workflow-state.json') -Raw | ConvertFrom-Json -Depth 100
+    if ($saved.status -ne 'completed' -or @($saved.stages).Count -eq 0 -or
+        @($saved.stages | Where-Object status -NotIn @('completed','approved')).Count -gt 0 -or
+        @($saved.stages | Where-Object { $_.id -eq 'bootstrap-change-review' -and $_.status -eq 'approved' }).Count -ne 1) {
+        throw 'Delivery recovery requires completed stages and unanimous final review approval.'
+    }
+    # Ordinary resume returns the completed analysis without running agents.
+    # Keep the core's source fingerprints and approved-artifact hash checks;
+    # never send this delivery-only label to Reset-WorkflowStage.
+    $analysisRestart=''
+}
 $allowance=0.0
 $hasAllowance=-not [string]::IsNullOrWhiteSpace($env:QA_FOUNDRY_ADDITIONAL_USD_LIMIT)
 if ($hasAllowance -and (-not [double]::TryParse($env:QA_FOUNDRY_ADDITIONAL_USD_LIMIT,[Globalization.NumberStyles]::Float,[Globalization.CultureInfo]::InvariantCulture,[ref]$allowance) -or $allowance -le 0 -or [double]::IsInfinity($allowance) -or [double]::IsNaN($allowance))) {
@@ -24,7 +37,7 @@ $result=$null
 try {
     $result=@(& (Join-Path $framework 'scripts/Start-FoundryBootstrap.ps1') -ConfigPath (Join-Path $root '.qa-foundry-artifacts/github-bootstrap.json') `
         -PreparedProjectConfigPath (Join-Path $root '.qa-foundry-artifacts/github-project.json') `
-        -Phase Plan -CurrentRef "refs/heads/$TargetBranch" -BudgetMinutes 280 -ResumeRunRoot $resumeRoot -RestartStage $RestartStage)[-1]
+        -Phase Plan -CurrentRef "refs/heads/$TargetBranch" -BudgetMinutes 280 -ResumeRunRoot $resumeRoot -RestartStage $analysisRestart)[-1]
     if ($result.status -notin @('dry_run','plan_applied','pull_request_created','paused')) {throw "Bootstrap ended as '$($result.status)'."}
 }
 finally {
